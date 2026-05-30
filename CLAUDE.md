@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## コーディングの制約条件（必読）
+
+実装時は以下を必ず守ること。各タスクの「完了」はこれらを満たすことを含む。
+
+1. **TDD で実装する**（Red → Green → Refactor）。先に失敗するテスト（RSpec）を書き、それを通す最小実装を行い、その後リファクタする。テストを後追いで書かない。
+2. **テストが通過するまでタスクを完了にしない**。完了の定義 = 対象の RSpec が green、かつ既存テストを壊していない。
+3. **service クラス／`app/services` ディレクトリを作らない（禁止）**。`*Service` という命名も使わない。ドメインロジックの置き場所は次のいずれか:
+   - 関連する **Active Record モデルのメソッド**（例: `Connection#bigquery`, `Query#bound_sql`）
+   - **PORO を `app/models/` 配下に置く**（例: `app/models/dry_run.rb`、テストは `spec/models/`）
+   - 運用スクリプト（バックアップ等）は **`lib/` 配下のモジュール＋rake/`bin` ラッパー**（テストは `spec/lib/`）
+4. **SimpleCov カバレッジ 85% 以上を維持する**（`spec/spec_helper.rb` の閾値を 85% に設定）。
+
 ## Commands
 
 ### テスト
@@ -11,7 +23,7 @@ bundle exec rspec spec/models/foo_spec.rb  # 単一ファイルのテスト
 bundle exec rspec spec/models/foo_spec.rb:42  # 特定の行のテスト
 ```
 
-カバレッジは90%未満でエラー終了（exit code 2）。レポートは `coverage/index.html` に生成される。
+カバレッジは **85%** 未満でエラー終了（exit code 2）。レポートは `coverage/index.html` に生成される。
 
 ### Lint
 ```bash

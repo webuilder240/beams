@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$stdout.sync = true
+
+require_relative "../lib/beams/procfile_reader"
+
+# Prepare all databases (primary, cache, queue, cable) before starting processes
+system("bin/rails db:prepare") || abort("db:prepare failed")
+
+procfile_path = File.join(__dir__, "..", "Procfile")
+processes = Beams::ProcfileReader.parse(File.read(procfile_path))
+
+pids = []
+processes.each do |name, command|
+  puts "Starting #{name}: #{command}"
+  pids << Process.spawn(command, pgroup: true)
+end
+
+# Forward INT and TERM to all child process groups
+%w[INT TERM].each do |sig|
+  trap(sig) { pids.each { |pid| Process.kill(sig, -pid) rescue nil } }
+end
+
+loop do
+  Process.wait
+rescue Errno::ECHILD
+  break
+rescue Errno::EINTR
+  retry
+end

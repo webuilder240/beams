@@ -2,8 +2,8 @@
 # check=error=true
 
 # This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
-# docker build -t sample_sns_service .
-# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name sample_sns_service sample_sns_service
+# docker build -t beams .
+# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name beams beams
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
@@ -72,6 +72,6 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server via Thruster by default, this can be overwritten at runtime
+# Start via supervisor (bin/boot handles db:prepare + web + worker)
 EXPOSE 80
-CMD ["./bin/thrust", "./bin/rails", "server"]
+CMD ["bin/boot"]
