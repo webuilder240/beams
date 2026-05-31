@@ -47,9 +47,9 @@
 
 > Thruster は `TLS_DOMAIN` を与えると Let's Encrypt で証明書を自動取得し HTTPS(443) 終端＋HTTP(80) リダイレクトを行う。未指定なら HTTP(80) のみ。
 
-- [ ] `Dockerfile` に `EXPOSE 443` を追加し、80/443 両待受であることを明示する (`Dockerfile`)
+- [x] `Dockerfile` に `EXPOSE 443` を追加し、80/443 両待受であることを明示する (`Dockerfile`)
   - 受け入れ条件: Dockerfile に `EXPOSE 80` と `EXPOSE 443` の両方がある
-- [ ] `config/environments/production.rb` で TLS 終端越し運用を有効化する。`TLS_DOMAIN` が設定されているときのみ `config.assume_ssl = true` / `config.force_ssl = true` を有効にし、`/up` を https リダイレクト除外にする (`config/environments/production.rb`)
+- [x] `config/environments/production.rb` で TLS 終端越し運用を有効化する。`TLS_DOMAIN` が設定されているときのみ `config.assume_ssl = true` / `config.force_ssl = true` を有効にし、`/up` を https リダイレクト除外にする (`config/environments/production.rb`)
   - 受け入れ条件: **TDD**。`TLS_DOMAIN` 設定時に通常パスが https へリダイレクトされ、`/up` は除外されることを検証する request spec を先に書く（Red→Green）
   - 受け入れ条件: `TLS_DOMAIN` 未設定時は従来どおり（リダイレクトなし）。dev/test の挙動は不変
   - 未決: production 設定の spec 化方法（`Rails.application.config` 直接検証 or `ssl_options` のラムダ検証）。Coder が最小で検証可能な形を選び、判断を progress に記録

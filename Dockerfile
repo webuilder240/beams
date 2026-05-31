@@ -73,5 +73,7 @@ COPY --chown=rails:rails --from=build /rails /rails
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start via supervisor (bin/boot handles db:prepare + web + worker)
+# Thruster listens on 80 (HTTP) and, when TLS_DOMAIN is set, terminates TLS on 443 (HTTPS).
 EXPOSE 80
+EXPOSE 443
 CMD ["bin/boot"]

@@ -1,5 +1,9 @@
 require "active_support/core_ext/integer/time"
 
+# TLS 有効判定 PORO。環境設定の評価時点では Zeitwerk オートロードが未整備のため
+# 明示 require する（`lib/beams/backup.rb` 等と同じ方針）。
+require "beams/once/tls_config"
+
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -28,14 +32,19 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  # config.assume_ssl = true
+  # TLS 終端越し運用（ONCE/Thruster）。`TLS_DOMAIN` 設定時のみ Thruster が
+  # HTTPS(443) で終端するため、その場合だけ SSL を強制する。未設定なら HTTP(80)
+  # のみで従来どおり動く（Beams::Once::TlsConfig が判定する）。
+  if Beams::Once::TlsConfig.new.enabled?
+    # Assume all access to the app is happening through a SSL-terminating reverse proxy.
+    config.assume_ssl = true
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  # config.force_ssl = true
+    # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
+    config.force_ssl = true
 
-  # Skip http-to-https redirect for the default health check endpoint.
-  # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+    # Skip http-to-https redirect for the default health check endpoint.
+    config.ssl_options = Beams::Once::TlsConfig.new.ssl_options
+  end
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]
