@@ -9,6 +9,26 @@ module Queries
 
     CONCURRENCY_LIMIT = 20
 
+    # 過去実行の結果テーブル再表示（トピック17）。当該クエリ配下の実行のみ
+    # 引ける（別クエリ・他人のクエリ配下の id は find が RecordNotFound → 404）。
+    # 状態に応じて _state（成功＝_result / 失敗＝_error / 実行中＝_running）で描画。
+    def show
+      execution = @query.query_executions.find(params[:id])
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "query_result",
+            partial: "query_executions/state",
+            locals: { execution: execution }
+          )
+        end
+        format.html do
+          render partial: "query_executions/state", locals: { execution: execution }
+        end
+      end
+    end
+
     def create
       raw = parameter_values
       missing = @query.missing_parameter_values(raw)
