@@ -33,6 +33,7 @@
 | 15 | SQLite自動バックアップ・復旧 | ✅完了 | Coder/Tester | [progress/15-backup-restore.md](progress/15-backup-restore.md) |
 | 16 | フォームUIのTailwindスタイル統一 | ✅完了 | Coder/Tester | [progress/16-form-styling-consistency.md](progress/16-form-styling-consistency.md) |
 | 17 | クエリ実行結果のレンダリング修正・実行履歴表示 | ✅完了 | Coder/Tester | [progress/17-query-result-history.md](progress/17-query-result-history.md) |
+| 18 | KamalからONCE配信への移行 | ✅完了 | Coder/Tester | [progress/18-once-distribution.md](progress/18-once-distribution.md) |
 
 ---
 

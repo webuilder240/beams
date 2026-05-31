@@ -53,7 +53,7 @@
   - 受け入れ条件: **TDD**。`TLS_DOMAIN` 設定時に通常パスが https へリダイレクトされ、`/up` は除外されることを検証する request spec を先に書く（Red→Green）
   - 受け入れ条件: `TLS_DOMAIN` 未設定時は従来どおり（リダイレクトなし）。dev/test の挙動は不変
   - 未決: production 設定の spec 化方法（`Rails.application.config` 直接検証 or `ssl_options` のラムダ検証）。Coder が最小で検証可能な形を選び、判断を progress に記録
-- [ ] Thruster のポート/ドメイン関連 env（`TLS_DOMAIN`・`HTTP_PORT`・`HTTPS_PORT`・`TARGET_PORT`）の挙動と既定値を `docs/INSTALL.md`（後述 E）に整理する
+- [x] Thruster のポート/ドメイン関連 env（`TLS_DOMAIN`・`HTTP_PORT`・`HTTPS_PORT`・`TARGET_PORT`）の挙動と既定値を `docs/INSTALL.md`（後述 E）に整理する
   - 受け入れ条件: `TLS_DOMAIN` 設定有無での待受ポート差が明記されている
 
 ## C. インストーラ（シェル）
@@ -81,15 +81,15 @@
 
 ## E. 配布・運用手順書
 
-- [ ] `docs/INSTALL.md` を新規作成する。前提（Linux + Docker）/ `install.sh` の使い方 / 必須 env（`RAILS_MASTER_KEY`・`TLS_DOMAIN`）/ ポート(80,443) / `/storage` ボリュームとバックアップ（[docs/RESTORE.md](../RESTORE.md) へリンク）/ 自動アップデート（systemd timer 設置手順）/ 手動アップデート・ロールバック、を記載する (`docs/INSTALL.md`)
+- [x] `docs/INSTALL.md` を新規作成する。前提（Linux + Docker）/ `install.sh` の使い方 / 必須 env（`RAILS_MASTER_KEY`・`TLS_DOMAIN`）/ ポート(80,443) / `/storage` ボリュームとバックアップ（[docs/RESTORE.md](../RESTORE.md) へリンク）/ 自動アップデート（systemd timer 設置手順）/ 手動アップデート・ロールバック、を記載する (`docs/INSTALL.md`)
   - 受け入れ条件: 上記項目がすべて含まれ、コマンド例が実在の成果物（`deploy/once/` 配下・`bin/once-update`）と一致する
-- [ ] `docs/PRODUCT_PLAN.md` / `00-overview.md` / `PROGRESS_LOG.md` の索引・進捗にトピック18を反映する（マネージャーが完了化時に更新）
+- [x] `docs/PRODUCT_PLAN.md` / `00-overview.md` / `PROGRESS_LOG.md` の索引・進捗にトピック18を反映する（マネージャーが完了化時に更新）
 
 ## F. Lint・テスト
 
-- [ ] `bin/rubocop` を実行し、追加した Ruby（`lib/beams/once/updater.rb`・`bin/once-update`）が `rubocop-rails-omakase` に準拠することを確認 (`lib/`, `bin/`)
+- [x] `bin/rubocop` を実行し、追加した Ruby（`lib/beams/once/updater.rb`・`bin/once-update`）が `rubocop-rails-omakase` に準拠することを確認 (`lib/`, `bin/`)
   - 受け入れ条件: `bin/rubocop` が exit code 0
-- [ ] `bin/rails db:test:prepare` 後 `bundle exec rspec` を実行し、既存 spec を壊していないこと・カバレッジ 85% 以上を確認 (`spec/`)
+- [x] `bin/rails db:test:prepare` 後 `bundle exec rspec` を実行し、既存 spec を壊していないこと・カバレッジ 85% 以上を確認 (`spec/`)
   - 受け入れ条件: exit code 0、SimpleCov 85% 以上
 
 ## 動作確認（手動）

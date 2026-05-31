@@ -144,3 +144,40 @@ C と D は共有定数（IMAGE / コンテナ名 / ボリューム / env ファ
 ### 迷った点
 
 - updater のダイジェスト比較に何を使うか。`docker inspect --format {{.Image}} <container>`（コンテナが作成された元イメージ ID）と `docker inspect --format {{.Id}} <image>`（pull 後のローカルイメージ ID）を比較する方式にした。両者は同一イメージなら同じ sha256 image id になるため、pull で新イメージに置き換わったかを確実に判定できる。runner は「コマンド配列→stdout 文字列」の最小インタフェースにし、テストでは `FakeRunner` がコマンド列を記録して順序と引数を検証する。
+
+---
+
+## 2026-05-31 — グループE（配布・運用手順書＋索引反映）
+
+ドキュメントのみ（アプリコード変更なし）。
+
+### 作成・更新物
+
+- 新規 `docs/INSTALL.md`: 前提（Linux + Docker / root・sudo）/ インストール手順（`RAILS_MASTER_KEY=<key> [TLS_DOMAIN=...] sudo -E bash deploy/once/install.sh`、`IMAGE` プレースホルダの差し替え必須を明記）/ 環境変数表（必須 `RAILS_MASTER_KEY`・任意 `TLS_DOMAIN`・`IMAGE`、鍵は `/etc/beams/beams.env` 600 + `--env-file`）/ ポートと TLS（`TLS_DOMAIN` 有無での待受差と Thruster env `TLS_DOMAIN`/`HTTP_PORT`80/`HTTPS_PORT`443/`TARGET_PORT`3000 の表）/ 永続データとバックアップ（`beams_storage` → `/rails/storage`、`docs/RESTORE.md` リンク）/ ヘルスチェック（`curl http://localhost/up`）/ 自動アップデート（systemd 設置手順・daily・ExecStartPre バックアップ失敗時中止・再生成時 db:prepare）/ 手動アップデート・ロールバック（`bin/once-update` / `IMAGE` を旧タグで再 run / RESTORE.md）。
+  - これによりグループB の3つ目「Thruster env を docs/INSTALL.md に整理」も満たした。
+- `docs/tasks/00-overview.md`: 総トピック数 17→18、トピック一覧に行 18（KamalからONCE配信への移行 / §2 / 依存 02,15 / ✅完了）を追加。
+- `docs/tasks/PROGRESS_LOG.md`: 進捗サマリ表に行 18（✅完了 / Coder/Tester / progress リンク）を追加。マイグレーション無しのため承認履歴表は変更なし。
+- `docs/PRODUCT_PLAN.md`: §2 配布形態に、Kamal を廃し install.sh + systemd 自動アップデート + TLS_DOMAIN で配信する旨を簡潔に追記（INSTALL.md へリンク）。
+- `docs/tasks/18-once-distribution.md`: グループB 3つ目・グループE 2項目・グループF 2項目を `- [x]` に更新。
+
+### INSTALL.md と実ファイルの整合確認（grep 突き合わせ）
+
+| INSTALL.md の記述 | 実ファイル | 一致 |
+|---|---|---|
+| `deploy/once/install.sh` の実行・run 引数 | `deploy/once/install.sh`（`docker run -d --name beams --restart unless-stopped -p 80:80 -p 443:443 -v beams_storage:/rails/storage --env-file /etc/beams/beams.env`） | ○ |
+| `IMAGE` 既定 `ghcr.io/REPLACE_ME/beams:latest` | install.sh / `lib/beams/once/updater.rb` 双方 | ○ |
+| env ファイル `/etc/beams/beams.env`（600・`--env-file`） | install.sh（`ENV_DIR=/etc/beams` + chmod 600） / updater.rb | ○ |
+| systemd ファイル名 `once-update.service` / `once-update.timer` | `deploy/once/` に実在 | ○ |
+| `ExecStartPre` バックアップ `docker exec beams ... rake beams:backup` | `once-update.service` | ○ |
+| `bin/once-update` | 実在（chmod +x） | ○ |
+| `docs/RESTORE.md` リンク | 実在 | ○ |
+
+### 検証結果
+
+- `bin/rubocop`: `149 files inspected, no offenses detected`（exit 0）。
+- `bin/rails db:test:prepare` → exit 0。
+- `bundle exec rspec`: **518 examples, 0 failures**、Line Coverage **98.66% (1031 / 1045)**（exit 0）。ドキュメントのみのため examples/カバレッジは C/D 完了時から不変。
+
+### 残る未チェック（手動動作確認のみ）
+
+タスク末尾「動作確認（手動）」の4項目（実イメージビルド→`docker run`→`/up` 200 確認、install.sh ドライラン、once-update dry-run、systemd-analyze verify）は実環境/実イメージが必要なため Coder では未実施。Reviewer/マネージャー側の手動確認に委ねる。
