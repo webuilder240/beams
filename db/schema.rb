@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_140000) do
   create_table "application_settings", force: :cascade do |t|
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
@@ -73,8 +73,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_130000) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "visualizations", force: :cascade do |t|
+    t.string "chart_type", default: "line", null: false
+    t.string "counter_aggregation", default: "sum", null: false
+    t.string "counter_column"
+    t.datetime "created_at", null: false
+    t.string "display_mode", default: "table", null: false
+    t.integer "query_id", null: false
+    t.string "series_column"
+    t.datetime "updated_at", null: false
+    t.string "x_column"
+    t.text "y_columns"
+    t.index ["query_id"], name: "index_visualizations_on_query_id", unique: true
+  end
+
   add_foreign_key "queries", "bigquery_connections"
   add_foreign_key "queries", "users"
   add_foreign_key "query_executions", "queries"
   add_foreign_key "query_parameters", "queries"
+  add_foreign_key "visualizations", "queries"
 end
