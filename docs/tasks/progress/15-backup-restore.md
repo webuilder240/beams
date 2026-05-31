@@ -20,6 +20,13 @@
 - 15.5 rake（backup/list/restore）・bin ラッパー（実行権限100755）✅
 - 15.6 設定（環境変数）・spec（lib/jobs/config）✅
 
+## 追加: バックアップ/復元の統合テスト（2026-05-31 追補）
+ユニット（`Beams::Backup`/`Beams::Restore` 直接呼び出し）に加え、運用フローを実レイヤー経由で往復検証する統合テストを `spec/integration/` に追加。本体（lib/beams・app/jobs・bin・lib/tasks）は**無改修**（変更は spec のみ）。コミット `1117649`/`9f4e15a`/`2c14055`。
+- `beams_backup_rake_spec.rb`: rake `beams:backup`→`backup:list`→`beams:restore[gen]` を `Rake::Task#invoke` で実起動。`Dir.chdir`+`BEAMS_BACKUP_DIR` で本番デフォルトパスを一時dirへ。10行→改竄(3行)→復元後10行・`.bak`退避(3行)を実データで検証。
+- `beams_bin_spec.rb`: `bin/beams-backup`/`bin/beams-restore` を `Open3.capture2e` で**実サブプロセス**起動。exit code（往復成功/引数なしexit1）・標準出力・データ往復一致(9行)を検証。
+- `backup_job_integration_spec.rb`: `BackupJob.perform_now` を**モックせず**実行し実1世代生成・integrity=ok を検証（既存のモック版 `spec/jobs/backup_job_spec.rb` は残置）。
+- TesterIT 独立検証 **PASS**: 全スイート **471 examples / 0 failures、カバレッジ 98.97%、rubocop 0、brakeman 0**。integration 単独 6例 green。実DB/`storage/backups` 汚染なし・git clean を確認。
+
 ## 申し送り
 - 要件文言のパス例（`bin/backup`/`bin/restore`/`lib/tasks/backup.rake`）と実装（`bin/beams-backup`/`bin/beams-restore`/`lib/tasks/beams.rake`）に命名差があるが、機能は全充足のため許容（`beams-`/`beams:` はアプリ名前空間として妥当）。
 - test DB に残留データがあると setup_wizard 系9件が誤って失敗する。検証前に必ず `bin/rails db:test:prepare`。
