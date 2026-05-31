@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/07-query-editor.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
-- **ステータス**: ✅完了（Coder）→ Tester へ引き継ぎ
-- **担当**: Coder
+- **ステータス**: ✅完了
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断）
 
@@ -53,3 +53,6 @@
   - `*Service` 不使用。ドメインロジック（`title_matching`）は Query モデルの scope に配置。
 - **残課題（Tester/後続向け）**: クエリ実行・結果表示はトピック10へ委譲（本トピック対象外）。スキーマブラウザ埋め込みは「キャッシュ済み接続のみ表示」のため、未キャッシュ接続では new/edit で名前挿入 UI が出ない（運用上はスキーマブラウザ画面で先にキャッシュ。許容と判断）。
 - **ステータス更新**: 🔄進行中 → ✅完了（Coder）。`00-overview.md` / `PROGRESS_LOG.md` の表も更新。
+- **司令塔→Tester**: トピック07 の QA（js:true 実行確認を含む）を依頼。
+- **Tester→司令塔**: トピック07 QA **PASS**。全受け入れ条件✅。接続必須(NOT NULL)をモデル/DB両層で実機確認。**js:true は `npx playwright install chromium` 後に Playwright/chromium で実起動・green（query_editor 3例 + schema連携 1例、skip/pendingなし）**。rspec 161例 0 failures 0 pending・カバレッジ99.66%、rubocop no offenses、brakeman 0、importmap audit クリーン。問題0件。差し戻し不要。
+- **司令塔**: トピック07 を **✅完了** と確定。
