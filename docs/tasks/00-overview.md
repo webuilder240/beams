@@ -37,7 +37,7 @@
 | 06 | [スキーマブラウザ・キャッシュ](06-schema-browser.md) | §4.3, §6.4 | 04 | 17 | 完了 |
 | 07 | [クエリエディタ（CodeMirror 6）](07-query-editor.md) | §4.3 | 06 | 22 | 完了 |
 | 08 | [コスト保護（dry-run・上限ガード）★](08-cost-protection.md) | §4.4 | 04, 07 | 19 | 完了 |
-| 09 | [パラメータ化クエリ](09-parameterized-query.md) | §4.5 | 07 | 21 | 未着手 |
+| 09 | [パラメータ化クエリ](09-parameterized-query.md) | §4.5 | 07 | 21 | 完了 |
 | 10 | [非同期実行・結果保存](10-query-execution.md) | §4.6, §6.1-6.3 | 04, 07, 09 | 30 | 未着手 |
 | 11 | [可視化（Chart.js）](11-visualization.md) | §4.7 | 10 | 20 | 未着手 |
 | 12 | [ダッシュボード](12-dashboard.md) | §4.8 | 11 | 22 | 未着手 |
