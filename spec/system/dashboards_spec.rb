@@ -145,6 +145,24 @@ RSpec.describe "Dashboards", type: :system do
     end
   end
 
+  describe "widget query link (turbo frame escape)" do
+    # ウィジェットは turbo_frame "widgets" 内に描画される。クエリ詳細へのリンクが
+    # frame を抜けないと、遷移先 queries/show に同名 frame が無く Turbo が
+    # 「Content missing」を表示する。data-turbo-frame="_top" の付与を担保する。
+    it "breaks the widget title link out of the widgets turbo frame" do
+      query = seed_query_with_result(title: "売上クエリ")
+      dashboard = create(:dashboard, user: user, title: "売上D")
+      create(:widget, dashboard: dashboard, query: query, position: 0, column_span: 1)
+
+      log_in
+      visit dashboard_path(dashboard)
+
+      expect(page).to have_css(
+        "a[href='#{query_path(query)}'][data-turbo-frame='_top']", text: "売上クエリ"
+      )
+    end
+  end
+
   describe "widget chart rendering", :js do
     it "renders a canvas for a chart-mode widget" do
       query = seed_query_with_result(title: "チャートクエリ")
