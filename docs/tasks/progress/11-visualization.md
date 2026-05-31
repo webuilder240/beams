@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/11-visualization.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
-- **ステータス**: 🔄進行中
-- **担当**: Coder
+- **ステータス**: ✅完了（Tester PASS）
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断・名称読み替え）
 
@@ -50,3 +50,9 @@
   - **Tester 申し送り（要件違反ではない）**: ①**死にマークアップ**＝未実装 `chart_settings_controller.js` を参照する orphaned data 属性が view に残存（chart_type 即時UIトグルは要件外＝「保存で反映」で受け入れ条件 OK）。②counter が **Float 表示**（60.0）。③area/scatter の実ブラウザ描画は js:true 自動検証外（helper spec でユニット検証済み）。④doc「動作確認」の実機4項目は人間/実機確認に申し送り。
 - **司令塔**: Tester PASS を受領。要件は満たすが、①死にマークアップ・②Float 表示の2点は技術的負債として**完了化前に最小クリーンアップ**を Coder に指示（①未配線 data 属性除去=Refactor／②整数割り切れ時は整数表示=TDD。ライブトグルは要件外につき実装しない）。クリーンアップ後に完了化する。
 - **司令塔→Coder**: 上記2点の軽微クリーンアップを1コミットで対応するよう指示（品質ゲート維持）。
+- **Coder→司令塔**: クリーンアップ完了（commit `c0df8e4`）。①未配線 data 属性（`chart_settings_target`/`counter-hidden`/`counter-shown`）を view から除去・grep で残存ゼロ確認（軸/counter UI 切替はサーバサイド `hidden` クラスのまま、ライブトグルは要件外につき非実装）。②`format_counter_value`（整数割り切れ→整数表示・小数はそのまま・nil→"—"）を TDD で追加し `_chart.html.erb` に適用（`counter_value` の戻り型は不変）。`rspec` **372/0**（+4 spec）・SimpleCov **98.86%**・rubocop 0・brakeman 0・importmap 0。スキーマ変更なし。
+- **司令塔**: クリーンアップ完了を確認しトピック11を **✅完了** と判定。索引・本ログ・`11-visualization.md`・`00-overview.md` を完了に更新、コミット。次トピック12（ダッシュボード）へ。
+
+#### ステータス: ✅完了（Tester PASS）
+
+**手動/実機確認の残（人間/実機）**: doc「動作確認」の実機4項目（実 server でのタブ切替・設定保持・円グラフ・CSV 実DL）、area/scatter の実ブラウザ描画、js:true の canvas 描画エラー有無の確証。いずれも自動テストの論理カバー済み・実機検証のみ未実施。
