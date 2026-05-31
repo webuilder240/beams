@@ -3,7 +3,8 @@ class QueriesController < ApplicationController
   before_action :set_query, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @queries = current_user.queries.title_matching(params[:q]).order(updated_at: :desc)
+    # 組織フルオープン（§4.9）: 全ログインユーザーが全クエリを閲覧可能。
+    @queries = Query.title_matching(params[:q]).order(updated_at: :desc)
     @q = params[:q]
   end
 
@@ -60,9 +61,10 @@ class QueriesController < ApplicationController
 
   private
 
-  # 所有者スコープ: current_user のクエリのみ操作可能（他人の id は 404）。
+  # 組織フルオープン（§4.9）: 全ログインユーザーが全クエリを操作可能。
+  # 所有者（user）は作成時に記録するが、アクセス制限には使わない。
   def set_query
-    @query = current_user.queries.find(params[:id])
+    @query = Query.find(params[:id])
   end
 
   def query_params

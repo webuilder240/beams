@@ -21,7 +21,7 @@ RSpec.describe "Queries", type: :request do
     before { login_as(user) }
 
     describe "GET /queries" do
-      it "lists only the current user's queries in updated_at desc order" do
+      it "lists all users' queries in updated_at desc order (org full-open §4.9)" do
         old = create(:query, user: user, title: "古い", updated_at: 2.days.ago)
         recent = create(:query, user: user, title: "新しい", updated_at: 1.hour.ago)
         create(:query, user: other_user, title: "他人のクエリ")
@@ -30,7 +30,8 @@ RSpec.describe "Queries", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("新しい")
         expect(response.body).to include("古い")
-        expect(response.body).not_to include("他人のクエリ")
+        # 全ユーザーのクエリが見える（§4.9）
+        expect(response.body).to include("他人のクエリ")
         expect(response.body.index("新しい")).to be < response.body.index("古い")
       end
 
@@ -91,10 +92,11 @@ RSpec.describe "Queries", type: :request do
         expect(response.body).to include("詳細クエリ")
       end
 
-      it "does not show another user's query (404)" do
-        query = create(:query, user: other_user)
+      it "shows another user's query (org full-open §4.9)" do
+        query = create(:query, user: other_user, title: "他人のクエリ詳細")
         get query_path(query)
-        expect(response).to have_http_status(:not_found)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("他人のクエリ詳細")
       end
 
       it "renders the parameter form for a parameterized query" do
@@ -156,11 +158,13 @@ RSpec.describe "Queries", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "cannot update another user's query (404)" do
+      it "updates another user's query (org full-open §4.9)" do
         query = create(:query, user: other_user)
-        patch query_path(query), params: { query: { title: "侵入" } }
-        expect(response).to have_http_status(:not_found)
-        expect(query.reload.title).not_to eq("侵入")
+        patch query_path(query), params: {
+          query: { title: "更新", sql_body: "SELECT 9", bigquery_connection_id: connection.id }
+        }
+        expect(response).to redirect_to(query_path(query))
+        expect(query.reload.title).to eq("更新")
       end
     end
 
@@ -173,12 +177,12 @@ RSpec.describe "Queries", type: :request do
         expect(response).to redirect_to(queries_path)
       end
 
-      it "cannot delete another user's query (404)" do
+      it "deletes another user's query (org full-open §4.9)" do
         query = create(:query, user: other_user)
         expect {
           delete query_path(query)
-        }.not_to change(Query, :count)
-        expect(response).to have_http_status(:not_found)
+        }.to change(Query, :count).by(-1)
+        expect(response).to redirect_to(queries_path)
       end
     end
   end
