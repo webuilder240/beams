@@ -27,7 +27,7 @@
 | 09 | パラメータ化クエリ | ✅完了 | Coder/Tester | [progress/09-parameterized-query.md](progress/09-parameterized-query.md) |
 | 10 | 非同期実行・結果保存 | ✅完了 | Coder/Tester | [progress/10-query-execution.md](progress/10-query-execution.md) |
 | 11 | 可視化 | ✅完了 | Coder/Tester | [progress/11-visualization.md](progress/11-visualization.md) |
-| 12 | ダッシュボード | ⏳未着手 | - | - |
+| 12 | ダッシュボード | 🔄進行中 | Coder | [progress/12-dashboard.md](progress/12-dashboard.md) |
 | 13 | 共有・権限 | ⏳未着手 | - | - |
 | 14 | 探しやすさ・一覧検索 | ⏳未着手 | - | - |
 | 15 | SQLite自動バックアップ | ⏳未着手 | - | - |
