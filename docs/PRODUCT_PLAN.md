@@ -85,7 +85,7 @@ worker: bundle exec bin/jobs          # SolidQueue（別プロセス）
 | チャート | Chart.js | importmapでピン留め |
 | SQLエディタ | CodeMirror 6 | importmapでピン留め。ハイライト・行番号 |
 | 認証 | Rails 8標準（has_secure_password） | 自前認証 |
-| デプロイ | ONCE（Docker / Kamalベース） | 単一アプライアンス |
+| デプロイ | ONCE（単一Dockerコンテナ） | 単一アプライアンス |
 
 ### 3.1 SQLite 4分割（Solid Stack）
 

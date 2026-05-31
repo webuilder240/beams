@@ -23,24 +23,24 @@
 
 ## A. Kamal 撤去
 
-- [ ] `config/deploy.yml` を削除する (`config/deploy.yml`)
+- [x] `config/deploy.yml` を削除する (`config/deploy.yml`)
   - 受け入れ条件: ファイルが存在しない
-- [ ] `bin/kamal` を削除する (`bin/kamal`)
+- [x] `bin/kamal` を削除する (`bin/kamal`)
   - 受け入れ条件: ファイルが存在しない
-- [ ] `.kamal/`（`hooks/` の各 `*.sample`・`secrets`）を削除する (`.kamal/`)
+- [x] `.kamal/`（`hooks/` の各 `*.sample`・`secrets`）を削除する (`.kamal/`)
   - 受け入れ条件: ディレクトリが存在しない
-- [ ] `Gemfile` から `gem "kamal", require: false` とその直上のコメント行を削除し、`bundle install` で `Gemfile.lock` を再生成する (`Gemfile`, `Gemfile.lock`)
+- [x] `Gemfile` から `gem "kamal", require: false` とその直上のコメント行を削除し、`bundle install` で `Gemfile.lock` を再生成する (`Gemfile`, `Gemfile.lock`)
   - 受け入れ条件: `Gemfile.lock` に `kamal` が現れない
   - 受け入れ条件: `bundle install` が成功し、`bundle exec rspec` が引き続き green
-- [ ] `Dockerfile` 冒頭コメントの "Use with Kamal" を ONCE 配布前提の記述に書き換える (`Dockerfile`)
+- [x] `Dockerfile` 冒頭コメントの "Use with Kamal" を ONCE 配布前提の記述に書き換える (`Dockerfile`)
   - 受け入れ条件: Dockerfile に "Kamal" の語が残らない
-- [ ] `.dockerignore` の Kamal 関連無視設定（`/config/deploy*.yml`・`/.kamal`）を削除または ONCE 向けに整理する (`.dockerignore`)
+- [x] `.dockerignore` の Kamal 関連無視設定（`/config/deploy*.yml`・`/.kamal`）を削除または ONCE 向けに整理する (`.dockerignore`)
   - 受け入れ条件: 撤去済みパスを参照する無視行が残らない
-- [ ] `CLAUDE.md` のデプロイ節（「Kamal を使用。`config/deploy.yml` を参照。」）を ONCE 配布（`docs/INSTALL.md` 参照）に更新する (`CLAUDE.md`)
+- [x] `CLAUDE.md` のデプロイ節（「Kamal を使用。`config/deploy.yml` を参照。」）を ONCE 配布（`docs/INSTALL.md` 参照）に更新する (`CLAUDE.md`)
   - 受け入れ条件: 当該節が ONCE を指し、`docs/INSTALL.md` へリンクしている
-- [ ] `docs/PRODUCT_PLAN.md` の技術スタック表「ONCE（Docker / Kamalベース）」を Kamal 非依存の記述に更新する (`docs/PRODUCT_PLAN.md`)
+- [x] `docs/PRODUCT_PLAN.md` の技術スタック表「ONCE（Docker / Kamalベース）」を Kamal 非依存の記述に更新する (`docs/PRODUCT_PLAN.md`)
   - 受け入れ条件: 当該行に "Kamalベース" が残らない
-- [ ] 全体の Kamal 参照を再確認する
+- [x] 全体の Kamal 参照を再確認する
   - 受け入れ条件: `grep -rniE "kamal" . --exclude-dir=.git`（`docs/tasks/` 配下の履歴記述を除く）が 0 件
 
 ## B. TLS 自動証明（Thruster）
