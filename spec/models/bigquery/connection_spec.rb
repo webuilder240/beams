@@ -220,4 +220,126 @@ RSpec.describe Bigquery::Connection, type: :model do
       end
     end
   end
+
+  describe "schema cache (SolidCache)" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:connection) { create(:bigquery_connection) }
+    let(:fake_client) { instance_double(Google::Cloud::Bigquery::Project) }
+
+    # BigQuery のレスポンスをスタブする double 群を組み立てる。
+    # datasets.list → dataset.tables → INFORMATION_SCHEMA.COLUMNS の3段。
+    def stub_bigquery!(columns: default_columns)
+      table = instance_double(
+        Google::Cloud::Bigquery::Table, table_id: "events", type: "TABLE"
+      )
+      dataset = instance_double(
+        Google::Cloud::Bigquery::Dataset,
+        dataset_id: "analytics", name: "Analytics", tables: [ table ]
+      )
+      allow(connection).to receive(:bigquery).and_return(fake_client)
+      allow(fake_client).to receive(:datasets).and_return([ dataset ])
+      allow(fake_client).to receive(:query).and_return(columns)
+    end
+
+    def default_columns
+      [
+        { table_name: "events", column_name: "user_id",
+          data_type: "STRING", is_nullable: "YES", ordinal_position: 1 },
+        { table_name: "events", column_name: "amount",
+          data_type: "INT64", is_nullable: "NO", ordinal_position: 2 }
+      ]
+    end
+
+    before do
+      Rails.cache.clear
+    end
+
+    describe "#sync_schema!" do
+      it "fetches datasets, tables and columns from BigQuery and writes the cache" do
+        stub_bigquery!
+
+        structure = connection.sync_schema!
+
+        expect(fake_client).to have_received(:datasets)
+        expect(fake_client).to have_received(:query)
+
+        dataset = structure[:datasets].first
+        expect(dataset[:dataset_id]).to eq("analytics")
+        expect(dataset[:name]).to eq("Analytics")
+
+        table = dataset[:tables].first
+        expect(table[:table_id]).to eq("events")
+        expect(table[:table_type]).to eq("TABLE")
+
+        columns = table[:columns]
+        expect(columns.map { |c| c[:column_name] }).to eq([ "user_id", "amount" ])
+        expect(columns.first).to include(
+          column_name: "user_id", data_type: "STRING",
+          is_nullable: true, ordinal_position: 1
+        )
+        expect(columns.second[:is_nullable]).to be(false)
+      end
+
+      it "stores the structure in Rails.cache under the connection-scoped key" do
+        stub_bigquery!
+
+        connection.sync_schema!
+
+        cached = Rails.cache.read("bigquery:schema:#{connection.id}")
+        expect(cached).to be_present
+        expect(cached[:datasets].first[:dataset_id]).to eq("analytics")
+        expect(cached[:fetched_at]).to be_present
+      end
+    end
+
+    describe "#cached_schema" do
+      it "syncs on the first access and serves from cache on the second" do
+        stub_bigquery!
+
+        first = connection.cached_schema
+        second = connection.cached_schema
+
+        expect(first[:datasets].first[:dataset_id]).to eq("analytics")
+        expect(second).to eq(first)
+        # 2 回呼んでも BigQuery アクセスは 1 回だけ（2 回目はキャッシュ）
+        expect(fake_client).to have_received(:datasets).once
+      end
+
+      it "re-fetches after the 24h TTL expires" do
+        stub_bigquery!
+
+        connection.cached_schema
+
+        travel 25.hours do
+          connection.cached_schema
+        end
+
+        expect(fake_client).to have_received(:datasets).twice
+      end
+
+      it "serves from cache within the TTL (1 hour later)" do
+        stub_bigquery!
+
+        connection.cached_schema
+
+        travel 1.hour do
+          connection.cached_schema
+        end
+
+        expect(fake_client).to have_received(:datasets).once
+      end
+    end
+
+    describe "#sync_schema!(force: true)" do
+      it "re-fetches and overwrites even when a fresh cache exists" do
+        stub_bigquery!
+
+        connection.cached_schema
+        connection.sync_schema!(force: true)
+
+        expect(fake_client).to have_received(:datasets).twice
+      end
+    end
+  end
 end

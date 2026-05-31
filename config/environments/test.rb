@@ -20,7 +20,9 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+  # スキーマキャッシュ（SolidCache 方式）の検証のため、テストでは memory_store を使う。
+  # デフォルトの :null_store は書き込みが no-op で TTL/取得を検証できないため。
+  config.cache_store = :memory_store
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable

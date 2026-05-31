@@ -47,7 +47,76 @@ class Bigquery::Connection < ApplicationRecord
     }
   end
 
+  # スキーマキャッシュの TTL（ADR 0001）。
+  SCHEMA_CACHE_TTL = 24.hours
+
+  # キャッシュ済みのスキーマ構造を返す。未キャッシュ（または失効）なら sync して保存する。
+  # 初回アクセス時取得と TTL を両立する（ADR 0001）。
+  def cached_schema
+    Rails.cache.fetch(schema_cache_key, expires_in: SCHEMA_CACHE_TTL) do
+      build_schema_structure
+    end
+  end
+
+  # BigQuery からスキーマ（datasets → tables → columns）を取得し、
+  # ネスト構造のハッシュとして SolidCache に保存して返す。
+  # force: true のときは既存キャッシュの有無に関わらず再取得・上書きする。
+  # 外部 API 呼び出しを伴うため、テストではクライアントをスタブする。
+  def sync_schema!(force: false)
+    return cached_schema if !force && Rails.cache.exist?(schema_cache_key)
+
+    structure = build_schema_structure
+    Rails.cache.write(schema_cache_key, structure, expires_in: SCHEMA_CACHE_TTL)
+    structure
+  end
+
+  # SolidCache の保存キー（接続単位）。
+  def schema_cache_key
+    "bigquery:schema:#{id}"
+  end
+
   private
+
+  # BigQuery を 3 段（datasets.list / tables.list / INFORMATION_SCHEMA.COLUMNS）で
+  # 叩き、ツリー描画用のネスト構造ハッシュを組み立てる。
+  def build_schema_structure
+    datasets = bigquery.datasets.map do |dataset|
+      columns_by_table = fetch_columns_by_table(dataset.dataset_id)
+
+      {
+        dataset_id: dataset.dataset_id,
+        name: dataset.name,
+        tables: dataset.tables.map do |table|
+          {
+            table_id: table.table_id,
+            table_type: table.type,
+            columns: columns_by_table.fetch(table.table_id, [])
+          }
+        end
+      }
+    end
+
+    { fetched_at: Time.current, datasets: datasets }
+  end
+
+  # 1 データセット分の INFORMATION_SCHEMA.COLUMNS を引き、table_id ごとに
+  # カラム情報の配列へまとめる。
+  def fetch_columns_by_table(dataset_id)
+    sql = <<~SQL.squish
+      SELECT table_name, column_name, data_type, is_nullable, ordinal_position
+      FROM `#{dataset_id}`.INFORMATION_SCHEMA.COLUMNS
+      ORDER BY table_name, ordinal_position
+    SQL
+
+    bigquery.query(sql).each_with_object(Hash.new { |h, k| h[k] = [] }) do |row, acc|
+      acc[row[:table_name]] << {
+        column_name: row[:column_name],
+        data_type: row[:data_type],
+        is_nullable: row[:is_nullable].to_s.upcase == "YES",
+        ordinal_position: row[:ordinal_position]
+      }
+    end
+  end
 
   def check_dry_run(missing, messages)
     bigquery.query_job("SELECT 1", dryrun: true)
