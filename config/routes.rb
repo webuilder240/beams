@@ -21,6 +21,11 @@ Rails.application.routes.draw do
     end
   end
 
+  # BigQuery 接続管理（admin 専用）
+  namespace :bigquery do
+    resources :connections, except: [ :show ]
+  end
+
   # Defines the root path route ("/")
   root "dashboard#show"
 end

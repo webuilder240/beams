@@ -1,0 +1,12 @@
+<% content_for :title, "BigQuery 接続編集" %>
+
+<div class="max-w-xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">BigQuery 接続編集</h1>
+
+  <%= render "form",
+        connection: @connection,
+        url: bigquery_connection_path(@connection),
+        method: :patch,
+        submit_label: "更新",
+        persisted: true %>
+</div>

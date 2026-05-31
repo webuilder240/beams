@@ -1,0 +1,41 @@
+<% content_for :title, "BigQuery 接続管理" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">BigQuery 接続管理</h1>
+    <%= link_to "新規接続", new_bigquery_connection_path,
+          class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
+  </div>
+
+  <% if notice %>
+    <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3"><%= notice %></div>
+  <% end %>
+
+  <table class="min-w-full divide-y divide-gray-200 bg-white rounded border border-gray-200">
+    <thead>
+      <tr class="text-left text-sm text-gray-600">
+        <th class="px-4 py-2">接続名</th>
+        <th class="px-4 py-2">プロジェクト ID</th>
+        <th class="px-4 py-2">コスト上限（バイト）</th>
+        <th class="px-4 py-2">操作</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      <% @connections.each do |connection| %>
+        <tr>
+          <td class="px-4 py-2"><%= connection.name %></td>
+          <td class="px-4 py-2"><%= connection.project_id %></td>
+          <td class="px-4 py-2">
+            <%= connection.maximum_bytes_billed ? number_with_delimiter(connection.maximum_bytes_billed) : "上限なし" %>
+          </td>
+          <td class="px-4 py-2 space-x-3 text-sm">
+            <%= link_to "編集", edit_bigquery_connection_path(connection), class: "text-blue-600 hover:underline" %>
+            <%= button_to "削除", bigquery_connection_path(connection), method: :delete,
+                  form: { data: { turbo_confirm: "本当に削除しますか？" }, class: "inline" },
+                  class: "text-red-600 hover:underline" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
