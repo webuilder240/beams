@@ -33,6 +33,8 @@ RSpec.describe "Schema browser", type: :system do
     fill_in "メールアドレス", with: "member@example.com"
     fill_in "パスワード", with: "password"
     click_button "ログイン"
+    # Turbo のリダイレクト完了を待つ（js: true では非同期。rack_test では即時）。
+    expect(page).to have_content("ログアウト", wait: 10)
   end
 
   before do
@@ -54,12 +56,24 @@ RSpec.describe "Schema browser", type: :system do
     expect(page).to have_button("スキーマを更新")
   end
 
-  # 名前クリックでクエリエディタへ挿入する `js: true` テストはトピック07に委ねる。
-  # 本トピックでは Stimulus の `schema-browser:insert` イベント発火/クリップボード
-  # コピーまでがスコープであり、エディタ側リスナの配線は07で行うため。
-  # （加えて、この環境では playwright/chromium の利用可否が未確認のため、ここでは pending とする。）
-  it "inserts a name into the editor on click", js: true do
-    pending("エディタ配線はトピック07。js:true(playwright/chromium)は07で検証する。")
-    raise "not implemented in this topic"
+  # 名前クリックでクエリエディタへ挿入する `js: true` 結合テストはトピック07で実装した。
+  # スキーマブラウザはクエリエディタ画面（/queries/new・/edit）に埋め込まれ、
+  # カラム名クリックで `schema-browser:insert`（detail.name）を dispatch → エディタへ挿入する。
+  # 実体の結合検証は spec/system/schema_browser_integration_spec.rb（js: true）で行う。
+  # ここでは「クリックで `schema-browser:insert` イベントが document に発火する」ことを
+  # エディタ非依存に確認する（06 のスコープ: イベント発火の担保）。
+  it "dispatches schema-browser:insert on column click", js: true do
+    log_in
+    visit schema_browser_path
+
+    received = page.evaluate_async_script(<<~JS)
+      const done = arguments[0];
+      document.addEventListener("schema-browser:insert", (e) => done(e.detail && e.detail.name), { once: true });
+      const el = Array.from(document.querySelectorAll(".schema-browser__insertable"))
+        .find((n) => n.textContent.trim() === "user_id");
+      el.click();
+    JS
+
+    expect(received).to eq("user_id")
   end
 end

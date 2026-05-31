@@ -13,6 +13,7 @@ class QueriesController < ApplicationController
   def new
     @query = current_user.queries.new(bigquery_connection_id: default_connection_id)
     @connections = Bigquery::Connection.order(:name)
+    load_schema_for(@query.bigquery_connection)
   end
 
   def create
@@ -28,6 +29,7 @@ class QueriesController < ApplicationController
 
   def edit
     @connections = Bigquery::Connection.order(:name)
+    load_schema_for(@query.bigquery_connection)
   end
 
   def update
@@ -58,5 +60,14 @@ class QueriesController < ApplicationController
   # 接続が 1 件だけならデフォルト選択する（新規フォームの利便性）。
   def default_connection_id
     Bigquery::Connection.order(:name).first&.id
+  end
+
+  # エディタ脇のスキーマブラウザ用に、対象接続のキャッシュ済みスキーマを読み込む。
+  # キャッシュ未取得の接続は同期せず（コスト/レイテンシ回避）、ブラウザは非表示。
+  def load_schema_for(connection)
+    return if connection.nil?
+    return unless Rails.cache.exist?(connection.schema_cache_key)
+
+    @schema = connection.cached_schema
   end
 end

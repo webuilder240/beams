@@ -9,6 +9,7 @@ pin_all_from "app/javascript/controllers", under: "controllers"
 # CodeMirror 6 (CDN pin via esm.sh)
 pin "@codemirror/state", to: "https://esm.sh/@codemirror/state@6.6.0"
 pin "@codemirror/view", to: "https://esm.sh/@codemirror/view@6.43.0"
+pin "@codemirror/commands", to: "https://esm.sh/@codemirror/commands@6.10.3"
 pin "@codemirror/lang-sql", to: "https://esm.sh/@codemirror/lang-sql@6.10.0"
 pin "@codemirror/autocomplete", to: "https://esm.sh/@codemirror/autocomplete@6.20.2"
 pin "@codemirror/language", to: "https://esm.sh/@codemirror/language@6.12.3"
