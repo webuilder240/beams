@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/04-bigquery-connection.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
-- **ステータス**: 🔄進行中
-- **担当**: Coder
+- **ステータス**: ✅完了
+- **担当**: Coder / Tester
 
 ## 確定した設計判断（重要）
 
@@ -42,4 +42,6 @@
   - セキュリティ実装: 編集画面で SA JSON 平文を再表示しない（`value: ""`）＋ 空欄なら既存値保持（`connection_update_params` で空欄キー削除）。
   - `spec/system/bigquery/connections_spec.rb`（rack_test、作成→編集→削除・SA JSON 非露出・member 拒否、3例）→ green。→ commit `507d240`
 - **Coder（完了確認）**: `bundle exec rspec` **全 81例 green / SimpleCov 99.3%**。`bin/rubocop` **0 offenses**。`bin/brakeman --no-pager` **0 warnings**。04-bigquery-connection.md 全チェック・ステータス完了、00-overview.md 表を完了に更新。**追加マイグレーションなし**（bigquery_connections の範囲内）。→ Tester へ引き継ぎ。
-</content>
+- **司令塔→Tester**: トピック04 の QA（実装要件の充足確認）を依頼。
+- **Tester→司令塔**: トピック04 QA **PASS**。全受け入れ条件✅を実機確認（暗号化保存・平文非露出・readback正常・`maximum_bytes_billed: -1` 拒否）。rspec 81例 0 failures・カバレッジ99.3%、rubocop no offenses、brakeman 0 warnings。差し戻し不要。
+- **司令塔**: トピック04 を **✅完了** と確定。

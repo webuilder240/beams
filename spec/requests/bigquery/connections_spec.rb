@@ -31,6 +31,7 @@ RSpec.describe "Bigquery::Connections", type: :request do
 
   describe "access control (unauthenticated rejected)" do
     it "redirects to login" do
+      create(:user) # 初回セットアップ誘導を回避（ユーザーが存在する状態）
       get bigquery_connections_path
       expect(response).to redirect_to(new_session_path)
     end

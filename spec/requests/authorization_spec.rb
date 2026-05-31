@@ -8,6 +8,7 @@ RSpec.describe "Authorization", type: :request do
   describe "admin-only endpoints (/admin/users)" do
     context "when not logged in" do
       it "redirects to the login page" do
+        create(:user) # 初回セットアップ誘導を回避（ユーザーが存在する状態）
         get admin_users_path
         expect(response).to redirect_to(new_session_path)
       end

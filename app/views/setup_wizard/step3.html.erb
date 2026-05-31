@@ -1,0 +1,39 @@
+<% content_for :title, "初回セットアップ — 接続テスト" %>
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold mb-2">接続テスト</h1>
+  <p class="text-gray-600 mb-6">BigQuery への接続を診断します（dry-run とデータセット一覧）。</p>
+
+  <%= render "progress", current: 3 %>
+
+  <% if @result[:success] %>
+    <div class="mb-6 rounded bg-green-50 border border-green-200 text-green-800 px-4 py-4">
+      <p class="font-semibold">接続に成功しました。</p>
+      <p class="text-sm mt-1">クエリの実行（dry-run）とデータセット一覧の取得を確認できました。</p>
+    </div>
+
+    <%= link_to "次へ（コスト上限の設定）", setup_step4_path,
+          class: "inline-block rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+  <% else %>
+    <div class="mb-6 rounded bg-red-50 border border-red-200 text-red-800 px-4 py-4">
+      <p class="font-semibold">接続に失敗しました。</p>
+      <% if @result[:missing_permissions].present? %>
+        <p class="text-sm mt-2">不足している権限:</p>
+        <ul class="list-disc list-inside text-sm mt-1 font-mono">
+          <% @result[:missing_permissions].each do |permission| %>
+            <li><%= permission %></li>
+          <% end %>
+        </ul>
+      <% end %>
+      <% if @result[:message].present? %>
+        <p class="text-xs text-red-600 mt-3 break-all"><%= @result[:message] %></p>
+      <% end %>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <%= link_to "接続テストを再試行", setup_step3_path,
+            class: "inline-block rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+      <%= link_to "接続設定をやり直す", setup_step2_path, class: "text-gray-600 hover:underline" %>
+    </div>
+  <% end %>
+</div>

@@ -3,6 +3,7 @@ require "rails_helper"
 RSpec.describe "Sessions", type: :request do
   describe "GET /session/new" do
     it "renders the login form" do
+      create(:user) # 初回セットアップ誘導を回避（ユーザーが存在する状態）
       get new_session_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("type=\"email\"")

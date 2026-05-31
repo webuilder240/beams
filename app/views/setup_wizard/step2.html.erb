@@ -1,0 +1,43 @@
+<% content_for :title, "初回セットアップ — BigQuery 接続登録" %>
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold mb-2">BigQuery 接続を登録</h1>
+  <p class="text-gray-600 mb-6">サービスアカウント JSON 鍵とプロジェクト ID を入力します。</p>
+
+  <%= render "progress", current: 2 %>
+
+  <% if @connection.errors.any? %>
+    <div class="mb-4 rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+      <ul class="list-disc list-inside">
+        <% @connection.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @connection, url: setup_step2_path, method: :post, local: true, class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :name, "接続名", class: "block text-sm font-medium mb-1" %>
+      <%= f.text_field :name, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.label :project_id, "プロジェクト ID", class: "block text-sm font-medium mb-1" %>
+      <%= f.text_field :project_id, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+      <p class="text-xs text-gray-500 mt-1">英数字とハイフンのみ（例: my-project-123）</p>
+    </div>
+
+    <div>
+      <%= f.label :service_account_json, "サービスアカウント JSON 鍵", class: "block text-sm font-medium mb-1" %>
+      <%= f.text_area :service_account_json, rows: 8,
+            placeholder: "サービスアカウントの JSON 鍵を貼り付けてください",
+            class: "w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm" %>
+    </div>
+
+    <div>
+      <%= f.submit "接続を登録して次へ",
+            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+    </div>
+  <% end %>
+</div>

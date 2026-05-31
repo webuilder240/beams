@@ -1,0 +1,15 @@
+<%# local: current ステップ番号（1〜4） %>
+<ol class="flex items-center gap-2 mb-8 text-sm">
+  <% steps = { 1 => "管理者作成", 2 => "接続登録", 3 => "接続テスト", 4 => "コスト上限" } %>
+  <% steps.each do |number, label| %>
+    <li class="flex items-center gap-2">
+      <span class="flex items-center justify-center w-6 h-6 rounded-full <%= number == current ? "bg-blue-600 text-white" : (number < current ? "bg-blue-200 text-blue-800" : "bg-gray-200 text-gray-500") %>">
+        <%= number %>
+      </span>
+      <span class="<%= number == current ? "font-semibold text-blue-700" : "text-gray-500" %>"><%= label %></span>
+      <% unless number == steps.keys.last %>
+        <span class="text-gray-300">›</span>
+      <% end %>
+    </li>
+  <% end %>
+</ol>

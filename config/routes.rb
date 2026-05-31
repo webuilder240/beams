@@ -26,6 +26,16 @@ Rails.application.routes.draw do
     resources :connections, except: [ :show ]
   end
 
+  # 初回セットアップウィザード（ユーザー 0 件のときに誘導）
+  get "setup" => "setup_wizard#index", as: :setup
+  get "setup/step1" => "setup_wizard#step1", as: :setup_step1
+  post "setup/step1" => "setup_wizard#create_step1"
+  get "setup/step2" => "setup_wizard#step2", as: :setup_step2
+  post "setup/step2" => "setup_wizard#create_step2"
+  get "setup/step3" => "setup_wizard#step3", as: :setup_step3
+  get "setup/step4" => "setup_wizard#step4", as: :setup_step4
+  post "setup/step4" => "setup_wizard#create_step4"
+
   # Defines the root path route ("/")
   root "dashboard#show"
 end
