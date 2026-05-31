@@ -42,3 +42,11 @@
   - **System spec**: `spec/system/visualizations_spec.rb`。rack_test で切替/軸設定/counter 表示（sum=60）/データなし、**js:true** で line/bar/pie の `<canvas>` 実描画（playwright/chromium・単一スレッド server・ログアウト待ちで Turbo redirect 完了を待機）。
 - **Coder（品質ゲート）**: `bundle exec rspec` **368 例 / 0 失敗**・SimpleCov **98.85%**（≥85%）。`bin/rubocop` **0 offense**（117ファイル）。`bin/brakeman --no-pager` **警告0**（既存の ignored 1 のみ）。`bin/importmap audit` 脆弱性0。既存テスト回帰なし。
 - **Coder→司令塔**: トピック11 本体実装完了。Tester へ引き継ぎ。
+
+### 2026-05-31（Tester 独立QA）
+
+- **司令塔→Tester**: 報告を鵜呑みにせず独立 QA を指示（09 の教訓）。13観点（モデル/y_columns round-trip/counter集計の正しさ/owner-scoped/切替/軸UI/area-scatter-counter/importmap CDN pin/CSVリンク/`*Service`不在/全テスト再現/回帰/Coder申し送りの妥当性）。特に **counter 集計を `bin/rails runner` で検算** させた。
+- **Tester→司令塔**: **総合判定 PASS**。全13観点 ✅。`rspec` **368/0**・coverage **98.85%**・`rubocop` 0・`brakeman` 警告0・`importmap` 0 を独立再現。**counter 検算実値**: rows `[[10],[20],[30],[nil]]` で sum=60/avg=20/count=3(非NULL件数)/min=10/max=30、非数値 sum=0・avg/min=nil、列欠落/結果未保存=nil。BigQuery 再クエリせず `result.rows` のみ使用をコード確認。area→`type:line+fill:true`、scatter→`{x,y}`、counter は Chart.js 不使用テキスト表示、importmap は esm.sh CDN pin（vendored 不使用）を確認。
+  - **Tester 申し送り（要件違反ではない）**: ①**死にマークアップ**＝未実装 `chart_settings_controller.js` を参照する orphaned data 属性が view に残存（chart_type 即時UIトグルは要件外＝「保存で反映」で受け入れ条件 OK）。②counter が **Float 表示**（60.0）。③area/scatter の実ブラウザ描画は js:true 自動検証外（helper spec でユニット検証済み）。④doc「動作確認」の実機4項目は人間/実機確認に申し送り。
+- **司令塔**: Tester PASS を受領。要件は満たすが、①死にマークアップ・②Float 表示の2点は技術的負債として**完了化前に最小クリーンアップ**を Coder に指示（①未配線 data 属性除去=Refactor／②整数割り切れ時は整数表示=TDD。ライブトグルは要件外につき実装しない）。クリーンアップ後に完了化する。
+- **司令塔→Coder**: 上記2点の軽微クリーンアップを1コミットで対応するよう指示（品質ゲート維持）。

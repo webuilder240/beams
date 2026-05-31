@@ -11,6 +11,16 @@ module VisualizationHelper
     Array(result[:schema]).map { |col| col["name"] }
   end
 
+  # counter（カウンター）の集計値を表示用に整形する。整数に割り切れる値は
+  # 整数表示（60.0→"60"）、小数はそのまま（20.5→"20.5"）。nil は "—"。
+  # `counter_value` の戻り値型は変えず、表示整形のみ担う。
+  def format_counter_value(value)
+    return "—" if value.nil?
+    return value.to_i.to_s if value.respond_to?(:to_i) && value == value.to_i
+
+    value.to_s
+  end
+
   # Chart.js へ渡す設定（{ type:, data: }）を組み立てる。
   # 軸未設定・結果未保存・指定列がスキーマに無い場合は nil（描画しない）。
   def chart_config_for(visualization, execution)

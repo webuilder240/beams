@@ -26,13 +26,11 @@
           <%= f.label :chart_type, "チャート種別", class: "block text-sm font-medium text-gray-700 mb-1" %>
           <%= f.select :chart_type,
                 Visualization::CHART_TYPES.map { |t| [ t, t ] },
-                {}, class: "rounded border-gray-300 text-sm",
-                data: { chart_settings_target: "chartType" } %>
+                {}, class: "rounded border-gray-300 text-sm" %>
         </div>
 
-        <%# counter 以外: 軸設定 UI %>
-        <div data-counter-hidden="<%= visualization.chart_type == 'counter' %>"
-             class="space-y-3 <%= 'hidden' if visualization.chart_type == 'counter' %>">
+        <%# counter 以外: 軸設定 UI（chart_type 切替は保存後の Turbo 再レンダリングで反映） %>
+        <div class="space-y-3 <%= 'hidden' if visualization.chart_type == 'counter' %>">
           <div>
             <%= f.label :x_column, "X軸", class: "block text-sm font-medium text-gray-700 mb-1" %>
             <%= f.select :x_column, columns, { include_blank: "（未選択）" },
@@ -51,8 +49,7 @@
         </div>
 
         <%# counter: counter_column / counter_aggregation UI（軸とは別系統） %>
-        <div data-counter-shown="<%= visualization.chart_type == 'counter' %>"
-             class="space-y-3 <%= 'hidden' unless visualization.chart_type == 'counter' %>">
+        <div class="space-y-3 <%= 'hidden' unless visualization.chart_type == 'counter' %>">
           <div>
             <%= f.label :counter_column, "カウンター対象カラム", class: "block text-sm font-medium text-gray-700 mb-1" %>
             <%= f.select :counter_column, columns, { include_blank: "（未選択）" },

@@ -76,4 +76,22 @@ RSpec.describe VisualizationHelper, type: :helper do
       expect(helper.result_columns(build(:query_execution))).to eq([])
     end
   end
+
+  describe "#format_counter_value" do
+    it "shows a whole number without a decimal point" do
+      expect(helper.format_counter_value(60.0)).to eq("60")
+    end
+
+    it "keeps a fractional value as-is" do
+      expect(helper.format_counter_value(20.5)).to eq("20.5")
+    end
+
+    it "shows an integer count as an integer" do
+      expect(helper.format_counter_value(2)).to eq("2")
+    end
+
+    it "shows a dash for nil" do
+      expect(helper.format_counter_value(nil)).to eq("—")
+    end
+  end
 end
