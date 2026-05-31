@@ -1,0 +1,38 @@
+<% content_for :title, "コスト単価設定" %>
+
+<div class="max-w-md mx-auto space-y-8">
+  <h1 class="text-2xl font-bold">コスト単価設定</h1>
+
+  <% if notice %>
+    <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3"><%= notice %></div>
+  <% end %>
+
+  <p class="text-sm text-gray-600">
+    クエリのスキャン量（GB）から推定コスト（円）を計算する単価です。
+    BigQuery オンデマンドは $6.25/TB ≒ ¥950/TB が目安です（1 TB = 1000 GB 換算）。
+  </p>
+
+  <%= form_with model: @setting, url: admin_settings_path, method: :patch, local: true, class: "space-y-4" do |f| %>
+    <% if @setting.errors.any? %>
+      <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+        <ul class="list-disc list-inside text-sm">
+          <% @setting.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :bigquery_yen_per_tb, "1 TB あたりの単価（円）", class: "block text-sm font-medium mb-1" %>
+      <%= f.number_field :bigquery_yen_per_tb, step: "0.01", min: "0",
+            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <%= f.submit "更新",
+            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+      <%= link_to "戻る", root_path, class: "text-gray-600 hover:underline" %>
+    </div>
+  <% end %>
+</div>

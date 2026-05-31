@@ -19,6 +19,9 @@ Rails.application.routes.draw do
         patch :reset_password
       end
     end
+
+    # コスト単価などのアプリ全体設定（シングルトン）。admin 専用。
+    resource :settings, only: [ :edit, :update ]
   end
 
   # BigQuery 接続管理（admin 専用）
