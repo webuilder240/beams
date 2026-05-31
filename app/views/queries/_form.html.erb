@@ -34,7 +34,15 @@
       スキーマブラウザのカラム名クリックは `schema-browser:insert`（detail.name）を
       document に dispatch し、query-editor コントローラがカーソル位置に挿入する。
     %>
-    <div data-controller="query-editor" class="query-editor flex gap-4">
+    <%#
+      dry-run（コスト保護★）: 保存済みクエリのときだけ有効化する。
+      エンドポイント POST /queries/:id/dry_run が query id を要求するため、
+      新規（未保存）では推定表示なし（保存後に推定が走る）。
+      query-editor の input textarea を dry-run の input target としても共有する。
+    %>
+    <% dry_run_enabled = query.persisted? %>
+    <% editor_data = dry_run_enabled ? { controller: "query-editor dry-run", dry_run_url_value: query_dry_run_path(query) } : { controller: "query-editor" } %>
+    <%= tag.div class: "query-editor flex gap-4", data: editor_data do %>
       <div class="flex-1 min-w-0">
         <%= f.label :sql_body, "SQL", class: "block text-sm font-medium mb-1" %>
         <%#
@@ -43,7 +51,7 @@
           connect() で非表示にしてエディタをマウントする。
         %>
         <%= f.text_area :sql_body, rows: 12,
-              data: { query_editor_target: "input" },
+              data: dry_run_enabled ? { query_editor_target: "input", dry_run_target: "input" } : { query_editor_target: "input" },
               class: "w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm" %>
         <div data-query-editor-target="mount" class="query-editor__mount"></div>
       </div>
@@ -54,11 +62,24 @@
           <%= render "schema_browser/schema_browser", connection: query.bigquery_connection, schema: schema %>
         </aside>
       <% end %>
-    </div>
+    <% end %>
+
+    <% if dry_run_enabled %>
+      <%# 上限超過の警告バナー（dry-run が over_limit を返したら JS が表示） %>
+      <div data-dry-run-target="warning" hidden
+           class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+        <span data-dry-run-target="warningText"></span>
+      </div>
+    <% end %>
 
     <div class="flex items-center gap-3">
+      <%# 推定スキャン量・コスト表示（dry-run コントローラが更新） %>
+      <% if dry_run_enabled %>
+        <span data-dry-run-target="result" class="text-sm text-gray-600">推定を計算中…</span>
+      <% end %>
       <%= f.submit submit_label,
-            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+            data: dry_run_enabled ? { dry_run_target: "submit" } : {},
+            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" %>
       <%= link_to "キャンセル", queries_path, class: "text-gray-600 hover:underline" %>
     </div>
   <% end %>
