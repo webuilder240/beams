@@ -31,7 +31,16 @@
             <span class="text-xl font-bold text-blue-600">Beams</span>
           </div>
           <div class="flex items-center gap-4">
-            <%# ログイン/ログアウトリンク（後続トピックで実装） %>
+            <% if logged_in? %>
+              <span class="text-sm text-gray-600"><%= current_user.email %></span>
+              <% if current_user.admin? %>
+                <%= link_to "ユーザー管理", admin_users_path, class: "text-sm text-blue-600 hover:underline" %>
+              <% end %>
+              <%= button_to "ログアウト", session_path, method: :delete,
+                    class: "text-sm text-gray-600 hover:underline" %>
+            <% else %>
+              <%= link_to "ログイン", new_session_path, class: "text-sm text-blue-600 hover:underline" %>
+            <% end %>
           </div>
         </div>
       </div>

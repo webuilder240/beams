@@ -1,0 +1,30 @@
+<% content_for :title, "ログイン" %>
+
+<div class="max-w-md mx-auto">
+  <h1 class="text-2xl font-bold mb-6">ログイン</h1>
+
+  <% if flash[:alert] %>
+    <div class="mb-4 rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+      <%= flash[:alert] %>
+    </div>
+  <% end %>
+
+  <%= form_with url: session_path, method: :post, local: true, class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :email, "メールアドレス", class: "block text-sm font-medium mb-1" %>
+      <%= f.email_field :email, autofocus: true, autocomplete: "username",
+            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.label :password, "パスワード", class: "block text-sm font-medium mb-1" %>
+      <%= f.password_field :password, autocomplete: "current-password",
+            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.submit "ログイン",
+            class: "w-full rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+    </div>
+  <% end %>
+</div>

@@ -9,6 +9,18 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # 認証（自前メール+パスワード）
+  resource :session, only: [ :new, :create, :destroy ]
+
+  # ユーザー管理（admin 専用）
+  namespace :admin do
+    resources :users do
+      member do
+        patch :reset_password
+      end
+    end
+  end
+
   # Defines the root path route ("/")
-  # root "posts#index"
+  root "dashboard#show"
 end
