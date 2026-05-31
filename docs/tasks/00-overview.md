@@ -34,7 +34,7 @@
 | 03 | [認証・ユーザー](03-auth-users.md) | §4.1 | 01 | 16 | 完了 |
 | 04 | [BigQuery接続・Connectionモデル](04-bigquery-connection.md) | §4.2 | 01, 03 | 17 | 完了 |
 | 05 | [初回セットアップウィザード](05-setup-wizard.md) | §4.10 | 03, 04 | 17 | 完了 |
-| 06 | [スキーマブラウザ・キャッシュ](06-schema-browser.md) | §4.3, §6.4 | 04 | 17 | 未着手 |
+| 06 | [スキーマブラウザ・キャッシュ](06-schema-browser.md) | §4.3, §6.4 | 04 | 17 | 完了 |
 | 07 | [クエリエディタ（CodeMirror 6）](07-query-editor.md) | §4.3 | 06 | 22 | 未着手 |
 | 08 | [コスト保護（dry-run・上限ガード）★](08-cost-protection.md) | §4.4 | 04, 07 | 19 | 未着手 |
 | 09 | [パラメータ化クエリ](09-parameterized-query.md) | §4.5 | 07 | 21 | 未着手 |
