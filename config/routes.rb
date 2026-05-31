@@ -39,7 +39,8 @@ Rails.application.routes.draw do
     # QueryExecution を作成し SolidQueue に投入。最新成功実行の全件 CSV は
     # GET /queries/:query_id/executions/latest/csv で X-Sendfile 配信する。
     # GET /queries/:query_id/executions/:id は過去実行の結果テーブル再表示
-    # （トピック17・所有者スコープ・他人/別クエリ配下は 404）。
+    # （トピック17・トピック13フルオープンに合わせ全ユーザー閲覧可。存在しない
+    # query_id / 当該クエリ配下に無い execution id は 404。create は所有者のみ）。
     resources :executions, only: [ :create, :show ], module: "queries" do
       get "latest/csv", to: "executions/csv_exports#show", on: :collection, as: :latest_csv
     end

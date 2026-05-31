@@ -32,7 +32,7 @@
 | 14 | 探しやすさ・一覧改善 | ✅完了 | Coder/Tester | [progress/14-search-listing.md](progress/14-search-listing.md) |
 | 15 | SQLite自動バックアップ・復旧 | ✅完了 | Coder/Tester | [progress/15-backup-restore.md](progress/15-backup-restore.md) |
 | 16 | フォームUIのTailwindスタイル統一 | ✅完了 | Coder/Tester | [progress/16-form-styling-consistency.md](progress/16-form-styling-consistency.md) |
-| 17 | クエリ実行結果のレンダリング修正・実行履歴表示 | ⏳進行中 | Coder/Tester | [progress/17-query-result-history.md](progress/17-query-result-history.md) |
+| 17 | クエリ実行結果のレンダリング修正・実行履歴表示 | ✅完了 | Coder/Tester | [progress/17-query-result-history.md](progress/17-query-result-history.md) |
 
 ---
 
