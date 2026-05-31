@@ -39,7 +39,7 @@
 | 08 | [コスト保護（dry-run・上限ガード）★](08-cost-protection.md) | §4.4 | 04, 07 | 19 | 完了 |
 | 09 | [パラメータ化クエリ](09-parameterized-query.md) | §4.5 | 07 | 21 | 完了 |
 | 10 | [非同期実行・結果保存](10-query-execution.md) | §4.6, §6.1-6.3 | 04, 07, 09 | 30 | 完了 |
-| 11 | [可視化（Chart.js）](11-visualization.md) | §4.7 | 10 | 20 | 未着手 |
+| 11 | [可視化（Chart.js）](11-visualization.md) | §4.7 | 10 | 20 | 進行中 |
 | 12 | [ダッシュボード](12-dashboard.md) | §4.8 | 11 | 22 | 未着手 |
 | 13 | [共有・権限（組織フルオープン）](13-sharing-permissions.md) | §4.9 | 03, 07 | 6 | 未着手 |
 | 14 | [探しやすさ・一覧検索](14-search-listing.md) | §4.11 | 07, 12 | 10 | 未着手 |
