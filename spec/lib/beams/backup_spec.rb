@@ -18,7 +18,7 @@ RSpec.describe Beams::Backup do
   def seed_db(path, rows:)
     SQLite3::Database.new(path.to_s) do |db|
       db.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
-      rows.times { |i| db.execute("INSERT INTO items (name) VALUES (?)", ["item-#{i}"]) }
+      rows.times { |i| db.execute("INSERT INTO items (name) VALUES (?)", [ "item-#{i}" ]) }
     end
   end
 
@@ -79,7 +79,7 @@ RSpec.describe Beams::Backup do
       # Keep an open connection in WAL mode with extra rows not yet checkpointed.
       writer = SQLite3::Database.new(source.to_s)
       writer.execute("PRAGMA journal_mode=WAL")
-      writer.execute("INSERT INTO items (name) VALUES (?)", ["wal-row"])
+      writer.execute("INSERT INTO items (name) VALUES (?)", [ "wal-row" ])
 
       begin
         backup = described_class.new(
@@ -170,7 +170,7 @@ RSpec.describe Beams::Backup do
       seed_db(source, rows: 1)
       backup_dir = @tmp.join("backups")
 
-      [Time.utc(2026, 5, 25), Time.utc(2026, 5, 26)].each do |t|
+      [ Time.utc(2026, 5, 25), Time.utc(2026, 5, 26) ].each do |t|
         described_class.new(
           sources: { "production" => source.to_s },
           backup_dir: backup_dir.to_s,

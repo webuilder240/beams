@@ -18,7 +18,7 @@ RSpec.describe Beams::Restore do
   def seed_db(path, rows:)
     SQLite3::Database.new(path.to_s) do |db|
       db.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
-      rows.times { |i| db.execute("INSERT INTO items (name) VALUES (?)", ["item-#{i}"]) }
+      rows.times { |i| db.execute("INSERT INTO items (name) VALUES (?)", [ "item-#{i}" ]) }
     end
   end
 
@@ -84,14 +84,15 @@ RSpec.describe Beams::Restore do
     end
 
     it "resolves 'latest' to the newest generation" do
-      source = @tmp.join("source.sqlite3")
-      seed_db(source, rows: 2)
       backup_dir = @tmp.join("backups")
-      make_backup(source, backup_dir, now: Time.utc(2026, 5, 25))
-      seed_db(source, rows: 7) # newer content overwritten into a new generation
-      File.delete(source)
-      seed_db(source, rows: 7)
-      make_backup(source, backup_dir, now: Time.utc(2026, 5, 26))
+
+      old_source = @tmp.join("old.sqlite3")
+      seed_db(old_source, rows: 2)
+      make_backup(old_source, backup_dir, now: Time.utc(2026, 5, 25))
+
+      new_source = @tmp.join("new.sqlite3")
+      seed_db(new_source, rows: 7)
+      make_backup(new_source, backup_dir, now: Time.utc(2026, 5, 26))
 
       target = @tmp.join("production.sqlite3")
       restore = described_class.new(

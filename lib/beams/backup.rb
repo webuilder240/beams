@@ -103,12 +103,15 @@ module Beams
       { name: name, file: File.basename(gz_path), bytes: bytes, integrity: integrity }
     end
 
+    # Take a consistent single-file snapshot using `VACUUM INTO`. This works on
+    # a live, WAL-mode database (uncheckpointed WAL pages are included) and does
+    # not depend on the optional SQLite3::Database#backup API, which is not
+    # available in every build of the sqlite3 gem.
     def online_backup(source_path, dest_path)
+      File.delete(dest_path) if File.exist?(dest_path)
       source = SQLite3::Database.new(source_path)
-      dest = SQLite3::Database.new(dest_path)
-      source.backup(dest)
+      source.execute("VACUUM INTO ?", [ dest_path ])
     ensure
-      dest&.close
       source&.close
     end
 
