@@ -7,11 +7,18 @@ class Query < ApplicationRecord
   belongs_to :bigquery_connection, class_name: "Bigquery::Connection"
 
   has_many :query_parameters, -> { order(:id) }, dependent: :destroy
+  has_many :query_executions, dependent: :destroy
 
   validates :title, presence: true
   validates :sql_body, presence: true
 
   after_save :sync_parameters!
+
+  # 最新の成功実行（succeeded）を 1 件返す。結果は上書き運用のため通常 1 件だが、
+  # 念のため作成日時の降順で最新を選ぶ。`(query_id, status)` 複合 index が効く。
+  def latest_succeeded_execution
+    query_executions.where(status: :succeeded).order(created_at: :desc).first
+  end
 
   # タイトル部分一致検索（§4.11）。空クエリは全件を返す。
   scope :title_matching, ->(term) {

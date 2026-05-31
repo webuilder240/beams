@@ -251,4 +251,34 @@ RSpec.describe Query, type: :model do
       expect(range_query.missing_parameter_values("c" => { "start" => "2026-01-01", "end" => "2026-01-31" })).to eq([])
     end
   end
+
+  describe "#query_executions" do
+    it "has many executions destroyed with the query" do
+      query = create(:query)
+      create(:query_execution, query: query)
+      expect { query.destroy }.to change(QueryExecution, :count).by(-1)
+    end
+  end
+
+  describe "#latest_succeeded_execution" do
+    let(:query) { create(:query) }
+
+    it "returns the most recent succeeded execution" do
+      create(:query_execution, :succeeded, query: query, created_at: 2.hours.ago)
+      newest = create(:query_execution, :succeeded, query: query, created_at: 1.minute.ago)
+      expect(query.latest_succeeded_execution).to eq(newest)
+    end
+
+    it "ignores non-succeeded executions" do
+      create(:query_execution, :running, query: query)
+      create(:query_execution, :failed, query: query)
+      expect(query.latest_succeeded_execution).to be_nil
+    end
+
+    it "is scoped to the query" do
+      other = create(:query)
+      create(:query_execution, :succeeded, query: other)
+      expect(query.latest_succeeded_execution).to be_nil
+    end
+  end
 end

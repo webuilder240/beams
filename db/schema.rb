@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_130000) do
   create_table "application_settings", force: :cascade do |t|
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
@@ -37,6 +37,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_120000) do
     t.index ["user_id"], name: "index_queries_on_user_id"
   end
 
+  create_table "query_executions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.integer "query_id", null: false
+    t.binary "result_blob"
+    t.integer "result_row_count"
+    t.text "result_schema"
+    t.boolean "result_truncated", default: false
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["query_id", "status"], name: "index_query_executions_on_query_id_and_status"
+    t.index ["query_id"], name: "index_query_executions_on_query_id"
+    t.index ["status"], name: "index_query_executions_on_status"
+  end
+
   create_table "query_parameters", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
@@ -58,5 +75,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_120000) do
 
   add_foreign_key "queries", "bigquery_connections"
   add_foreign_key "queries", "users"
+  add_foreign_key "query_executions", "queries"
   add_foreign_key "query_parameters", "queries"
 end
