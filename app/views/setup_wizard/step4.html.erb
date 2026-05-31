@@ -8,9 +8,9 @@
 
   <%= form_with model: @connection, url: setup_step4_path, method: :post, local: true, class: "space-y-4" do |f| %>
     <div>
-      <%= f.label :maximum_bytes_billed, "コスト上限（バイト）", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :maximum_bytes_billed, "コスト上限（バイト）", class: "form-label" %>
       <%= f.number_field :maximum_bytes_billed, min: 1,
-            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+            class: "form-input" %>
       <p class="text-xs text-gray-500 mt-1">
         バイト数で入力します（例: 1 TB = 1,000,000,000,000 バイト）。空欄なら上限なしで完了します。
       </p>
@@ -18,9 +18,9 @@
 
     <div class="flex items-center gap-4">
       <%= f.submit "保存して完了",
-            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+            class: "btn-primary" %>
       <%= f.submit "スキップして完了",
-            class: "rounded bg-gray-200 text-gray-700 px-4 py-2 font-medium hover:bg-gray-300" %>
+            class: "btn-secondary" %>
     </div>
   <% end %>
 </div>

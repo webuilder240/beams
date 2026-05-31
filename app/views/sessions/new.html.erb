@@ -11,20 +11,20 @@
 
   <%= form_with url: session_path, method: :post, local: true, class: "space-y-4" do |f| %>
     <div>
-      <%= f.label :email, "メールアドレス", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :email, "メールアドレス", class: "form-label" %>
       <%= f.email_field :email, autofocus: true, autocomplete: "username",
-            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+            class: "form-input" %>
     </div>
 
     <div>
-      <%= f.label :password, "パスワード", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :password, "パスワード", class: "form-label" %>
       <%= f.password_field :password, autocomplete: "current-password",
-            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+            class: "form-input" %>
     </div>
 
     <div>
       <%= f.submit "ログイン",
-            class: "w-full rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+            class: "btn-primary w-full justify-center" %>
     </div>
   <% end %>
 </div>

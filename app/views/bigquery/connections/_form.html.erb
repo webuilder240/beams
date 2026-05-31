@@ -3,31 +3,31 @@
   <%= render "errors", connection: connection %>
 
   <div>
-    <%= f.label :name, "接続名", class: "block text-sm font-medium mb-1" %>
-    <%= f.text_field :name, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    <%= f.label :name, "接続名", class: "form-label" %>
+    <%= f.text_field :name, class: "form-input" %>
   </div>
 
   <div>
-    <%= f.label :project_id, "プロジェクト ID", class: "block text-sm font-medium mb-1" %>
-    <%= f.text_field :project_id, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    <%= f.label :project_id, "プロジェクト ID", class: "form-label" %>
+    <%= f.text_field :project_id, class: "form-input" %>
     <p class="text-xs text-gray-500 mt-1">英数字とハイフンのみ（例: my-project-123）</p>
   </div>
 
   <div>
-    <%= f.label :service_account_json, "サービスアカウント JSON 鍵", class: "block text-sm font-medium mb-1" %>
+    <%= f.label :service_account_json, "サービスアカウント JSON 鍵", class: "form-label" %>
     <%#
       セキュリティ: 暗号化済みの SA JSON 平文は編集画面でも再表示しない。
       value: "" で常に空欄を表示し、編集時は「変更する場合のみ入力」運用とする。
     %>
     <%= f.text_area :service_account_json, value: "", rows: 8,
           placeholder: persisted ? "変更する場合のみ、新しい JSON 鍵を貼り付けてください（空欄なら既存の鍵を保持）" : "サービスアカウントの JSON 鍵を貼り付けてください",
-          class: "w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm" %>
+          class: "form-input font-mono" %>
   </div>
 
   <div>
-    <%= f.label :maximum_bytes_billed_gb, "コスト上限（GB・任意）", class: "block text-sm font-medium mb-1" %>
+    <%= f.label :maximum_bytes_billed_gb, "コスト上限（GB・任意）", class: "form-label" %>
     <%= f.number_field :maximum_bytes_billed_gb, min: 0, step: "0.01",
-          class: "w-full rounded border border-gray-300 px-3 py-2" %>
+          class: "form-input" %>
     <p class="text-xs text-gray-500 mt-1">
       空欄で上限なし。クエリ単位のスキャン量上限（GB）。1 GB = 1024³ bytes として保存します。
       <% if connection.maximum_bytes_billed.present? %>
@@ -38,7 +38,7 @@
 
   <div class="flex items-center gap-3">
     <%= f.submit submit_label,
-          class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+          class: "btn-primary" %>
     <%= link_to "キャンセル", bigquery_connections_path, class: "text-gray-600 hover:underline" %>
   </div>
 <% end %>

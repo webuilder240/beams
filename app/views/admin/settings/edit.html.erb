@@ -24,14 +24,14 @@
     <% end %>
 
     <div>
-      <%= f.label :bigquery_yen_per_tb, "1 TB あたりの単価（円）", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :bigquery_yen_per_tb, "1 TB あたりの単価（円）", class: "form-label" %>
       <%= f.number_field :bigquery_yen_per_tb, step: "0.01", min: "0",
-            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+            class: "form-input" %>
     </div>
 
     <div class="flex items-center gap-3">
       <%= f.submit "更新",
-            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+            class: "btn-primary" %>
       <%= link_to "戻る", root_path, class: "text-gray-600 hover:underline" %>
     </div>
   <% end %>

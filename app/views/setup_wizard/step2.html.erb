@@ -18,26 +18,26 @@
 
   <%= form_with model: @connection, url: setup_step2_path, method: :post, local: true, class: "space-y-4" do |f| %>
     <div>
-      <%= f.label :name, "接続名", class: "block text-sm font-medium mb-1" %>
-      <%= f.text_field :name, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+      <%= f.label :name, "接続名", class: "form-label" %>
+      <%= f.text_field :name, class: "form-input" %>
     </div>
 
     <div>
-      <%= f.label :project_id, "プロジェクト ID", class: "block text-sm font-medium mb-1" %>
-      <%= f.text_field :project_id, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+      <%= f.label :project_id, "プロジェクト ID", class: "form-label" %>
+      <%= f.text_field :project_id, class: "form-input" %>
       <p class="text-xs text-gray-500 mt-1">英数字とハイフンのみ（例: my-project-123）</p>
     </div>
 
     <div>
-      <%= f.label :service_account_json, "サービスアカウント JSON 鍵", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :service_account_json, "サービスアカウント JSON 鍵", class: "form-label" %>
       <%= f.text_area :service_account_json, rows: 8,
             placeholder: "サービスアカウントの JSON 鍵を貼り付けてください",
-            class: "w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm" %>
+            class: "form-input font-mono" %>
     </div>
 
     <div>
       <%= f.submit "接続を登録して次へ",
-            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+            class: "btn-primary" %>
     </div>
   <% end %>
 </div>

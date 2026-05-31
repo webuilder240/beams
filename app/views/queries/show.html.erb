@@ -50,12 +50,12 @@
       <% end %>
 
       <div class="flex items-center gap-3">
-        <%= submit_tag "実行", class: "rounded bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" %>
+        <%= submit_tag "実行", class: "btn-primary" %>
         <% if @query.query_parameters.any? %>
           <%= submit_tag "パラメータを適用",
                 formaction: query_path(@query), formmethod: "get",
                 name: "preview",
-                class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
+                class: "btn-secondary" %>
         <% end %>
       </div>
     <% end %>
@@ -67,6 +67,6 @@
   <div>
     <%= button_to "削除", query_path(@query), method: :delete,
           form: { data: { turbo_confirm: "本当に削除しますか？" }, class: "inline" },
-          class: "rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700" %>
+          class: "btn-danger" %>
   </div>
 </div>

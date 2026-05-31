@@ -28,15 +28,15 @@
   <% form_data = dry_run_enabled ? { controller: "dry-run", dry_run_url_value: query_dry_run_path(query) } : {} %>
   <%= form_with model: query, url: url, method: method, local: true, class: "space-y-4", data: form_data do |f| %>
     <div>
-      <%= f.label :title, "タイトル", class: "block text-sm font-medium mb-1" %>
-      <%= f.text_field :title, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+      <%= f.label :title, "タイトル", class: "form-label" %>
+      <%= f.text_field :title, class: "form-input" %>
     </div>
 
     <div>
-      <%= f.label :bigquery_connection_id, "実行先 BigQuery 接続", class: "block text-sm font-medium mb-1" %>
+      <%= f.label :bigquery_connection_id, "実行先 BigQuery 接続", class: "form-label" %>
       <%= f.collection_select :bigquery_connection_id, connections, :id, :name,
             { prompt: "接続を選択" },
-            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+            class: "form-input" %>
     </div>
 
     <%#
@@ -49,7 +49,7 @@
     %>
     <%= tag.div class: "query-editor flex gap-4", data: { controller: "query-editor" } do %>
       <div class="flex-1 min-w-0">
-        <%= f.label :sql_body, "SQL", class: "block text-sm font-medium mb-1" %>
+        <%= f.label :sql_body, "SQL", class: "form-label" %>
         <%#
           隠しフィールド: 実体の sql_body。Stimulus がエディタ変更を同期する。
           JS が無効でも編集できるよう <textarea> をフォールバックにし、
@@ -57,7 +57,7 @@
         %>
         <%= f.text_area :sql_body, rows: 12,
               data: dry_run_enabled ? { query_editor_target: "input", dry_run_target: "input" } : { query_editor_target: "input" },
-              class: "w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm" %>
+              class: "form-input font-mono" %>
         <div data-query-editor-target="mount" class="query-editor__mount"></div>
       </div>
 
@@ -98,7 +98,7 @@
       <% end %>
       <%= f.submit submit_label,
             data: dry_run_enabled ? { dry_run_target: "submit" } : {},
-            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" %>
+            class: "btn-primary disabled:opacity-50 disabled:cursor-not-allowed" %>
       <%= link_to "キャンセル", queries_path, class: "text-gray-600 hover:underline" %>
     </div>
   <% end %>
