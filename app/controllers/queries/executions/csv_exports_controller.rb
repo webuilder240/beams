@@ -11,12 +11,14 @@ module Queries
 
       def show
         execution = @query.latest_succeeded_execution
-        path = execution && csv_path(execution)
+        return head :not_found if execution.nil?
 
-        return head :not_found if path.nil? || !File.exist?(path)
+        # パスは整数の id だけから組み立てる（ユーザー入力・文字列属性を含めない）。
+        path = Rails.root.join("storage/csv", "#{execution.id.to_i}.csv.gz").to_s
+        return head :not_found unless File.exist?(path)
 
         send_file path,
-                  filename: "#{@query.title}.csv.gz",
+                  filename: download_filename,
                   type: "text/csv",
                   disposition: "attachment",
                   x_sendfile: true
@@ -29,8 +31,12 @@ module Queries
         @query = current_user.queries.find(params[:query_id])
       end
 
-      def csv_path(execution)
-        Rails.root.join("storage/csv/#{execution.id}.csv.gz")
+      # ダウンロード時のファイル名（ヘッダー用）。ファイルシステムパスではないため
+      # 安全だが、念のため英数字・ハイフン・アンダースコア以外を除去する。
+      def download_filename
+        base = @query.title.to_s.gsub(/[^\w\-]+/, "_")
+        base = "query" if base.blank?
+        "#{base}.csv.gz"
       end
     end
   end
