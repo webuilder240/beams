@@ -2,7 +2,7 @@
 
 > 複数ページのフォーム入力欄に Tailwind のスタイルが当たっていない不具合を修正し、全フォームの入力欄・ラベル・ボタンのスタイルを共通コンポーネントクラスに統一する。
 
-- **ステータス**: 未着手
+- **ステータス**: 完了
 - **依存**: [[12-dashboard]]（ダッシュボードフォーム）/ [[11-visualization]]（可視化エディタ）/ [[07-query-editor]]（クエリフォーム）
 - **関連計画書**: §3（Beamsリネーム・UI基盤）。機能追加ではなくUI不具合修正。
 
@@ -53,16 +53,16 @@ button,input,select,optgroup,textarea{ ...; background-color:#0000; border-radiu
 
 ### 1. 共通コンポーネントクラスの確認・拡充
 
-- [ ] `.form-input` / `.form-label` / `.btn-primary` 系が現状の手書きスタイル（`w-full rounded border border-gray-300 px-3 py-2`）と視覚的に等価か確認する（`app/assets/tailwind/application.css`）。差異があれば調整する
+- [x] `.form-input` / `.form-label` / `.btn-primary` 系が現状の手書きスタイル（`w-full rounded border border-gray-300 px-3 py-2`）と視覚的に等価か確認する（`app/assets/tailwind/application.css`）。差異があれば調整する
   - 受け入れ条件: `.form-input` を当てた入力欄が、既存の正しいフォーム（queries / sessions）と同等の見た目になる
-- [ ] `<select multiple>`（`:y_columns`）にも `.form-input` で破綻しないことを確認する。必要なら `min-h` 等を追加
+- [x] `<select multiple>`（`:y_columns`）にも `.form-input` で破綻しないことを確認する。必要なら `min-h` 等を追加
   - 受け入れ条件: 複数選択 select が枠線付きで表示される
 
 ### 2. 影響箇所の修正（不具合解消）
 
-- [ ] `app/views/dashboards/_form.html.erb` の `title` / `description` を `.form-input`（＋ラベルを `.form-label`）に置換
+- [x] `app/views/dashboards/_form.html.erb` の `title` / `description` を `.form-input`（＋ラベルを `.form-label`）に置換
   - 受け入れ条件: ダッシュボード新規/編集フォームの入力欄に枠線・パディングが表示される
-- [ ] `app/views/visualizations/_visualization.html.erb` の 6 つの `f.select` を `.form-input`（＋ラベルを `.form-label`）に置換
+- [x] `app/views/visualizations/_visualization.html.erb` の 6 つの `f.select` を `.form-input`（＋ラベルを `.form-label`）に置換
   - 受け入れ条件: 可視化エディタの全 select に枠線が表示される
 
 ### 3. 全フォームのスタイル統一（再発防止・本タスクの必須スコープ）
@@ -71,14 +71,14 @@ button,input,select,optgroup,textarea{ ...; background-color:#0000; border-radiu
 
 対象フォーム（入力欄 → `.form-input`、ラベル → `.form-label`、送信ボタン → `.btn-primary` / 取消・副ボタン → `.btn-secondary`、削除 → `.btn-danger` へ置換）:
 
-- [ ] `app/views/queries/_form.html.erb`（title / bigquery_connection_id / sql_body・submit・キャンセルリンク）
+- [x] `app/views/queries/_form.html.erb`（title / bigquery_connection_id / sql_body・submit・キャンセルリンク）
   - 受け入れ条件: 既存の見た目を維持し、入力欄が `.form-input`、ラベルが `.form-label`、送信が `.btn-primary` を使う
-- [ ] `app/views/sessions/new.html.erb`（email / password / submit）
-- [ ] `app/views/admin/users/new.html.erb`・`app/views/admin/users/edit.html.erb`（email / password / role select / submit）
-- [ ] `app/views/admin/settings/edit.html.erb`（number_field / submit）
-- [ ] `app/views/bigquery/connections/_form.html.erb`（name / project_id / service_account_json / number_field / submit）
-- [ ] `app/views/setup_wizard/step1.html.erb`・`step2.html.erb`・`step4.html.erb`（各入力・submit）
-- [ ] `app/views/queries/show.html.erb` 内の実行フォーム・削除ボタン（`submit_tag` / `button_to` を `.btn-*` に）
+- [x] `app/views/sessions/new.html.erb`（email / password / submit）
+- [x] `app/views/admin/users/new.html.erb`・`app/views/admin/users/edit.html.erb`（email / password / role select / submit）
+- [x] `app/views/admin/settings/edit.html.erb`（number_field / submit）
+- [x] `app/views/bigquery/connections/_form.html.erb`（name / project_id / service_account_json / number_field / submit）
+- [x] `app/views/setup_wizard/step1.html.erb`・`step2.html.erb`・`step4.html.erb`（各入力・submit）
+- [x] `app/views/queries/show.html.erb` 内の実行フォーム・削除ボタン（`submit_tag` / `button_to` を `.btn-*` に）
   - 受け入れ条件（共通）: 各フォームの見た目が劣化せず、入力欄が `.form-input`、ボタンが `.btn-*` を使う。System Spec が全て green のまま
   - 進め方: 一度に全置換せず、**ファイル単位で TDD（下記スペック）→ ビルド再生成 → 目視** を繰り返す。`f.submit` のラベル文字列・フォーム挙動（method / formaction 等）は変更しない（クラスのみ差し替え）
 
@@ -86,27 +86,27 @@ button,input,select,optgroup,textarea{ ...; background-color:#0000; border-radiu
 
 ### 4. ビルド再生成
 
-- [ ] `bin/rails tailwindcss:build` を実行し `app/assets/builds/tailwind.css` を再生成・コミットする（`.form-input` 等が purge されず含まれることを確認）
+- [x] `bin/rails tailwindcss:build` を実行し `app/assets/builds/tailwind.css` を再生成・コミットする（`.form-input` 等が purge されず含まれることを確認）
   - 受け入れ条件: ビルド済み CSS に `.form-input` / `.btn-primary` 等のクラス定義が含まれる
 
 ### 5. RSpec（TDD・リグレッション）
 
-- [ ] System Spec（`rack_test`）で、修正対象フォームの入力欄に正しいスタイルフック（`form-input` クラス）が付与されていることを assert（`spec/system/form_styling_spec.rb` 新規）
+- [x] System Spec（`rack_test`）で、修正対象フォームの入力欄に正しいスタイルフック（`form-input` クラス）が付与されていることを assert（`spec/system/form_styling_spec.rb` 新規）
   - 例: ダッシュボード新規フォームを開き、`expect(page).to have_css("input#dashboard_title.form-input")`、可視化エディタの各 select が `.form-input` を持つこと
   - 受け入れ条件: 先に失敗するスペックを書き（Red）、修正後に green
   - 注記: `rack_test` は CSS を評価しないため、これは「スタイルフックが markup に存在する」ことを担保する構造テスト
-- [ ] **（必須・厳密リグレッション／CI 対象）** `js: true`（Playwright）で、入力欄の `getComputedStyle(...).borderTopWidth` が `0px` でないことを検証する CSS リグレッションスペックを 1 本追加（`spec/system/form_styling_spec.rb` に `js: true` example）。対象は不具合箇所（ダッシュボードフォーム入力欄・可視化 select）
+- [x] **（必須・厳密リグレッション／CI 対象）** `js: true`（Playwright）で、入力欄の `getComputedStyle(...).borderTopWidth` が `0px` でないことを検証する CSS リグレッションスペックを 1 本追加（`spec/system/form_styling_spec.rb` に `js: true` example）。対象は不具合箇所（ダッシュボードフォーム入力欄・可視化 select）
   - 受け入れ条件: 修正前は枠線幅 0px で失敗、修正後に枠線幅 > 0 で green。ローカル初回は `npx playwright install chromium` が必要
   - CI: 既存の `system-test` ジョブ（`.github/workflows/ci.yml`）が `npx playwright install chromium --with-deps` 実行後に `bundle exec rspec spec/system` を走らせるため、**`spec/system/` 配下に置けば追加設定なしで CI 対象になる**。`js: true` タグ付けを忘れないこと（CI 変更は原則不要）
 
 ## 動作確認
 
-- [ ] `bin/dev` で起動し、以下のページでフォーム入力欄に枠線・余白が表示されることを目視
+- [ ] `bin/dev` で起動し、以下のページでフォーム入力欄に枠線・余白が表示されることを目視（注: Coder 環境では GUI 目視不可。代替として js:true の getComputedStyle 検証＋rack_test 構造検証で担保。人間による最終目視は未実施）
   - `/dashboards/new`・`/dashboards/:id/edit`
   - `/queries/:id/visualization`（チャート種別・X軸・Y軸・系列・カウンター系の各 select）
   - 既存の `/queries/new`・`/sessions/new`・`/admin/users/new` で見た目が劣化していない
-- [ ] `bundle exec rspec` がグリーン、SimpleCov 85% 以上
-- [ ] `bin/rubocop` がエラーなし
+- [x] `bundle exec rspec` がグリーン、SimpleCov 85% 以上
+- [x] `bin/rubocop` がエラーなし
 
 ## 未決事項・質問
 
