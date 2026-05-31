@@ -61,5 +61,22 @@ result_blob/error_message カラムのみで完結。スキーマ変更なし。
 
 - `bundle exec rspec`（全体）: `507 examples, 0 failures` / `Line Coverage: 98.88% (972 / 983)`
 - `bin/rubocop`: `145 files inspected, no offenses detected`
-</content>
-</invoke>
+
+## 追記: トピック13（組織フルオープン）整合のアクセス制御修正（ボス決定）
+
+- **決定**: 過去結果の再表示（`executions#show`・読み取り）は**全ユーザー可**にフルオープンへ揃える。
+  実行（`executions#create`・書き込み/課金）のみ**所有者スコープ**を維持。タスク冒頭の
+  「他ユーザーのクエリ配下は404」はトピック13（§4.9）に合わせて上書き。
+- **背景**: `QueriesController#show` は `Query.find`（フルオープン）で他人のクエリ詳細も閲覧でき
+  履歴の「結果を表示」リンクを描画するが、`executions#show` が所有者スコープだと当該リンクが
+  必ず 404 になる不整合があった。
+- **修正**: `Queries::ExecutionsController` の before_action を分離。
+  `set_query`（`current_user.queries.find`・owner）を `only: [ :create ]` に限定し、
+  `show` 用に `set_query_full_open`（`Query.find`）を `only: [ :show ]` で追加。
+  存在しない query_id / 当該クエリ配下に無い execution id は引き続き 404（RecordNotFound）。
+- **TDD**: `spec/requests/queries/executions/show_spec.rb` の「他ユーザーのクエリ配下は404」を
+  「他ユーザーのクエリ配下でも 200 で再表示できる（フルオープン）」に変更（Red）→ 実装（Green）。
+  存在しない query_id の 404 ケース、当該クエリ配下に無い execution id の 404 ケースは残置。
+  `create` の所有者スコープ 404 テスト（`executions_spec.rb` の「returns 404 for another user's query」）は維持を確認。
+- **実テスト結果（修正後・全体）**: `508 examples, 0 failures` / `Line Coverage: 98.88% (975 / 986)`。
+  `bin/rubocop`: `145 files inspected, no offenses detected`。

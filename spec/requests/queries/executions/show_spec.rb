@@ -1,7 +1,9 @@
 require "rails_helper"
 
 # 過去実行の結果再表示エンドポイント（トピック17）。
-# GET /queries/:query_id/executions/:id。所有クエリのみ（他人の id は 404）。
+# GET /queries/:query_id/executions/:id。トピック13（組織フルオープン）に合わせ、
+# 過去結果の再表示（読み取り）は全ユーザー可。実行（create・書き込み/課金）のみ所有者スコープ。
+# 存在しない query_id / 当該クエリ配下に存在しない execution id は 404。
 RSpec.describe "Queries::Executions#show", type: :request do
   let(:user) { create(:user, :member, password: "password") }
   let(:other_user) { create(:user, :member, password: "password") }
@@ -20,11 +22,24 @@ RSpec.describe "Queries::Executions#show", type: :request do
       expect(response).to redirect_to(new_session_path)
     end
 
-    it "returns 404 for another user's query" do
+    # トピック13（組織フルオープン）に合わせ、過去結果の再表示（読み取り）は
+    # 全ユーザー可。実行（create・書き込み/課金）のみ所有者スコープ。
+    it "renders another user's query execution result (full-open / トピック13)" do
       login_as(user)
       foreign = create(:query, user: other_user, bigquery_connection: connection)
-      execution = create(:query_execution, :succeeded, query: foreign)
+      execution = create(:query_execution, :succeeded, query: foreign, result_row_count: 1)
+      execution.store_result([ { "name" => "shared", "type" => "STRING" } ], [ [ "ok" ] ])
+      execution.save!
+
       get query_execution_path(foreign, execution)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("shared")
+    end
+
+    it "returns 404 for a non-existent query" do
+      login_as(user)
+      get query_execution_path(query_id: -1, id: 1)
       expect(response).to have_http_status(:not_found)
     end
 

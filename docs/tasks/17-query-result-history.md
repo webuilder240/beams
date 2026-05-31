@@ -61,8 +61,8 @@
   - 受け入れ条件: 詳細ページに直近 N 件が新しい順で渡る（リクエストスペック）
 - [x] 実行履歴一覧の partial を追加（`app/views/query_executions/_history.html.erb`）— status バッジ / 開始・終了時刻（`l(..., format: :short)`）/ 所要時間 / 行数 / `result_truncated` 表示 / 「結果を表示」リンク / 成功実行の CSV リンク。`queries/show` に差し込む
   - 受け入れ条件: 複数回実行したクエリの詳細ページに履歴行が並ぶ（System Spec `rack_test`）
-- [x] 過去実行の結果を再表示するアクションを追加（`Queries::ExecutionsController#show`、ルートに `:show` を追加）— `@query.query_executions.find(params[:id])` を `_state`（または `_result`）で描画。所有者スコープ外は 404
-  - 受け入れ条件: `GET /queries/:query_id/executions/:id` が当該実行の結果テーブル（`result_blob` 復元）を返す（リクエストスペック）。他ユーザーのクエリ配下は 404
+- [x] 過去実行の結果を再表示するアクションを追加（`Queries::ExecutionsController#show`、ルートに `:show` を追加）— `@query.query_executions.find(params[:id])` を `_state`（または `_result`）で描画。**トピック13フルオープンに合わせ過去結果の再表示は全ユーザー可（`Query.find`）。実行（create）のみ所有者スコープを維持**（タスク冒頭の「他ユーザーのクエリ配下は404」はトピック13決定で上書き）
+  - 受け入れ条件: `GET /queries/:query_id/executions/:id` が当該実行の結果テーブル（`result_blob` 復元）を返す（リクエストスペック）。他ユーザーのクエリ配下でも 200 で再表示可。存在しない query_id / 当該クエリ配下に無い execution id は 404
 
 ### 3. 履歴のライブ追記（任意・推奨）
 
@@ -78,7 +78,7 @@
 
 - [x] モデルスペック（`spec/models/query_execution_spec.rb`）: `recent` 順序 / `duration` / `result` の blob 復元 / `succeeded_with_result?`
   - 受け入れ条件: 全 green
-- [x] リクエストスペック（`spec/requests/queries/executions_spec.rb` 等）: `executions#show` が成功実行の結果を返す / 失敗・実行中の状態表示 / 他ユーザーのクエリ配下は 404
+- [x] リクエストスペック（`spec/requests/queries/executions_spec.rb` 等）: `executions#show` が成功実行の結果を返す / 失敗・実行中の状態表示 / **他ユーザーのクエリ配下でも 200（フルオープン・トピック13）** / 存在しない execution id は 404。`create` は所有者スコープ（他人のクエリは 404）を維持
   - 受け入れ条件: 全 green
 - [x] System Spec（`spec/system/`・`rack_test`）: 複数回実行 → 詳細ページに履歴が並ぶ → 過去実行の「結果を表示」で結果テーブルが描画される
   - 受け入れ条件: 全 green
@@ -100,6 +100,7 @@
 
 - **履歴の保持件数**: 表示は直近 **20 件**・新しい順。**剪定なし（MVP）**。古い実行レコード/CSV の自動削除は実装しない。
 - **過去実行ごとの CSV ダウンロード（タスク4）**: **提供しない**。既存の `latest/csv` ルートのみ維持。`GET /queries/:query_id/executions/:id/csv` は追加しない。履歴行の CSV リンクは最新の成功実行（`Query#latest_succeeded_execution`＝succeeded を created_at 降順で 1 件）のみに表示し、「latest」が最新の成功実行を指す挙動を確認済み。
+- **過去結果の再表示のアクセス制御（トピック13 整合）**: **フルオープンに揃える**。過去結果の再表示（`executions#show`・読み取り）は**全ユーザー可**（`Query.find`）。実行（`executions#create`・書き込み/課金）のみ**所有者スコープ**（`current_user.queries.find`・他人のクエリは 404）を維持。タスク冒頭の「他ユーザーのクエリ配下は404」はトピック13（§4.9 組織フルオープン）に合わせて上書き。存在しない query_id / 当該クエリ配下に無い execution id は引き続き 404。
 
 ### 将来課題（残す）
 
