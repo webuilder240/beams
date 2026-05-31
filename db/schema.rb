@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_092141) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_100000) do
   create_table "bigquery_connections", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "maximum_bytes_billed"
@@ -18,6 +18,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_092141) do
     t.string "project_id", null: false
     t.text "service_account_json", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "queries", force: :cascade do |t|
+    t.integer "bigquery_connection_id", null: false
+    t.datetime "created_at", null: false
+    t.text "sql_body", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["bigquery_connection_id"], name: "index_queries_on_bigquery_connection_id"
+    t.index ["user_id"], name: "index_queries_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -28,4 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_092141) do
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
   end
+
+  add_foreign_key "queries", "bigquery_connections"
+  add_foreign_key "queries", "users"
 end
