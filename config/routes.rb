@@ -41,6 +41,10 @@ Rails.application.routes.draw do
     resources :executions, only: [ :create ], module: "queries" do
       get "latest/csv", to: "executions/csv_exports#show", on: :collection, as: :latest_csv
     end
+
+    # 可視化（トピック11）: クエリ結果を Chart.js で描画する設定（軸・系列・
+    # チャート種別・表示モード・counter）。1クエリ1可視化（has_one）。
+    resource :visualization, only: [ :show, :update ]
   end
 
   # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）
