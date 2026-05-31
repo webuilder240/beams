@@ -24,6 +24,10 @@
 # Ignore storage (uploaded files in development and any SQLite databases).
 /storage/*
 !/storage/.keep
+# クエリ実行の全件 CSV（トピック10）。ディレクトリは保持し中身は無視する。
+!/storage/csv/
+/storage/csv/*
+!/storage/csv/.keep
 /tmp/storage/*
 !/tmp/storage/
 !/tmp/storage/.keep

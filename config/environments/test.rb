@@ -18,6 +18,10 @@ Rails.application.configure do
   # Configure public file server for tests with cache-control for performance.
   config.public_file_server.headers = { "cache-control" => "public, max-age=3600" }
 
+  # CSV ダウンロード（トピック10）は X-Sendfile（本番は Thruster）で配信する。
+  # テストでも send_file が X-Sendfile ヘッダーを立てるよう明示設定する。
+  config.action_dispatch.x_sendfile_header = "X-Sendfile"
+
   # Show full error reports.
   config.consider_all_requests_local = true
   # スキーマキャッシュ（SolidCache 方式）の検証のため、テストでは memory_store を使う。

@@ -34,6 +34,13 @@ Rails.application.routes.draw do
   # リクエストボディの現在のエディタ内容を受け取り、接続コンテキストのみ Query から得る。
   resources :queries do
     resource :dry_run, only: [ :create ], module: "queries"
+
+    # 非同期実行（トピック10）: POST /queries/:query_id/executions で
+    # QueryExecution を作成し SolidQueue に投入。最新成功実行の全件 CSV は
+    # GET /queries/:query_id/executions/latest/csv で X-Sendfile 配信する。
+    resources :executions, only: [ :create ], module: "queries" do
+      get "latest/csv", to: "executions/csv_exports#show", on: :collection, as: :latest_csv
+    end
   end
 
   # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）

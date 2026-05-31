@@ -23,29 +23,44 @@
     <pre class="rounded border border-gray-200 bg-white px-4 py-3 font-mono text-sm overflow-x-auto"><%= @query.sql_body %></pre>
   </div>
 
-  <% if @query.query_parameters.any? %>
-    <%#
-      実行時パラメータ入力。パラメータを持つクエリのみ表示する。
-      実行コントローラ本体はトピック10。本ステップでは入力フォームと
-      サーバ側の必須チェック（全パラメータ必須）の動作確認まで行う。
-      送信は GET で同じ show に戻し、未入力があればエラーを表示する。
-    %>
-    <% if @missing_parameters.present? %>
-      <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
-        未入力のパラメータがあります: <%= @missing_parameters.join(", ") %>
-      </div>
-    <% elsif @parameter_values_ready %>
-      <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
-        パラメータを受け付けました。
+  <%#
+    クエリ実行（トピック10）。1 つのフォームで入力を共有し、2 つの送信先を持つ:
+    - 「実行」: POST /queries/:id/executions（QueryExecution 作成→SolidQueue 投入）
+    - 「パラメータを適用」: GET show（サーバ側の必須チェック・プレビュー）
+    パラメータを持つクエリは入力値も同送する（全パラメータ必須）。
+    結果は Turbo Streams（turbo_stream_from @query）で query_result に差し込まれる。
+  %>
+  <% if @missing_parameters.present? %>
+    <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+      未入力のパラメータがあります: <%= @missing_parameters.join(", ") %>
+    </div>
+  <% elsif @parameter_values_ready %>
+    <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
+      パラメータを受け付けました。
+    </div>
+  <% end %>
+
+  <div class="space-y-3">
+    <%= form_with url: query_executions_path(@query), method: :post, local: true,
+          data: { controller: "parameter-form" }, class: "space-y-4 rounded border border-gray-200 p-4" do %>
+      <% if @query.query_parameters.any? %>
+        <%= render "parameter_form", query: @query %>
+      <% end %>
+
+      <div class="flex items-center gap-3">
+        <%= submit_tag "実行", class: "rounded bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" %>
+        <% if @query.query_parameters.any? %>
+          <%= submit_tag "パラメータを適用",
+                formaction: query_path(@query), formmethod: "get",
+                name: "preview",
+                class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
+        <% end %>
       </div>
     <% end %>
 
-    <%= form_with url: query_path(@query), method: :get, local: true,
-          data: { controller: "parameter-form" }, class: "space-y-4 rounded border border-gray-200 p-4" do %>
-      <%= render "parameter_form", query: @query %>
-      <%= submit_tag "パラメータを適用", class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
-    <% end %>
-  <% end %>
+    <%= turbo_stream_from @query %>
+    <%= render "query_executions/state", execution: @latest_execution %>
+  </div>
 
   <div>
     <%= button_to "削除", query_path(@query), method: :delete,

@@ -1,0 +1,13 @@
+<%#
+  実行中（pending/running）の状態表示。Turbo Streams で query_result に差し込まれる。
+  ジョブ完了後、同じ target が _result / _error に置き換えられる。
+%>
+<div id="query_result" class="rounded border border-gray-200 bg-white px-4 py-6 text-center text-gray-600">
+  <% if execution.pending? %>
+    <p class="text-sm font-medium">実行待ち...</p>
+    <p class="text-xs text-gray-400 mt-1">同時実行の上限に達しているため順番を待っています。</p>
+  <% else %>
+    <p class="text-sm font-medium">実行中...</p>
+    <p class="text-xs text-gray-400 mt-1">BigQuery の完了を待っています。</p>
+  <% end %>
+</div>

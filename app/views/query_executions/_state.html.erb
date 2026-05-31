@@ -1,0 +1,15 @@
+<%#
+  query_result エリアの初期描画ディスパッチャ。直近の実行（execution）の状態で
+  表示を切り替える。execution が nil（未実行）のときは空のプレースホルダ。
+%>
+<% if execution.nil? %>
+  <div id="query_result" class="rounded border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+    まだ実行されていません。「実行」ボタンでクエリを実行します。
+  </div>
+<% elsif execution.pending? || execution.running? %>
+  <%= render "query_executions/running", execution: execution %>
+<% elsif execution.failed? %>
+  <%= render "query_executions/error", execution: execution %>
+<% else %>
+  <%= render "query_executions/result", execution: execution %>
+<% end %>

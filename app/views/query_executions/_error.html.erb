@@ -1,0 +1,10 @@
+<%#
+  失敗状態・パラメータ未入力などのエラー表示。
+  - ジョブの broadcast からは locals: { execution: } で渡され error_message を表示。
+  - コントローラのパラメータ未入力時は locals: { message: } で渡される。
+%>
+<% text = local_assigns[:message] || local_assigns[:execution]&.error_message %>
+<div id="query_result" class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+  <p class="text-sm font-medium">エラー</p>
+  <p class="text-sm mt-1 whitespace-pre-wrap"><%= text %></p>
+</div>

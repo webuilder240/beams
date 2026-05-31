@@ -8,6 +8,9 @@ class QueriesController < ApplicationController
   end
 
   def show
+    # 結果エリア初期表示用に直近の実行を読み込む（トピック10）。
+    @latest_execution = @query.query_executions.order(created_at: :desc).first
+
     return if params[:query_params].blank?
 
     # 実行時パラメータ受け取りの設計（グループ5）。
