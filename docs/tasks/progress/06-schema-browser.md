@@ -3,7 +3,7 @@
 > タスク `docs/tasks/06-schema-browser.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
 - **ステータス**: ✅完了
-- **担当**: Coder
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断）
 
@@ -49,3 +49,6 @@
   - spec: request（schema_caches / schema_browsers）、rack_test system spec（ツリーHTML確認）。`js: true` のエディタ挿入は **トピック07へ委譲し pending**（理由をテスト内に明記）。
 - **結果**: `bundle exec rspec` 全体 126 examples / 0 failures / 1 pending、SimpleCov **99.6%**（≥85%）。`bin/rubocop` 0 offenses、`bin/brakeman --no-pager` 警告0。**マイグレーションは発生していない**。
 - **ステータス更新**: 🔄進行中 → ✅完了（00-overview.md の表も完了に更新）。Tester へ引き継ぎ。
+- **司令塔→Tester**: トピック06（SolidCache方式）の QA を依頼。
+- **Tester→司令塔**: トピック06 QA **PASS**。改訂後の全受け入れ条件✅、設計変更の整合性も確認（schema系テーブル/マイグレーション無し・確認doc削除済み・ADR 0001 Accepted）。rspec 126例 0 failures 1 pending（js:trueエディタ挿入=07委譲）・カバレッジ99.6%、rubocop no offenses、brakeman 0。実機round-trip（sync_schema!→cached_schema）確認。軽微指摘1件（Stimulus未宣言target、実害なし）。差し戻し不要。
+- **司令塔**: トピック06 を **✅完了** と確定。

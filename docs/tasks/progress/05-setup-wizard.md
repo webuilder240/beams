@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/05-setup-wizard.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
-- **ステータス**: 🔄進行中
-- **担当**: Coder
+- **ステータス**: ✅完了
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断）
 
@@ -39,4 +39,7 @@
 - **Coder（commit: システムスペック）**: `spec/system/setup_wizard_spec.rb`（rack_test）を追加。0 件 → step1 → step2 → step3（`test_connection` スタブで成功）→ step4 スキップ → root の通しフロー、完了後 step1 アクセスで root へ戻る、接続テスト失敗時の不足権限表示を検証。2 examples, 0 failures。
 
 - **Coder（完了報告）**: 全 RSpec green（113 examples, 0 failures）、SimpleCov 99.51%（≥85%）、`bin/rubocop` 0 offenses、`bin/brakeman --no-pager` 警告 0。`docs/tasks/05-setup-wizard.md` の全チェックボックス・ステータスを完了に、`00-overview.md` の表も完了に更新。Tester へ引き継ぎ。
-</content>
+
+- **司令塔→Tester**: トピック05 の QA（実装要件の充足確認＋既存spec変更の回帰確認）を依頼。
+- **Tester→司令塔**: トピック05 QA **PASS**。全受け入れ条件✅。rspec 113例 0 failures・カバレッジ99.51%、rubocop no offenses、brakeman 0 warnings。**回帰なし**（既存spec3件の `create(:user)` 追加は、初回誘導が認可チェックより先に発火する問題への妥当な対応で、元の検証意図「未ログイン→ログインへリダイレクト」は保たれている）。軽微指摘1件（完了済みガードは入口のみ＝doc要件は充足、合理的）。差し戻し不要。
+- **司令塔**: トピック05 を **✅完了** と確定。

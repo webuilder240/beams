@@ -20,8 +20,8 @@
 | 02 | ONCE配布・プロセス管理 | ✅完了 | - | （既存コミットで完了済み） |
 | 03 | 認証・ユーザー | ✅完了 | Coder/Tester | [progress/03-auth-users.md](progress/03-auth-users.md) |
 | 04 | BigQuery接続 | ✅完了 | Coder/Tester | [progress/04-bigquery-connection.md](progress/04-bigquery-connection.md) |
-| 05 | 初回セットアップウィザード | 🔄進行中 | Coder | [progress/05-setup-wizard.md](progress/05-setup-wizard.md) |
-| 06 | スキーマブラウザ | ⏳未着手 | - | - |
+| 05 | 初回セットアップウィザード | ✅完了 | Coder/Tester | [progress/05-setup-wizard.md](progress/05-setup-wizard.md) |
+| 06 | スキーマブラウザ | ✅完了 | Coder/Tester | [progress/06-schema-browser.md](progress/06-schema-browser.md)（SolidCache方式・[ADR 0001](../adr/0001-bigquery-schema-cache.md)）|
 | 07 | クエリエディタ | ⏳未着手 | - | - |
 | 08 | コスト保護 | ⏳未着手 | - | - |
 | 09 | パラメータ化クエリ | ⏳未着手 | - | - |
