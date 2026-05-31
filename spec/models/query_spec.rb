@@ -77,6 +77,37 @@ RSpec.describe Query, type: :model do
     end
   end
 
+  describe ".title_matching" do
+    it "returns queries whose title contains the term (partial match)" do
+      hit = create(:query, title: "売上集計")
+      create(:query, title: "ユーザー一覧")
+
+      expect(Query.title_matching("売上")).to contain_exactly(hit)
+    end
+
+    it "returns all queries when the term is blank" do
+      create(:query, title: "A")
+      create(:query, title: "B")
+
+      expect(Query.title_matching("")).to match_array(Query.all)
+      expect(Query.title_matching(nil)).to match_array(Query.all)
+    end
+
+    it "escapes the LIKE wildcard % so it is treated literally" do
+      literal = create(:query, title: "100%達成")
+      create(:query, title: "未達成")
+
+      expect(Query.title_matching("100%")).to contain_exactly(literal)
+    end
+
+    it "escapes the LIKE wildcard _ so it is treated literally" do
+      literal = create(:query, title: "a_b 集計")
+      create(:query, title: "axb 集計")
+
+      expect(Query.title_matching("a_b")).to contain_exactly(literal)
+    end
+  end
+
   describe "#parameters (parser)" do
     def params_for(sql)
       build(:query, sql_body: sql).parameters

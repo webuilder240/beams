@@ -38,6 +38,34 @@ RSpec.describe "Dashboards", type: :request do
       expect(response.body.index("新しい")).to be < response.body.index("古い")
       expect([ old, recent ]).to all(be_present)
     end
+
+    it "filters by title partial match with ?q=" do
+      create(:dashboard, user: user, title: "売上ダッシュボード")
+      create(:dashboard, user: other_user, title: "ユーザー分析")
+
+      get dashboards_path(q: "売上")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("売上ダッシュボード")
+      expect(response.body).not_to include("ユーザー分析")
+    end
+
+    it "shows no dashboards when nothing matches ?q=" do
+      create(:dashboard, user: user, title: "売上ダッシュボード")
+
+      get dashboards_path(q: "存在しないキーワード")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("売上ダッシュボード")
+      expect(response.body).to include("まだダッシュボードがありません")
+    end
+
+    it "returns all dashboards when q is blank" do
+      create(:dashboard, user: user, title: "売上ダッシュボード")
+      create(:dashboard, user: other_user, title: "ユーザー分析")
+
+      get dashboards_path(q: "")
+      expect(response.body).to include("売上ダッシュボード")
+      expect(response.body).to include("ユーザー分析")
+    end
   end
 
   describe "GET /dashboards/:id" do

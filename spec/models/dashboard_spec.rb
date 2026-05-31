@@ -43,6 +43,37 @@ RSpec.describe Dashboard, type: :model do
     end
   end
 
+  describe ".title_matching" do
+    it "returns dashboards whose title contains the term (partial match)" do
+      hit = create(:dashboard, title: "売上ダッシュボード")
+      create(:dashboard, title: "ユーザー分析")
+
+      expect(Dashboard.title_matching("売上")).to contain_exactly(hit)
+    end
+
+    it "returns all dashboards when the term is blank" do
+      create(:dashboard, title: "A")
+      create(:dashboard, title: "B")
+
+      expect(Dashboard.title_matching("")).to match_array(Dashboard.all)
+      expect(Dashboard.title_matching(nil)).to match_array(Dashboard.all)
+    end
+
+    it "escapes the LIKE wildcard % so it is treated literally" do
+      literal = create(:dashboard, title: "100%達成")
+      create(:dashboard, title: "未達成")
+
+      expect(Dashboard.title_matching("100%")).to contain_exactly(literal)
+    end
+
+    it "escapes the LIKE wildcard _ so it is treated literally" do
+      literal = create(:dashboard, title: "a_b レポート")
+      create(:dashboard, title: "axb レポート")
+
+      expect(Dashboard.title_matching("a_b")).to contain_exactly(literal)
+    end
+  end
+
   describe "#ordered_widgets" do
     it "returns widgets ordered by position ascending" do
       dashboard = create(:dashboard)

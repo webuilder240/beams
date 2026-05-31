@@ -48,6 +48,27 @@ RSpec.describe "Dashboards", type: :system do
     end
   end
 
+  describe "title search (rack_test)" do
+    it "filters the list by entering a keyword in the search form" do
+      create(:dashboard, user: user, title: "売上ダッシュボード")
+      create(:dashboard, user: user, title: "ユーザー分析")
+
+      log_in
+      visit dashboards_path
+
+      expect(page).to have_content("売上ダッシュボード")
+      expect(page).to have_content("ユーザー分析")
+
+      fill_in "q", with: "売上"
+      click_button "検索"
+
+      expect(page).to have_content("売上ダッシュボード")
+      expect(page).not_to have_content("ユーザー分析")
+      # キーワードが入力欄に残る
+      expect(page).to have_field("q", with: "売上")
+    end
+  end
+
   describe "CRUD and widget flow (rack_test)" do
     it "creates a dashboard, adds widgets, reorders, and deletes" do
       seed_query_with_result(title: "売上クエリ")

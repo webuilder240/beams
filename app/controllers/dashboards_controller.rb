@@ -6,7 +6,8 @@ class DashboardsController < ApplicationController
   before_action :set_dashboard, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @dashboards = Dashboard.order(updated_at: :desc)
+    @q = params[:q]
+    @dashboards = Dashboard.title_matching(@q).order(updated_at: :desc)
   end
 
   def show

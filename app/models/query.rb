@@ -22,10 +22,12 @@ class Query < ApplicationRecord
   end
 
   # タイトル部分一致検索（§4.11）。空クエリは全件を返す。
+  # SQLite は `\` を既定のエスケープ文字として扱わないため、`sanitize_sql_like`
+  # が生成する `\` を有効化する `ESCAPE '\'` を明示する（`%` `_` を文字どおり扱う）。
   scope :title_matching, ->(term) {
     next all if term.blank?
 
-    where("title LIKE ?", "%#{sanitize_sql_like(term)}%")
+    where("title LIKE ? ESCAPE '\\'", "%#{sanitize_sql_like(term)}%")
   }
 
   # SQL 本文から `{{ name }}` パラメータをパースし、`[{ name:, type: }]` の配列を返す。
