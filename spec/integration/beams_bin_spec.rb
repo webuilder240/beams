@@ -14,9 +14,8 @@ require "sqlite3"
 # subprocesses with chdir into a tmp dir. require_relative is resolved relative
 # to the script file, so Rails itself still loads correctly from the repo.
 RSpec.describe "beams bin wrappers", type: :integration do
-  APP_ROOT = Rails.root
-  BACKUP_BIN = APP_ROOT.join("bin", "beams-backup").to_s
-  RESTORE_BIN = APP_ROOT.join("bin", "beams-restore").to_s
+  def backup_bin = Rails.root.join("bin", "beams-backup").to_s
+  def restore_bin = Rails.root.join("bin", "beams-restore").to_s
 
   around do |example|
     Dir.mktmpdir("beams-bin-spec") do |dir|
@@ -54,7 +53,7 @@ RSpec.describe "beams bin wrappers", type: :integration do
     seed_db(prod, rows: 9)
 
     # --- bin/beams-backup -----------------------------------------------------
-    out, status = run_bin(BACKUP_BIN)
+    out, status = run_bin(backup_bin)
     expect(status).to be_success, "beams-backup failed:\n#{out}"
     expect(out).to include("Backup created")
 
@@ -68,7 +67,7 @@ RSpec.describe "beams bin wrappers", type: :integration do
     seed_db(prod, rows: 2)
     expect(count_items(prod)).to eq(2)
 
-    out, status = run_bin(RESTORE_BIN, generation)
+    out, status = run_bin(restore_bin, generation)
     expect(status).to be_success, "beams-restore failed:\n#{out}"
     expect(out).to include("Restored from generation: #{generation}")
     expect(out).to include("Next steps")
@@ -78,9 +77,9 @@ RSpec.describe "beams bin wrappers", type: :integration do
 
   it "bin/beams-restore with no argument lists generations and exits 1" do
     seed_db(@tmp.join("storage", "production.sqlite3"), rows: 1)
-    run_bin(BACKUP_BIN)
+    run_bin(backup_bin)
 
-    out, status = run_bin(RESTORE_BIN)
+    out, status = run_bin(restore_bin)
     expect(status.exitstatus).to eq(1)
     expect(out).to match(/Usage: bin\/beams-restore/)
     expect(out).to match(/Available generations:/)
