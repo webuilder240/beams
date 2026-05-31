@@ -14,7 +14,7 @@ Rails.application.routes.draw do
 
   # ユーザー管理（admin 専用）
   namespace :admin do
-    resources :users do
+    resources :users, except: [ :show ] do
       member do
         patch :reset_password
       end
