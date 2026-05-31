@@ -23,7 +23,7 @@
 | 05 | 初回セットアップウィザード | ✅完了 | Coder/Tester | [progress/05-setup-wizard.md](progress/05-setup-wizard.md) |
 | 06 | スキーマブラウザ | ✅完了 | Coder/Tester | [progress/06-schema-browser.md](progress/06-schema-browser.md)（SolidCache方式・[ADR 0001](../adr/0001-bigquery-schema-cache.md)）|
 | 07 | クエリエディタ | ✅完了 | Coder/Tester | [progress/07-query-editor.md](progress/07-query-editor.md) |
-| 08 | コスト保護 | ⏳未着手 | - | - |
+| 08 | コスト保護 | 🔄進行中 | Coder | [progress/08-cost-protection.md](progress/08-cost-protection.md) |
 | 09 | パラメータ化クエリ | ⏳未着手 | - | - |
 | 10 | 非同期実行・結果保存 | ⏳未着手 | - | - |
 | 11 | 可視化 | ⏳未着手 | - | - |
