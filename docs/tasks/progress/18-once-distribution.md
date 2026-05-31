@@ -181,3 +181,7 @@ C と D は共有定数（IMAGE / コンテナ名 / ボリューム / env ファ
 ### 残る未チェック（手動動作確認のみ）
 
 タスク末尾「動作確認（手動）」の4項目（実イメージビルド→`docker run`→`/up` 200 確認、install.sh ドライラン、once-update dry-run、systemd-analyze verify）は実環境/実イメージが必要なため Coder では未実施。Reviewer/マネージャー側の手動確認に委ねる。
+
+### Tester 指摘対応（2026-05-31）
+
+- 受け入れ条件A最終項目（`grep -rniE "kamal"` が docs/tasks 除き 0 件）が未達：グループEの §2 追記で `docs/PRODUCT_PLAN.md:46` 地の文に literal "Kamal" が再混入していた。当該箇所を「従来のデプロイ基盤を廃し」に固有名詞を使わずリワード。`grep -rniE "kamal" . --exclude-dir=.git --exclude-dir=node_modules | grep -v "docs/tasks/"` → **0 件**を確認。`bin/rubocop` exit 0、`bundle exec rspec` 518 examples / 0 failures / カバレッジ 98.66%（ドキュメントのみ・不変）。
