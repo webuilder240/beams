@@ -3,7 +3,7 @@
 > タスク `docs/tasks/09-parameterized-query.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
 - **ステータス**: ✅実装完了（Tester引き継ぎ待ち）
-- **担当**: Coder
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断・未決事項の決定）
 
@@ -57,3 +57,6 @@
   - `config/database.yml`（test）+ `spec/support/playwright.rb`: js System Spec の "database is locked"（Puma マルチスレッド × SQLite × transactional fixtures）対策。test に `busy_timeout: 10000`、Capybara サーバを単一スレッド Puma（`Threads: "1:1"`）に固定。製品挙動には影響なし（テスト基盤の安定化のみ）。
   - 結果: **`bundle exec rspec` 全体 278 examples / 0 failures**（regression 2例含め完全 green）、カバレッジ 99.56%、`bin/rubocop` 0 offense。commit「regression spec のボタンラベル修正（保存→更新）でtopic-09を全体green化」。
 - **Coder→司令塔**: 全体 green 達成。topic-09 完了報告。
+- **Coder**: regression spec のボタンラベルを `"保存"`→`"更新"` に修正、dry-runコントローラを `_form` のフォーム要素へ移設、js System Spec の SQLite ロック対策（test の `busy_timeout: 10000` ＋ Capybara Puma を単一スレッド化＝テスト基盤のみ）。commit `19fd…`。
+- **司令塔（独立検証）**: `bundle exec rspec` 全体を司令塔自身で実行し **278 examples / 0 failures / カバレッジ99.56%** を確認（Coderの前回誤診を踏まえ独立確認）。
+- **司令塔**: トピック09 を **✅完了** と確定。
