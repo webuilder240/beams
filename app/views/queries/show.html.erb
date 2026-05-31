@@ -16,6 +16,7 @@
 
   <dl class="space-y-1 text-sm text-gray-600">
     <div><dt class="inline font-medium">実行先接続:</dt> <dd class="inline"><%= @query.bigquery_connection.name %></dd></div>
+    <div><dt class="inline font-medium">所有者:</dt> <dd class="inline"><%= @query.user&.email %></dd></div>
     <div><dt class="inline font-medium">更新日時:</dt> <dd class="inline"><%= l(@query.updated_at.in_time_zone, format: :short) rescue @query.updated_at %></dd></div>
   </dl>
 

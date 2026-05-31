@@ -25,6 +25,7 @@
         <tr class="text-left text-sm text-gray-600">
           <th class="px-4 py-2">タイトル</th>
           <th class="px-4 py-2">接続</th>
+          <th class="px-4 py-2">所有者</th>
           <th class="px-4 py-2">更新日時</th>
           <th class="px-4 py-2">操作</th>
         </tr>
@@ -34,6 +35,7 @@
           <tr>
             <td class="px-4 py-2"><%= link_to query.title, query_path(query), class: "text-blue-600 hover:underline" %></td>
             <td class="px-4 py-2"><%= query.bigquery_connection.name %></td>
+            <td class="px-4 py-2 text-sm text-gray-500"><%= query.user&.email %></td>
             <td class="px-4 py-2 text-sm text-gray-500"><%= l(query.updated_at.in_time_zone, format: :short) rescue query.updated_at %></td>
             <td class="px-4 py-2 space-x-3 text-sm">
               <%= link_to "編集", edit_query_path(query), class: "text-blue-600 hover:underline" %>

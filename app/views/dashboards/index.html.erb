@@ -19,6 +19,9 @@
             <%= link_to dashboard.title, dashboard_path(dashboard),
                   class: "text-base font-medium text-blue-600 hover:underline" %>
             <p class="text-xs text-gray-500">
+              所有者: <%= dashboard.user&.email %>
+            </p>
+            <p class="text-xs text-gray-500">
               更新: <%= l(dashboard.updated_at.in_time_zone, format: :short) rescue dashboard.updated_at %>
             </p>
           </div>
