@@ -16,9 +16,10 @@ module Beams
   # `manifest.json` describing the run. Old generations beyond the configured
   # retention count are pruned automatically.
   #
-  # Snapshots are produced with SQLite's online backup API
-  # (`SQLite3::Database#backup`), which yields a single-file, transactionally
-  # consistent copy even while the source is being written to in WAL mode.
+  # Snapshots are produced with SQLite's online backup (`VACUUM INTO`),
+  # which yields a single-file, transactionally consistent copy even while
+  # the source is being written to in WAL mode. The optional
+  # SQLite3::Database#backup C-API is not built into this gem.
   class Backup
     DEFAULT_BACKUP_DIR = "storage/backups"
     DEFAULT_GENERATIONS = 7
