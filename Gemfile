@@ -46,6 +46,10 @@ gem "image_processing", "~> 1.2"
 # BigQuery クライアント（Beams のクエリ実行基盤）[https://github.com/googleapis/google-cloud-ruby]
 gem "google-cloud-bigquery"
 
+# CSV はクエリ結果の全件ダウンロード（トピック10）で使用。Ruby 3.4 から
+# default gem ではなくなったため明示的に追加する。
+gem "csv"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
