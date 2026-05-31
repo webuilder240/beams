@@ -63,6 +63,22 @@ RSpec.describe "Query editor", type: :system do
     expect(page).not_to have_content("在庫一覧")
   end
 
+  it "lists all users' queries with owner names (org full-open §4.9, rack_test)" do
+    other_user = create(:user, :member, email: "other@example.com", password: "password")
+    create(:query, user: user, title: "自分のクエリ", bigquery_connection: connection)
+    create(:query, user: other_user, title: "他人のクエリ", bigquery_connection: connection)
+
+    log_in
+    visit queries_path
+
+    # 全ユーザーのクエリが見える（§4.9）
+    expect(page).to have_content("自分のクエリ")
+    expect(page).to have_content("他人のクエリ")
+    # 所有者名（email）が一覧に表示される
+    expect(page).to have_content("member@example.com")
+    expect(page).to have_content("other@example.com")
+  end
+
   it "guides to connection registration when no connection exists (rack_test)" do
     connection.destroy
     log_in

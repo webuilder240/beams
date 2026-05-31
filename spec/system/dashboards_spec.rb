@@ -30,6 +30,24 @@ RSpec.describe "Dashboards", type: :system do
     end
   end
 
+  describe "owner display (org full-open §4.9)" do
+    it "lists all users' dashboards with owner names (rack_test)" do
+      other_user = create(:user, :member, email: "other@example.com", password: "password")
+      create(:dashboard, user: user, title: "自分のD")
+      create(:dashboard, user: other_user, title: "他人のD")
+
+      log_in
+      visit dashboards_path
+
+      # 全ユーザーのダッシュボードが見える（§4.9）
+      expect(page).to have_content("自分のD")
+      expect(page).to have_content("他人のD")
+      # 所有者名（email）が一覧に表示される
+      expect(page).to have_content("member@example.com")
+      expect(page).to have_content("other@example.com")
+    end
+  end
+
   describe "CRUD and widget flow (rack_test)" do
     it "creates a dashboard, adds widgets, reorders, and deletes" do
       seed_query_with_result(title: "売上クエリ")
