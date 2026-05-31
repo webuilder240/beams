@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Thin wrapper to create one SQLite backup generation. Suitable for manual runs
+# or as a cron entry. Backups normally run via SolidQueue (config/recurring.yml),
+# but this wrapper lets an operator force a generation at any time.
+#
+# Configuration (env vars):
+#   BEAMS_BACKUP_DIR          backup root dir   (default: storage/backups)
+#   BEAMS_BACKUP_GENERATIONS  generations kept  (default: 7)
+
+require_relative "../config/environment"
+require "beams/backup"
+
+result = Beams::Backup.new.run
+puts "Backup created: #{result[:dir]}"
+result[:databases].each do |db|
+  puts "  #{db[:name]}: #{db[:file]} (#{db[:bytes]} bytes, integrity=#{db[:integrity]})"
+end

@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Restore SQLite databases from a backup generation.
+#
+# Usage:
+#   bin/beams-restore <timestamp>|latest
+#   bin/beams-restore                # lists available generations
+#
+# WARNING: restore overwrites database files in place. Stop the web and worker
+# processes before running (single-container / ONCE model). The current
+# databases are moved aside to timestamped *.bak safety copies first, and the
+# run rolls back automatically if any step fails.
+
+require_relative "../config/environment"
+require "beams/restore"
+
+generation = ARGV[0]
+
+if generation.nil? || generation.strip.empty?
+  warn "Usage: bin/beams-restore <timestamp>|latest"
+  warn "Available generations:"
+  available = Beams::Restore.available
+  if available.empty?
+    warn "  (none found in #{ENV.fetch('BEAMS_BACKUP_DIR', Beams::Backup::DEFAULT_BACKUP_DIR)})"
+  else
+    available.each { |g| warn "  #{g}" }
+  end
+  exit 1
+end
+
+result = Beams::Restore.new(generation).run
+puts "Restored from generation: #{result[:timestamp]}"
+result[:databases].each do |db|
+  puts "  #{db[:name]} -> #{db[:target]} (safety copy: #{db[:safety_copy] || 'none'})"
+end
+puts
+puts "Next steps: run `bin/rails db:migrate` and verify `PRAGMA integrity_check`, then restart processes."
