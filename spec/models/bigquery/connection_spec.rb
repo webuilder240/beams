@@ -125,4 +125,99 @@ RSpec.describe Bigquery::Connection, type: :model do
       expect(Google::Cloud::Bigquery).to have_received(:new).once
     end
   end
+
+  describe "#test_connection" do
+    let(:connection) { build(:bigquery_connection) }
+    let(:fake_client) { instance_double(Google::Cloud::Bigquery::Project) }
+
+    before do
+      allow(connection).to receive(:bigquery).and_return(fake_client)
+    end
+
+    context "when both dry-run and datasets.list succeed" do
+      it "returns success: true" do
+        allow(fake_client).to receive(:query_job).with("SELECT 1", dryrun: true)
+        allow(fake_client).to receive(:datasets).and_return([])
+
+        expect(connection.test_connection).to eq({ success: true })
+      end
+
+      it "treats an empty dataset list as success" do
+        allow(fake_client).to receive(:query_job).with("SELECT 1", dryrun: true)
+        allow(fake_client).to receive(:datasets).and_return([])
+
+        result = connection.test_connection
+        expect(result[:success]).to be(true)
+      end
+
+      it "runs the dry-run query without billing (dry_run: true)" do
+        allow(fake_client).to receive(:query_job).with("SELECT 1", dryrun: true)
+        allow(fake_client).to receive(:datasets).and_return([])
+
+        connection.test_connection
+        expect(fake_client).to have_received(:query_job).with("SELECT 1", dryrun: true)
+      end
+    end
+
+    context "when the dry-run is denied for bigquery.jobs.create" do
+      it "extracts the missing permission and returns failure" do
+        error = Google::Cloud::PermissionDeniedError.new(
+          "Access Denied: Project p: User does not have bigquery.jobs.create permission in project p."
+        )
+        allow(fake_client).to receive(:query_job).and_raise(error)
+        allow(fake_client).to receive(:datasets).and_return([])
+
+        result = connection.test_connection
+        expect(result[:success]).to be(false)
+        expect(result[:missing_permissions]).to include("bigquery.jobs.create")
+        expect(result[:message]).to be_present
+      end
+    end
+
+    context "when datasets.list is denied for bigquery.datasets.list" do
+      it "extracts the missing permission and returns failure" do
+        allow(fake_client).to receive(:query_job).with("SELECT 1", dryrun: true)
+        error = Google::Cloud::PermissionDeniedError.new(
+          "Access Denied: Project p: User does not have bigquery.datasets.list permission."
+        )
+        allow(fake_client).to receive(:datasets).and_raise(error)
+
+        result = connection.test_connection
+        expect(result[:success]).to be(false)
+        expect(result[:missing_permissions]).to include("bigquery.datasets.list")
+      end
+    end
+
+    context "when multiple permissions are missing across both checks" do
+      it "aggregates the missing permissions" do
+        jobs_error = Google::Cloud::PermissionDeniedError.new(
+          "User does not have bigquery.jobs.create permission in project p."
+        )
+        datasets_error = Google::Cloud::PermissionDeniedError.new(
+          "User does not have bigquery.datasets.list permission."
+        )
+        allow(fake_client).to receive(:query_job).and_raise(jobs_error)
+        allow(fake_client).to receive(:datasets).and_raise(datasets_error)
+
+        result = connection.test_connection
+        expect(result[:missing_permissions]).to contain_exactly(
+          "bigquery.jobs.create", "bigquery.datasets.list"
+        )
+      end
+    end
+
+    context "when a non-permission error occurs" do
+      it "returns failure with the error message and no missing permissions" do
+        allow(fake_client).to receive(:query_job).and_raise(
+          Google::Cloud::Error.new("network unreachable")
+        )
+        allow(fake_client).to receive(:datasets).and_return([])
+
+        result = connection.test_connection
+        expect(result[:success]).to be(false)
+        expect(result[:missing_permissions]).to eq([])
+        expect(result[:message]).to include("network unreachable")
+      end
+    end
+  end
 end

@@ -24,7 +24,52 @@ class Bigquery::Connection < ApplicationRecord
     )
   end
 
+  # BigQuery への接続を診断する。
+  # (1) dry-run（`SELECT 1`）でクエリ実行権限（bigquery.jobs.create 等）を確認し、
+  # (2) `datasets.list` でデータセット閲覧権限（bigquery.datasets.list）を確認する。
+  # `datasets.list` 権限があればデータセットが 0 件でも成功扱いとする。
+  # 成功時は `{ success: true }`、失敗時は
+  # `{ success: false, missing_permissions: [...], message: "..." }` を返す。
+  # 外部 API 呼び出しを伴うため、テストではクライアントをスタブする。
+  def test_connection
+    missing = []
+    messages = []
+
+    check_dry_run(missing, messages)
+    check_datasets_list(missing, messages)
+
+    return { success: true } if messages.empty?
+
+    {
+      success: false,
+      missing_permissions: missing.uniq,
+      message: messages.join(" / ")
+    }
+  end
+
   private
+
+  def check_dry_run(missing, messages)
+    bigquery.query_job("SELECT 1", dryrun: true)
+  rescue Google::Cloud::Error => e
+    record_failure(e, missing, messages)
+  end
+
+  def check_datasets_list(missing, messages)
+    bigquery.datasets
+  rescue Google::Cloud::Error => e
+    record_failure(e, missing, messages)
+  end
+
+  def record_failure(error, missing, messages)
+    missing.concat(extract_missing_permissions(error.message))
+    messages << error.message
+  end
+
+  # BigQuery のエラーメッセージから `bigquery.xxx.yyy` 形式の権限名を抽出する。
+  def extract_missing_permissions(message)
+    message.to_s.scan(/\b(bigquery\.[a-zA-Z]+\.[a-zA-Z]+)\b/).flatten.uniq
+  end
 
   def parsed_service_account
     JSON.parse(service_account_json)
