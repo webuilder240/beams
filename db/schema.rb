@@ -10,7 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_000928) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_092141) do
+  create_table "bigquery_connections", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "maximum_bytes_billed"
+    t.string "name", null: false
+    t.string "project_id", null: false
+    t.text "service_account_json", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", null: false
