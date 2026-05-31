@@ -95,3 +95,52 @@
 ### 迷った点
 
 - `production.rb` で PORO を autoload に任せられるか試したところ、環境設定評価時点では Zeitwerk が未整備で `uninitialized constant Beams::Once (NameError)` となった。既存 `lib/beams/*` と同じく明示 `require` で解決（dev/test の挙動には影響しない。production.rb は production 環境でのみ評価される）。
+
+---
+
+## 2026-05-31 — グループC（インストーラ）+ グループD（自動アップデート）
+
+C と D は共有定数（IMAGE / コンテナ名 / ボリューム / env ファイル / ポート / 再起動ポリシー）を一致させる必要があるため一緒に実装した。
+
+### 共有定数（install.sh と updater.rb で一致を確認）
+
+| 項目 | 値 |
+|------|----|
+| IMAGE（既定プレースホルダ） | `ghcr.io/REPLACE_ME/beams:latest` |
+| コンテナ名 | `beams` |
+| ボリューム / マウント先 | `beams_storage` / `/rails/storage` |
+| ホスト env ファイル | `/etc/beams/beams.env` |
+| ポート | `-p 80:80 -p 443:443` |
+| 再起動ポリシー | `--restart unless-stopped` |
+
+`grep` で両ファイルの定数を突き合わせ、すべて一致を確認済み。
+
+### グループD: TDD（Red→Green）
+
+1. 先に `spec/lib/beams/once/updater_spec.rb` を作成。runner（コマンド配列→stdout 文字列）をスタブする `FakeRunner` で検証する形にした。
+   - Red: `bundle exec rspec spec/lib/beams/once/updater_spec.rb`
+     → `LoadError: cannot load such file -- .../lib/beams/once/updater`（updater 未作成。0 examples / 1 error）。
+2. `lib/beams/once/updater.rb`（`Beams::Once::Updater`）を実装。
+   - Green: 同 spec → **3 examples, 0 failures**。
+   - 検証内容: (a) 現行/最新ダイジェストが同一 → `docker pull` のみで stop/rm/run を呼ばず `updated: false`、(b) 異なる → `pull → stop → rm → run` の順で呼ばれ、run コマンドに `--name beams` / `--restart unless-stopped` / `-p 80:80` / `-p 443:443` / `-v beams_storage:/rails/storage` / `--env-file /etc/beams/beams.env` / image を含み `updated: true`、(c) 共有定数（IMAGE/CONTAINER/VOLUME/ENV_FILE）の値検証。
+
+### 実装内容
+
+- `lib/beams/once/updater.rb`: Rails 非依存・stdlib のみ（`open3`）。シェル実行は `runner:` で注入可能、`default_run` は `Open3.capture2`（失敗時 raise）。`update!` は pull → 現行コンテナのイメージダイジェスト（`docker inspect --format {{.Image}} beams`）と pull 後イメージのダイジェスト（`docker inspect --format {{.Id}} <image>`）を比較し、同一なら再生成せず `updated:false`、差分があれば stop→rm→run で再生成し `updated:true`、新旧ダイジェストも返す。run 引数は install.sh と同一。
+- `bin/once-update`: shebang `#!/usr/bin/env ruby`、`require_relative "../lib/beams/once/updater"` のみで `Beams::Once::Updater.new.update!` を実行し結果を puts。bundler/config:environment は require しない（ホスト system ruby で動く）。`chmod +x` 済み。
+- `deploy/once/install.sh`: 純 bash（`set -euo pipefail`）。冒頭で共有定数を変数定義。docker 未導入なら明示エラー終了、`RAILS_MASTER_KEY` 未指定なら明示エラー終了（`TLS_DOMAIN` は任意）。`/etc/beams/beams.env` を umask 177 + chmod 600 で書き出し、鍵は `--env-file` 経由（`docker run -e` を使わずプロセス一覧に出さない）。`docker volume create beams_storage`（冪等）→ `docker pull` → 既存コンテナ stop/rm → `docker run -d` で起動。`chmod +x` 済み。
+- `deploy/once/once-update.service`: `Type=oneshot`。`ExecStartPre=/usr/bin/docker exec beams bundle exec rake beams:backup`（稼働コンテナ内 SQLite バックアップ）→ `ExecStart=/opt/beams/bin/once-update`。**バックアップ失敗時はアップデート中止**（ExecStartPre 失敗で unit 失敗・ExecStart 未実行＝fail-closed/安全側）をコメントで明記。
+- `deploy/once/once-update.timer`: `OnCalendar=daily` / `Persistent=true` / `[Install] WantedBy=timers.target`。
+
+### 実コマンドと結果
+
+- `bash -n deploy/once/install.sh` → 構文 OK（exit 0）。
+- `ruby -c bin/once-update` → `Syntax OK`。
+- `chmod +x deploy/once/install.sh bin/once-update` 済み（`-rwxr-xr-x`）。
+- `bin/rubocop`: `149 files inspected, no offenses detected`（exit 0。`lib/beams/once/updater.rb`・`bin/once-update` 含む）。
+- `bin/rails db:test:prepare` → exit 0。
+- `bundle exec rspec`: **518 examples, 0 failures**、Line Coverage **98.66% (1031 / 1045)**（exit 0）。基線 515 から updater spec の 3 examples 増。
+
+### 迷った点
+
+- updater のダイジェスト比較に何を使うか。`docker inspect --format {{.Image}} <container>`（コンテナが作成された元イメージ ID）と `docker inspect --format {{.Id}} <image>`（pull 後のローカルイメージ ID）を比較する方式にした。両者は同一イメージなら同じ sha256 image id になるため、pull で新イメージに置き換わったかを確実に判定できる。runner は「コマンド配列→stdout 文字列」の最小インタフェースにし、テストでは `FakeRunner` がコマンド列を記録して順序と引数を検証する。

@@ -60,7 +60,7 @@
 
 > まっさらな Linux サーバーで顧客が 1 コマンド実行する想定。Ruby/bundle 非依存の standalone シェル（SimpleCov 計測対象外＝Reviewer/手動で受け入れ確認）。
 
-- [ ] `deploy/once/install.sh` を新規作成する。Docker 導入確認→`/storage` 用 named volume 作成→ホスト env ファイル（`/etc/beams/beams.env`、`RAILS_MASTER_KEY`・`TLS_DOMAIN`・`IMAGE` を記録）作成→イメージ pull→`docker run`（`--restart unless-stopped` / `-p 80:80` / `-p 443:443` / `-v <volume>:/rails/storage` / `--env-file /etc/beams/beams.env`）でコンテナ起動、までを行う (`deploy/once/install.sh`)
+- [x] `deploy/once/install.sh` を新規作成する。Docker 導入確認→`/storage` 用 named volume 作成→ホスト env ファイル（`/etc/beams/beams.env`、`RAILS_MASTER_KEY`・`TLS_DOMAIN`・`IMAGE` を記録）作成→イメージ pull→`docker run`（`--restart unless-stopped` / `-p 80:80` / `-p 443:443` / `-v <volume>:/rails/storage` / `--env-file /etc/beams/beams.env`）でコンテナ起動、までを行う (`deploy/once/install.sh`)
   - 受け入れ条件: `bash -n deploy/once/install.sh`（構文チェック）が通る。`chmod +x` 済み
   - 受け入れ条件: `RAILS_MASTER_KEY` 未指定時は明示エラーで停止する。`TLS_DOMAIN` 未指定でも HTTP のみで起動できる
   - 受け入れ条件: イメージ参照(`IMAGE`)・コンテナ名・ボリューム名・env ファイルパスを冒頭の変数で一元管理している。`IMAGE` 既定値はプレースホルダ（`ghcr.io/REPLACE_ME/beams:latest`）
@@ -70,12 +70,12 @@
 
 > ONCE は自動アップデートする。ホスト側で定期的に最新イメージを pull しコンテナを再生成する。再生成時に `bin/boot` が 4DB へ `db:prepare` を流すため、マイグレーションは自動適用される（[[02-once-deployment]]）。ドメインロジックは backup/restore と同じく `lib/beams/` モジュール＋`bin` ラッパー＋`spec/lib` で実装する（service クラス禁止）。
 
-- [ ] `lib/beams/once/updater.rb` を新規作成する。`docker pull` で最新イメージ取得→現行/最新イメージダイジェスト比較→差分があればコンテナを停止・削除・再 `run`（install.sh と同じ run 引数＝`--env-file /etc/beams/beams.env` 等）する Ruby モジュール。シェル実行は注入可能な runner（依存性注入）にしてテスト可能にする (`lib/beams/once/updater.rb`)
+- [x] `lib/beams/once/updater.rb` を新規作成する。`docker pull` で最新イメージ取得→現行/最新イメージダイジェスト比較→差分があればコンテナを停止・削除・再 `run`（install.sh と同じ run 引数＝`--env-file /etc/beams/beams.env` 等）する Ruby モジュール。シェル実行は注入可能な runner（依存性注入）にしてテスト可能にする (`lib/beams/once/updater.rb`)
   - 受け入れ条件: **TDD**。runner をスタブして「最新と同一なら再生成しない」「差分があれば pull→再生成コマンドを正しい引数で発行する」を検証する spec を先に書く (`spec/lib/beams/once/updater_spec.rb`)
   - 受け入れ条件: イメージ参照(`IMAGE`)・コンテナ名・ボリューム名・ポート・env ファイルが install.sh と矛盾しない
-- [ ] `bin/once-update` 薄いラッパーを新規作成する（`Beams::Once::Updater` を呼ぶ。ホストの system ruby で動くよう stdlib のみ依存） (`bin/once-update`)
+- [x] `bin/once-update` 薄いラッパーを新規作成する（`Beams::Once::Updater` を呼ぶ。ホストの system ruby で動くよう stdlib のみ依存） (`bin/once-update`)
   - 受け入れ条件: `ruby -c bin/once-update` が通り、`chmod +x` 済み
-- [ ] `deploy/once/once-update.service` と `deploy/once/once-update.timer` の systemd テンプレートを新規作成する（定期的に `bin/once-update` を実行） (`deploy/once/once-update.service`, `deploy/once/once-update.timer`)
+- [x] `deploy/once/once-update.service` と `deploy/once/once-update.timer` の systemd テンプレートを新規作成する（定期的に `bin/once-update` を実行） (`deploy/once/once-update.service`, `deploy/once/once-update.timer`)
   - 受け入れ条件: timer は `OnCalendar=daily`。service は `ExecStartPre` で稼働コンテナ内バックアップ（`docker exec <container> rake beams:backup` 相当）を実行してから `ExecStart` で `bin/once-update` を起動する Unit になっている
   - 受け入れ条件: バックアップ失敗時の扱い（更新を止めるか続行するか）を Unit のコメントに明記する
 

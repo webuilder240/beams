@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Beams ONCE auto-update daily
+
+[Timer]
+# Once per day. Persistent=true catches up a missed run after the host was off.
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
