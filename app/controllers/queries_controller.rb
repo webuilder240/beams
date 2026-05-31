@@ -8,6 +8,15 @@ class QueriesController < ApplicationController
   end
 
   def show
+    return if params[:query_params].blank?
+
+    # 実行時パラメータ受け取りの設計（グループ5）。
+    # 1) 定義済みパラメータ名のみにホワイトリストフィルタ（未定義の名前は無視）。
+    # 2) 全パラメータ必須運用: 未入力が 1 つでもあれば実行を拒否しエラー表示。
+    raw = params[:query_params].to_unsafe_h
+    @permitted_parameter_values = @query.permit_parameter_values(raw)
+    @missing_parameters = @query.missing_parameter_values(raw)
+    @parameter_values_ready = @missing_parameters.empty?
   end
 
   def new

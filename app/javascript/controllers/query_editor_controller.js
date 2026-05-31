@@ -58,8 +58,15 @@ export default class extends Controller {
   }
 
   // エディタ内容を隠し textarea に書き戻す。
+  // 09（パラメータ化クエリ）連携: SQL 変更を `query-editor:change`
+  // （detail.sql に現在の SQL）として dispatch し、parameter-form が
+  // `{{ name }}` の増減に応じてフォームフィールドを再描画できるようにする。
   syncToInput() {
-    if (this.hasInputTarget) this.inputTarget.value = this.view.state.doc.toString()
+    if (!this.hasInputTarget) return
+
+    const sql = this.view.state.doc.toString()
+    this.inputTarget.value = sql
+    this.dispatch("change", { detail: { sql }, prefix: "query-editor", bubbles: true })
   }
 
   // `schema-browser:insert`（detail.name）でカーソル位置に名前を挿入する。

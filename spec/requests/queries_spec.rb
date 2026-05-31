@@ -96,6 +96,38 @@ RSpec.describe "Queries", type: :request do
         get query_path(query)
         expect(response).to have_http_status(:not_found)
       end
+
+      it "renders the parameter form for a parameterized query" do
+        query = create(:query, user: user, sql_body: "SELECT {{ user_id:number }}")
+        get query_path(query)
+        expect(response.body).to include("パラメータ")
+        expect(response.body).to include("query_params[user_id]")
+      end
+
+      it "does not render the parameter form when the query has no parameters" do
+        query = create(:query, user: user, sql_body: "SELECT 1")
+        get query_path(query)
+        expect(response.body).not_to include("query_params[")
+      end
+
+      it "rejects execution when a required parameter value is blank" do
+        query = create(:query, user: user, sql_body: "SELECT {{ a }}, {{ b }}")
+        get query_path(query), params: { query_params: { a: "1", b: "" } }
+        expect(response.body).to include("未入力のパラメータがあります")
+        expect(response.body).to include("b")
+      end
+
+      it "ignores parameter names that are not defined on the query (whitelist)" do
+        query = create(:query, user: user, sql_body: "SELECT {{ a }}")
+        get query_path(query), params: { query_params: { a: "1", evil: "DROP TABLE" } }
+        expect(response.body).to include("パラメータを受け付けました")
+      end
+
+      it "accepts when all required parameters are present" do
+        query = create(:query, user: user, sql_body: "SELECT {{ a }}, {{ b }}")
+        get query_path(query), params: { query_params: { a: "1", b: "2" } }
+        expect(response.body).to include("パラメータを受け付けました")
+      end
     end
 
     describe "GET /queries/:id/edit" do

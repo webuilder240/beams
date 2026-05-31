@@ -72,6 +72,20 @@
       </div>
     <% end %>
 
+    <%#
+      パラメータプレビュー（09）: SQL の `{{ name }}` 増減に応じて
+      parameter-form コントローラがフィールドを描画する。エディタ（query-editor）が
+      dispatch する `query-editor:change` を listen する。実行時の本送信は
+      show 画面のパラメータフォームで行うため、ここでは入力プレビューのみ。
+    %>
+    <div data-controller="parameter-form"
+         class="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-700">
+      <p class="mb-2 text-xs text-gray-500">
+        SQL に <code>{{ name }}</code> / <code>{{ name:number }}</code> 等を書くと、ここに実行時パラメータが表示されます。
+      </p>
+      <div data-parameter-form-target="fields" class="space-y-3"></div>
+    </div>
+
     <div class="flex items-center gap-3">
       <%# 推定スキャン量・コスト表示（dry-run コントローラが更新） %>
       <% if dry_run_enabled %>

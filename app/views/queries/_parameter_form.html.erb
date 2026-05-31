@@ -1,0 +1,44 @@
+<%#
+  パラメータ入力フォーム（実行時）。`query.query_parameters` を元に型別フィールドを描画する。
+  - string     : <input type="text">
+  - number     : <input type="number">
+  - date       : <input type="date">
+  - date_range : <input type="date"> × 2（開始・終了 → name[start] / name[end]）
+  値は params[:query_params][name]（date_range は params[:query_params][name][start|end]）で送られる。
+  全パラメータ必須運用のため、全フィールドに HTML5 required を付与する。
+  パラメータが 0 件のクエリでは何も描画しない（呼び出し側で present? を確認するが二重に保険）。
+%>
+<% parameters = query.query_parameters.order(:id) %>
+<% if parameters.any? %>
+  <div class="space-y-3" data-parameter-form-target="fields">
+    <h2 class="text-sm font-medium">パラメータ</h2>
+    <% parameters.each do |param| %>
+      <% field_id = "query_param_#{param.name}" %>
+      <div class="space-y-1">
+        <%= label_tag field_id, param.name, class: "block text-sm font-medium" %>
+        <% case param.param_type %>
+        <% when "number" %>
+          <%= number_field_tag "query_params[#{param.name}]", nil, id: field_id, step: "any", required: true,
+                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+        <% when "date" %>
+          <%= date_field_tag "query_params[#{param.name}]", nil, id: field_id, required: true,
+                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+        <% when "date_range" %>
+          <div class="flex items-center gap-2">
+            <%= date_field_tag "query_params[#{param.name}][start]", nil, id: "#{field_id}_start", required: true,
+                  class: "rounded border border-gray-300 px-3 py-2" %>
+            <span class="text-gray-500">〜</span>
+            <%= date_field_tag "query_params[#{param.name}][end]", nil, id: "#{field_id}_end", required: true,
+                  class: "rounded border border-gray-300 px-3 py-2" %>
+          </div>
+          <p class="text-xs text-gray-500">
+            SQL では <code>BETWEEN @<%= param.name %>_start AND @<%= param.name %>_end</code> として参照されます。
+          </p>
+        <% else %>
+          <%= text_field_tag "query_params[#{param.name}]", nil, id: field_id, required: true,
+                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

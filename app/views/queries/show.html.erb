@@ -23,6 +23,30 @@
     <pre class="rounded border border-gray-200 bg-white px-4 py-3 font-mono text-sm overflow-x-auto"><%= @query.sql_body %></pre>
   </div>
 
+  <% if @query.query_parameters.any? %>
+    <%#
+      実行時パラメータ入力。パラメータを持つクエリのみ表示する。
+      実行コントローラ本体はトピック10。本ステップでは入力フォームと
+      サーバ側の必須チェック（全パラメータ必須）の動作確認まで行う。
+      送信は GET で同じ show に戻し、未入力があればエラーを表示する。
+    %>
+    <% if @missing_parameters.present? %>
+      <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+        未入力のパラメータがあります: <%= @missing_parameters.join(", ") %>
+      </div>
+    <% elsif @parameter_values_ready %>
+      <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
+        パラメータを受け付けました。
+      </div>
+    <% end %>
+
+    <%= form_with url: query_path(@query), method: :get, local: true,
+          data: { controller: "parameter-form" }, class: "space-y-4 rounded border border-gray-200 p-4" do %>
+      <%= render "parameter_form", query: @query %>
+      <%= submit_tag "パラメータを適用", class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
+    <% end %>
+  <% end %>
+
   <div>
     <%= button_to "削除", query_path(@query), method: :delete,
           form: { data: { turbo_confirm: "本当に削除しますか？" }, class: "inline" },
