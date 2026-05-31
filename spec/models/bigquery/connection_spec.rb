@@ -221,6 +221,66 @@ RSpec.describe Bigquery::Connection, type: :model do
     end
   end
 
+  describe "#over_limit?" do
+    it "is false when maximum_bytes_billed is nil (no limit)" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: nil)
+      expect(connection.over_limit?(10**12)).to be(false)
+    end
+
+    it "is false when bytes_processed is within the limit" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 1_000)
+      expect(connection.over_limit?(999)).to be(false)
+    end
+
+    it "is false when bytes_processed equals the limit (boundary)" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 1_000)
+      expect(connection.over_limit?(1_000)).to be(false)
+    end
+
+    it "is true when bytes_processed exceeds the limit" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 1_000)
+      expect(connection.over_limit?(1_001)).to be(true)
+    end
+  end
+
+  describe "#job_options" do
+    it "includes maximum_bytes_billed when a limit is set" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 5_000)
+      expect(connection.job_options).to eq({ maximum_bytes_billed: 5_000 })
+    end
+
+    it "is empty when no limit is set (nil)" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: nil)
+      expect(connection.job_options).to eq({})
+    end
+  end
+
+  describe "#dry_run_job" do
+    let(:connection) { build(:bigquery_connection, maximum_bytes_billed: 5_000) }
+    let(:fake_client) { instance_double(Google::Cloud::Bigquery::Project) }
+
+    before { allow(connection).to receive(:bigquery).and_return(fake_client) }
+
+    it "creates a dry-run job carrying the connection's maximum_bytes_billed" do
+      job = instance_double(Google::Cloud::Bigquery::Job)
+      allow(fake_client).to receive(:query_job)
+        .with("SELECT 1", dryrun: true, maximum_bytes_billed: 5_000)
+        .and_return(job)
+
+      expect(connection.dry_run_job("SELECT 1")).to eq(job)
+    end
+
+    it "omits maximum_bytes_billed when no limit is set" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: nil)
+      allow(connection).to receive(:bigquery).and_return(fake_client)
+      job = instance_double(Google::Cloud::Bigquery::Job)
+      allow(fake_client).to receive(:query_job)
+        .with("SELECT 1", dryrun: true).and_return(job)
+
+      expect(connection.dry_run_job("SELECT 1")).to eq(job)
+    end
+  end
+
   describe "schema cache (SolidCache)" do
     include ActiveSupport::Testing::TimeHelpers
 

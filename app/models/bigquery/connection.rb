@@ -24,6 +24,29 @@ class Bigquery::Connection < ApplicationRecord
     )
   end
 
+  # スキャン予定バイト数が接続の上限（`maximum_bytes_billed`）を超えるか判定する。
+  # 上限未設定（nil）は「上限なし」として常に false。境界（等しい）は超過扱いしない。
+  def over_limit?(bytes_processed)
+    return false if maximum_bytes_billed.nil?
+
+    bytes_processed.to_i > maximum_bytes_billed
+  end
+
+  # BigQuery ジョブ生成時に渡す共通オプション。接続に上限があれば
+  # `maximum_bytes_billed:` を含める（BigQuery 側でも上限を強制させるための下地）。
+  # 上限なし（nil）のときは空ハッシュ。実行ジョブ（トピック10）でも本メソッドを使う。
+  def job_options
+    return {} if maximum_bytes_billed.nil?
+
+    { maximum_bytes_billed: maximum_bytes_billed }
+  end
+
+  # 課金ゼロ（`dryrun: true`）でジョブを投入する。接続の `job_options`
+  # （= `maximum_bytes_billed`）を併せて渡し、上限を BigQuery 側にも伝える。
+  def dry_run_job(sql)
+    bigquery.query_job(sql, dryrun: true, **job_options)
+  end
+
   # BigQuery への接続を診断する。
   # (1) dry-run（`SELECT 1`）でクエリ実行権限（bigquery.jobs.create 等）を確認し、
   # (2) `datasets.list` でデータセット閲覧権限（bigquery.datasets.list）を確認する。
