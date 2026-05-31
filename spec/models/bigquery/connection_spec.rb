@@ -221,6 +221,37 @@ RSpec.describe Bigquery::Connection, type: :model do
     end
   end
 
+  describe "maximum_bytes_billed_gb (GB 入力 → bytes 保存の仮想属性)" do
+    it "writes GB input as bytes into maximum_bytes_billed" do
+      connection = build(:bigquery_connection)
+      connection.maximum_bytes_billed_gb = "10"
+      # 10 GiB = 10 * 1024^3
+      expect(connection.maximum_bytes_billed).to eq(10 * (1024**3))
+    end
+
+    it "reads the bytes back as GB" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 5 * (1024**3))
+      expect(connection.maximum_bytes_billed_gb).to eq(5.0)
+    end
+
+    it "treats a blank GB input as no limit (nil)" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: 10**10)
+      connection.maximum_bytes_billed_gb = ""
+      expect(connection.maximum_bytes_billed).to be_nil
+    end
+
+    it "returns nil GB when no limit is set" do
+      connection = build(:bigquery_connection, maximum_bytes_billed: nil)
+      expect(connection.maximum_bytes_billed_gb).to be_nil
+    end
+
+    it "accepts a fractional GB value" do
+      connection = build(:bigquery_connection)
+      connection.maximum_bytes_billed_gb = "0.5"
+      expect(connection.maximum_bytes_billed).to eq((0.5 * (1024**3)).round)
+    end
+  end
+
   describe "#over_limit?" do
     it "is false when maximum_bytes_billed is nil (no limit)" do
       connection = build(:bigquery_connection, maximum_bytes_billed: nil)

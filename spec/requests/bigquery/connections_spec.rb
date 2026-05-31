@@ -6,7 +6,8 @@ RSpec.describe "Bigquery::Connections", type: :request do
 
   let(:valid_json) { '{"type":"service_account","project_id":"my-project-123"}' }
   let(:valid_attributes) do
-    { name: "本番", project_id: "my-project-123", service_account_json: valid_json, maximum_bytes_billed: 10_000_000_000 }
+    # コスト上限は GB 入力（仮想属性）→ バイト保存。
+    { name: "本番", project_id: "my-project-123", service_account_json: valid_json, maximum_bytes_billed_gb: "10" }
   end
 
   def login_as(user, password: "password")
@@ -67,6 +68,21 @@ RSpec.describe "Bigquery::Connections", type: :request do
         created = Bigquery::Connection.find_by(name: "本番")
         expect(created.project_id).to eq("my-project-123")
         expect(created.service_account_json).to eq(valid_json)
+      end
+
+      it "saves the GB cost limit as bytes (10 GB → 10 * 1024^3 bytes)" do
+        post bigquery_connections_path, params: { bigquery_connection: valid_attributes }
+        created = Bigquery::Connection.find_by(name: "本番")
+        expect(created.maximum_bytes_billed).to eq(10 * (1024**3))
+        expect(created.maximum_bytes_billed_gb).to eq(10.0)
+      end
+
+      it "treats a blank GB limit as no limit (nil)" do
+        post bigquery_connections_path, params: {
+          bigquery_connection: valid_attributes.merge(maximum_bytes_billed_gb: "")
+        }
+        created = Bigquery::Connection.find_by(name: "本番")
+        expect(created.maximum_bytes_billed).to be_nil
       end
 
       it "re-renders on invalid input" do

@@ -25,10 +25,15 @@
   </div>
 
   <div>
-    <%= f.label :maximum_bytes_billed, "コスト上限（バイト・任意）", class: "block text-sm font-medium mb-1" %>
-    <%= f.number_field :maximum_bytes_billed, min: 1,
+    <%= f.label :maximum_bytes_billed_gb, "コスト上限（GB・任意）", class: "block text-sm font-medium mb-1" %>
+    <%= f.number_field :maximum_bytes_billed_gb, min: 0, step: "0.01",
           class: "w-full rounded border border-gray-300 px-3 py-2" %>
-    <p class="text-xs text-gray-500 mt-1">空欄で上限なし。クエリ単位の課金バイト上限。</p>
+    <p class="text-xs text-gray-500 mt-1">
+      空欄で上限なし。クエリ単位のスキャン量上限（GB）。1 GB = 1024³ bytes として保存します。
+      <% if connection.maximum_bytes_billed.present? %>
+        <br>現在の上限: <%= connection.maximum_bytes_billed_gb %> GB（= <%= number_with_delimiter(connection.maximum_bytes_billed) %> bytes）
+      <% end %>
+    </p>
   </div>
 
   <div class="flex items-center gap-3">

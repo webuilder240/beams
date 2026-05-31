@@ -24,6 +24,19 @@ class Bigquery::Connection < ApplicationRecord
     )
   end
 
+  # コスト上限の GB 入力 ↔ バイト保存を仲介する仮想属性。
+  # フォームではバイト直打ちは非現実的なため GB で入力させ、バイト列へ換算して保存する。
+  # 空欄は「上限なし（nil）」を維持する（トピック04の仕様）。換算は CostEstimate に集約。
+  def maximum_bytes_billed_gb
+    return nil if maximum_bytes_billed.nil?
+
+    CostEstimate.bytes_to_gb(maximum_bytes_billed)
+  end
+
+  def maximum_bytes_billed_gb=(gb)
+    self.maximum_bytes_billed = CostEstimate.gb_to_bytes(gb)
+  end
+
   # スキャン予定バイト数が接続の上限（`maximum_bytes_billed`）を超えるか判定する。
   # 上限未設定（nil）は「上限なし」として常に false。境界（等しい）は超過扱いしない。
   def over_limit?(bytes_processed)

@@ -18,12 +18,15 @@ RSpec.describe "BigQuery connection management", type: :system do
     fill_in "接続名", with: "本番接続"
     fill_in "プロジェクト ID", with: "my-project-123"
     fill_in "サービスアカウント JSON 鍵", with: '{"type":"service_account","project_id":"my-project-123"}'
-    fill_in "コスト上限（バイト・任意）", with: "10000000000"
+    fill_in "コスト上限（GB・任意）", with: "10"
     click_button "作成"
 
     expect(page).to have_current_path(bigquery_connections_path)
     expect(page).to have_content("本番接続")
     expect(page).to have_content("my-project-123")
+
+    # GB 入力がバイト換算で保存されている（10 GB = 10 * 1024^3 bytes）
+    expect(Bigquery::Connection.find_by(name: "本番接続").maximum_bytes_billed).to eq(10 * (1024**3))
 
     # 編集
     within("tr", text: "本番接続") { click_link "編集" }

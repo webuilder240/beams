@@ -44,7 +44,8 @@ module Bigquery
     end
 
     def connection_params
-      params.expect(bigquery_connection: [ :name, :project_id, :service_account_json, :maximum_bytes_billed ])
+      # コスト上限は GB 入力 → バイト保存（モデルの仮想属性 maximum_bytes_billed_gb）。
+      params.expect(bigquery_connection: [ :name, :project_id, :service_account_json, :maximum_bytes_billed_gb ])
     end
 
     # 編集時に SA JSON が空欄なら既存値を保持する（セキュリティ: 平文を再表示しないため、
