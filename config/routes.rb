@@ -27,7 +27,11 @@ Rails.application.routes.draw do
   end
 
   # クエリエディタ（CodeMirror 6・保存クエリの CRUD）
-  resources :queries
+  # dry-run（コスト保護★）: POST /queries/:query_id/dry_run。SQL 本文は
+  # リクエストボディの現在のエディタ内容を受け取り、接続コンテキストのみ Query から得る。
+  resources :queries do
+    resource :dry_run, only: [ :create ], module: "queries"
+  end
 
   # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）
   get "schema_browser" => "schema_browsers#show", as: :schema_browser
