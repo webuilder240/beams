@@ -25,7 +25,7 @@
 | 07 | クエリエディタ | ✅完了 | Coder/Tester | [progress/07-query-editor.md](progress/07-query-editor.md) |
 | 08 | コスト保護★ | ✅完了 | Coder/Tester | [progress/08-cost-protection.md](progress/08-cost-protection.md) |
 | 09 | パラメータ化クエリ | ✅完了 | Coder/Tester | [progress/09-parameterized-query.md](progress/09-parameterized-query.md) |
-| 10 | 非同期実行・結果保存 | 🔄進行中 | Coder | [progress/10-query-execution.md](progress/10-query-execution.md) |
+| 10 | 非同期実行・結果保存 | ✅完了 | Coder/Tester | [progress/10-query-execution.md](progress/10-query-execution.md) |
 | 11 | 可視化 | ⏳未着手 | - | - |
 | 12 | ダッシュボード | ⏳未着手 | - | - |
 | 13 | 共有・権限 | ⏳未着手 | - | - |
@@ -40,4 +40,9 @@
 |---|---|---|:---:|
 | 03 | `20260531000928_create_users` | [migrations/03-users-migration.md](migrations/03-users-migration.md) | ✅承認・実行済み |
 | 04 | `20260531092141_create_bigquery_connections` | [migrations/04-bigquery-connections-migration.md](migrations/04-bigquery-connections-migration.md) | ✅承認・実行許可 |
-</content>
+| 07 | `20260531100000_create_queries` | [migrations/07-queries-migration.md](migrations/07-queries-migration.md) | ✅承認・実行済み |
+| 08 | `20260531110000_create_application_settings` | [migrations/08-application-settings-migration.md](migrations/08-application-settings-migration.md) | ✅承認・実行済み |
+| 09 | `20260531120000_create_query_parameters` | [migrations/09-query-parameters-migration.md](migrations/09-query-parameters-migration.md) | ✅承認・実行済み |
+| 10 | `20260531130000_create_query_executions` | [migrations/10-query-executions-migration.md](migrations/10-query-executions-migration.md) | ✅承認・実行済み |
+
+> ※ 05（セットアップウィザード）・06（スキーマブラウザ）は新規マイグレーション無し（06 は SolidCache 方式採用のため当初案のテーブルを廃止、[ADR 0001](../adr/0001-bigquery-schema-cache.md) 参照）。

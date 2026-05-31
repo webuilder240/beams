@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/10-query-execution.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。最大トピック（30タスク・10グループ）。
 
-- **ステータス**: 🔄進行中
-- **担当**: Coder
+- **ステータス**: ✅完了（Tester PASS）
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断・名称読み替え）
 
@@ -48,3 +48,13 @@
 - **追加マイグレーション**: なし（query_executions の範囲内）。SolidQueue/SolidCable の新規テーブル追加も不要。
 - **コミット**: G1/G2、G3、G4-G7、G9/G10 の論理単位で 4 コミット（+ マイグレーション準備の既存コミット）。
 - **Coder→司令塔**: トピック10 全グループ実装完了。Tester へ引き継ぎ。
+
+### 2026-05-31（Tester 独立QA）
+
+- **司令塔→Tester**: 報告を鵜呑みにせず独立 QA を指示（前トピック09 の「フレークを装ったテストバグ」教訓）。13観点（モデル/blob round-trip/二重上限/状態遷移/同時実行20/owner-scoped/全パラメータ必須/CSV path traversal/Turbo Streams/`*Service`不在/全テスト再現/回帰/brakeman.ignore妥当性）。
+- **Tester→司令塔**: **総合判定 PASS**。全13観点 ✅。独立再現で `rspec` **322/0**・coverage **98.68%**・`rubocop` **0 offense**・`brakeman` **0 warning(1 ignored)**。blob round-trip・二重上限(10,000行/10MB)を `bin/rails runner` で実値確認（rowlimit→10,000 truncated / sizelimit→4,000行 8.72MB under10）。topic-09 併走72 examples 0 failures で回帰なし。CSV パスは `execution.id.to_i` のみ由来で path traversal 不可、DL名サニタイズ確認。`grep -rn "Service" app/ lib/` のヒットは禁止コメントのみ＝制約遵守。brakeman.ignore の CSV SendFile(Weak) は正当な false positive と確認。
+  - **軽微申し送り（FAILではない）**: `result_schema` カラムが dead column（圧縮blob内にスキーマ格納のため app/spec で未参照）。要件「カラム作成＋migrate 通過」は満たすため違反ではない。
+  - **手動/実機確認の残**: 実 worker でのジョブ消化＋実 WebSocket の Turbo ライブ差し込み、実ブラウザの即時"実行中"反映、実 Thruster の X-Sendfile 実体、実キューでの21件目 pending 消化。
+- **司令塔**: Tester PASS を受けトピック10を **✅完了** と判定。`result_schema` dead column は「要件違反ではない」ため今回は撤去せず申し送りとして記録（撤去は新規マイグレーション＝承認ゲートが必要なため、必要時にまとめて対応）。索引・本ログ更新、コミット。次トピック11（可視化）へ。
+
+#### ステータス: ✅完了（Tester PASS）
