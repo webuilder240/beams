@@ -1,0 +1,34 @@
+<%#
+  テーブル表示パーシャル。`QueryExecution#result`（{schema:, rows:}）から
+  列ヘッダ＋行をレンダリングする。結果が無ければ「データなし」を表示する。
+%>
+<% data = execution&.result %>
+<% if data.nil? || data[:rows].blank? %>
+  <p class="rounded border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+    データなし
+  </p>
+<% else %>
+  <div class="overflow-x-auto rounded border border-gray-200">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <% data[:schema].each do |col| %>
+            <th class="px-3 py-2 text-left font-medium text-gray-700 whitespace-nowrap">
+              <%= col["name"] %>
+              <span class="text-xs text-gray-400 font-normal">(<%= col["type"] %>)</span>
+            </th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% data[:rows].each do |row| %>
+          <tr>
+            <% row.each do |cell| %>
+              <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-800"><%= cell %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

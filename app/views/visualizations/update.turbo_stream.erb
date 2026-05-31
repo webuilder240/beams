@@ -1,0 +1,11 @@
+<%#
+  update 成功時: Turbo Frame（フォーム＋描画エリア）をまとめて差し替える。
+  リダイレクトなしでチャート/テーブルが更新される。
+%>
+<%= turbo_stream.replace dom_id(@query, :visualization) do %>
+  <%= render "visualizations/visualization",
+        query: @query,
+        visualization: @visualization,
+        execution: @query.latest_succeeded_execution,
+        columns: result_columns(@query.latest_succeeded_execution) %>
+<% end %>
