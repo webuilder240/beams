@@ -34,6 +34,14 @@ Rails.application.configure do
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
 
+  # Active Record Encryption（Bigquery::Connection#service_account_json など）の鍵は
+  # テストでは credentials（config/master.key で復号）に依存させず、固定のダミー値を使う。
+  # CI では RAILS_MASTER_KEY を渡さないため、credentials を復号できず
+  # "Missing Active Record encryption credential" で落ちるのを防ぐ。
+  config.active_record.encryption.primary_key = "test_ar_encryption_primary_key"
+  config.active_record.encryption.deterministic_key = "test_ar_encryption_deterministic_key"
+  config.active_record.encryption.key_derivation_salt = "test_ar_encryption_key_derivation_salt"
+
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 
