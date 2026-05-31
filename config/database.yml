@@ -19,6 +19,12 @@ development:
 test:
   <<: *default
   database: storage/test.sqlite3
+  # System spec（Playwright/js）では Puma サーバスレッドとテストスレッドが
+  # 同一 SQLite ファイルに同時アクセスし得る。busy_timeout を明示して
+  # 競合時に即 BusyException を投げず待機させる（"database is locked" 対策）。
+  timeout: 10000
+  pragmas:
+    busy_timeout: 10000
 
 # Store production database in the storage/ directory, which by default
 # is mounted as a persistent Docker volume in config/deploy.yml.

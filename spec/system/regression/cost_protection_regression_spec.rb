@@ -40,9 +40,9 @@ RSpec.describe "Regression: cost protection dry-run (topic 08, js)", type: :syst
     expect(page).to have_css("[data-dry-run-target='result']", text: /GB/, wait: 10)
     expect(page).to have_css("[data-dry-run-target='result']", text: /¥/, wait: 10)
 
-    # 上限超過ではないので警告は出ず、実行ボタンは有効のまま。
+    # 上限超過ではないので警告は出ず、実行ボタン（編集画面は「更新」）は有効のまま。
     expect(page).to have_css("[data-dry-run-target='warning']", visible: :hidden, wait: 10)
-    expect(page).not_to have_button("保存", disabled: true)
+    expect(page).not_to have_button("更新", disabled: true)
   end
 
   it "shows a warning banner and disables the submit button when over the limit" do
@@ -61,7 +61,7 @@ RSpec.describe "Regression: cost protection dry-run (topic 08, js)", type: :syst
     expect(page).to have_css("[data-dry-run-target='warning']", visible: :visible, wait: 10)
     expect(page).to have_css("[data-dry-run-target='warningText']", text: /上限/, wait: 10)
 
-    # 実行/保存ボタンが disabled になる。
-    expect(page).to have_button("保存", disabled: true, wait: 10)
+    # 実行/更新ボタン（編集画面は「更新」）が disabled になる。
+    expect(page).to have_button("更新", disabled: true, wait: 10)
   end
 end

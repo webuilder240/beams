@@ -16,7 +16,17 @@
           class: "inline-block rounded bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-700" %>
   </div>
 <% else %>
-  <%= form_with model: query, url: url, method: method, local: true, class: "space-y-4" do |f| %>
+  <%#
+    dry-run（コスト保護★）: 保存済みクエリのときだけ有効化する。
+    エンドポイント POST /queries/:id/dry_run が query id を要求するため、
+    新規（未保存）では推定表示なし（保存後に推定が走る）。
+    dry-run の result/warning/submit ターゲットはフォーム直下に並ぶため、
+    コントローラはフォーム要素に付与してそれらを配下に含める（query-editor の
+    input textarea も配下にあり、input ターゲットとして共有される）。
+  %>
+  <% dry_run_enabled = query.persisted? %>
+  <% form_data = dry_run_enabled ? { controller: "dry-run", dry_run_url_value: query_dry_run_path(query) } : {} %>
+  <%= form_with model: query, url: url, method: method, local: true, class: "space-y-4", data: form_data do |f| %>
     <div>
       <%= f.label :title, "タイトル", class: "block text-sm font-medium mb-1" %>
       <%= f.text_field :title, class: "w-full rounded border border-gray-300 px-3 py-2" %>
@@ -35,14 +45,9 @@
       document に dispatch し、query-editor コントローラがカーソル位置に挿入する。
     %>
     <%#
-      dry-run（コスト保護★）: 保存済みクエリのときだけ有効化する。
-      エンドポイント POST /queries/:id/dry_run が query id を要求するため、
-      新規（未保存）では推定表示なし（保存後に推定が走る）。
       query-editor の input textarea を dry-run の input target としても共有する。
     %>
-    <% dry_run_enabled = query.persisted? %>
-    <% editor_data = dry_run_enabled ? { controller: "query-editor dry-run", dry_run_url_value: query_dry_run_path(query) } : { controller: "query-editor" } %>
-    <%= tag.div class: "query-editor flex gap-4", data: editor_data do %>
+    <%= tag.div class: "query-editor flex gap-4", data: { controller: "query-editor" } do %>
       <div class="flex-1 min-w-0">
         <%= f.label :sql_body, "SQL", class: "block text-sm font-medium mb-1" %>
         <%#
