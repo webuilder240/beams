@@ -38,3 +38,13 @@
 - `bin/rubocop`: `144 files inspected, no offenses detected`。
 - 目視（bin/dev での GUI 確認）は Coder 環境では不可。js:true の getComputedStyle 検証と rack_test 構造検証で代替担保。人間による最終目視は未実施。
 
+### 6. QA 追加対応: queries/_parameter_form.html.erb の統一
+- TesterのQAで `app/views/queries/_parameter_form.html.erb` にアドホッククラス残存が判明。ゴール（全フォーム統一・重複一掃）の確定スコープに該当するため対応。
+- Red: `spec/system/form_styling_spec.rb` に「parameter form on parameterized query (rack_test)」を追加し `1 example, 1 failure` を確認。
+- Green（class 属性のみ変更。name/required/id/data-parameter-form-target は不変）:
+  - label_tag → `.form-label`
+  - number/date/text の全幅入力 → `.form-input`
+  - date_range の 2 フィールド（28/32 行目）→ `.form-input w-auto`（親 `flex items-center gap-2` の横並びを維持するため `block w-full` を `w-auto` で打ち消し）
+- js:true に date_range のレイアウト検証 example を追加。`bin/rails tailwindcss:build` 後に `--tag js` で `3 examples, 0 failures`。getComputedStyle で borderTopWidth != 0px、かつ start/end が同一行（offsetTop 一致）・start が親より狭い（全幅化していない）ことを確認。
+- 全体: `bundle exec rspec` → `489 examples, 0 failures` / Line Coverage 98.97%（957/967）。`bin/rubocop` → `144 files inspected, no offenses detected`。
+- built CSS に `.w-auto` が含まれることを grep で確認（`app/assets/builds/*` は gitignore のためコミット対象外）。

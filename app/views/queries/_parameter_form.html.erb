@@ -15,28 +15,29 @@
     <% parameters.each do |param| %>
       <% field_id = "query_param_#{param.name}" %>
       <div class="space-y-1">
-        <%= label_tag field_id, param.name, class: "block text-sm font-medium" %>
+        <%= label_tag field_id, param.name, class: "form-label" %>
         <% case param.param_type %>
         <% when "number" %>
           <%= number_field_tag "query_params[#{param.name}]", nil, id: field_id, step: "any", required: true,
-                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+                class: "form-input" %>
         <% when "date" %>
           <%= date_field_tag "query_params[#{param.name}]", nil, id: field_id, required: true,
-                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+                class: "form-input" %>
         <% when "date_range" %>
           <div class="flex items-center gap-2">
+            <%# 横並び維持: .form-input の block w-full を w-auto で打ち消す %>
             <%= date_field_tag "query_params[#{param.name}][start]", nil, id: "#{field_id}_start", required: true,
-                  class: "rounded border border-gray-300 px-3 py-2" %>
+                  class: "form-input w-auto" %>
             <span class="text-gray-500">〜</span>
             <%= date_field_tag "query_params[#{param.name}][end]", nil, id: "#{field_id}_end", required: true,
-                  class: "rounded border border-gray-300 px-3 py-2" %>
+                  class: "form-input w-auto" %>
           </div>
           <p class="text-xs text-gray-500">
             SQL では <code>BETWEEN @<%= param.name %>_start AND @<%= param.name %>_end</code> として参照されます。
           </p>
         <% else %>
           <%= text_field_tag "query_params[#{param.name}]", nil, id: field_id, required: true,
-                class: "w-full rounded border border-gray-300 px-3 py-2" %>
+                class: "form-input" %>
         <% end %>
       </div>
     <% end %>

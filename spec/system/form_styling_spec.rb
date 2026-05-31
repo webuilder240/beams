@@ -149,6 +149,29 @@ RSpec.describe "Form styling consistency", type: :system do
     end
   end
 
+  describe "parameter form on parameterized query (rack_test)" do
+    let!(:connection) { create(:bigquery_connection, name: "本番接続") }
+
+    it "uses .form-input on number / date / text / date_range fields and .form-label on labels" do
+      query = create(:query, user: user, title: "パラメータクエリ",
+                     sql_body: "SELECT {{ s }}, {{ n:number }} WHERE d = {{ d:date }} AND c BETWEEN {{ c:date_range }}",
+                     bigquery_connection: connection)
+      log_in("member@example.com")
+      visit query_path(query)
+
+      # ラベル
+      expect(page).to have_css("label[for='query_param_s'].form-label")
+      expect(page).to have_css("label[for='query_param_n'].form-label")
+      # 全幅入力（string / number / date）
+      expect(page).to have_css("input#query_param_s.form-input")
+      expect(page).to have_css("input#query_param_n.form-input")
+      expect(page).to have_css("input#query_param_d.form-input")
+      # date_range の 2 フィールドも .form-input を持つ（横並び維持のため w-auto を併用）
+      expect(page).to have_css("input#query_param_c_start.form-input")
+      expect(page).to have_css("input#query_param_c_end.form-input")
+    end
+  end
+
   # 厳密リグレッション（CSS リグレッション）: 実際に枠線幅が 0px でないことを Playwright で検証。
   # 修正前は border-width:0（Preflight）で失敗、修正後は border-width > 0 で green。
   describe "computed border width (js)", :js do
@@ -176,6 +199,31 @@ RSpec.describe "Form styling consistency", type: :system do
         "(function(){ var el = document.querySelector(\"select[name='visualization[chart_type]'].form-input\"); return window.getComputedStyle(el).borderTopWidth; })()"
       )
       expect(width).not_to eq("0px")
+    end
+
+    it "keeps date_range fields bordered and laid out side by side" do
+      query = create(:query, user: user, title: "日付レンジ",
+                     sql_body: "WHERE c BETWEEN {{ c:date_range }}",
+                     bigquery_connection: create(:bigquery_connection, name: "本番接続"))
+      log_in("member@example.com")
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit query_path(query)
+
+      find("input#query_param_c_start.form-input", wait: 10)
+      # 枠線が描画されている
+      width = page.evaluate_script(
+        "(function(){ var el = document.querySelector('input#query_param_c_start.form-input'); return window.getComputedStyle(el).borderTopWidth; })()"
+      )
+      expect(width).not_to eq("0px")
+      # 開始・終了が横並び（同じ行＝offsetTop が一致）かつ全幅化していない（start が親より狭い）
+      same_row = page.evaluate_script(
+        "(function(){ var s = document.querySelector('#query_param_c_start'); var e = document.querySelector('#query_param_c_end'); return s.offsetTop === e.offsetTop; })()"
+      )
+      expect(same_row).to eq(true)
+      not_full_width = page.evaluate_script(
+        "(function(){ var s = document.querySelector('#query_param_c_start'); return s.offsetWidth < s.parentElement.offsetWidth; })()"
+      )
+      expect(not_full_width).to eq(true)
     end
   end
 end

@@ -79,6 +79,7 @@ button,input,select,optgroup,textarea{ ...; background-color:#0000; border-radiu
 - [x] `app/views/bigquery/connections/_form.html.erb`（name / project_id / service_account_json / number_field / submit）
 - [x] `app/views/setup_wizard/step1.html.erb`・`step2.html.erb`・`step4.html.erb`（各入力・submit）
 - [x] `app/views/queries/show.html.erb` 内の実行フォーム・削除ボタン（`submit_tag` / `button_to` を `.btn-*` に）
+- [x] `app/views/queries/_parameter_form.html.erb`（QA 追加対応）— ラベル → `.form-label`、number/date/text → `.form-input`、date_range の 2 フィールドは横並び維持のため `.form-input w-auto`
   - 受け入れ条件（共通）: 各フォームの見た目が劣化せず、入力欄が `.form-input`、ボタンが `.btn-*` を使う。System Spec が全て green のまま
   - 進め方: 一度に全置換せず、**ファイル単位で TDD（下記スペック）→ ビルド再生成 → 目視** を繰り返す。`f.submit` のラベル文字列・フォーム挙動（method / formaction 等）は変更しない（クラスのみ差し替え）
 
