@@ -142,7 +142,8 @@ systemctl status once-update.service
 - **`OnCalendar=daily`**（`once-update.timer`）。`Persistent=true` によりホスト停止中に逃した実行を起動時に追いつく。
 - **`ExecStartPre`** が更新前に稼働コンテナ内バックアップ（`docker exec beams bundle exec rake beams:backup`）を実行する。
 - **バックアップ失敗時はアップデートを中止**する（`ExecStartPre` 失敗で unit が失敗し `ExecStart` は実行されない＝fail-closed / 安全側）。
-- `bin/once-update` は `docker pull` 後にイメージダイジェストを比較し、**同一なら再生成しない**。差分があるときだけコンテナを停止・削除・再 run する（`install.sh` と同一の run 引数）。
+- `bin/once-update` は `docker pull` 後に**ローカルイメージID（同タグ更新の有無）を比較**し、**同一なら再生成しない**。差分があるときだけコンテナを停止・削除・再 run する（`install.sh` と同一の run 引数）。
+- アップデート対象のイメージは env ファイル `/etc/beams/beams.env` の `IMAGE` を尊重する（`once-update.service` が `EnvironmentFile=/etc/beams/beams.env` で読み込む）。そのため `IMAGE` を旧タグに固定したロールバック後も、自動アップデートが `:latest` を pull して巻き戻すことはない。
 
 ---
 
@@ -158,18 +159,18 @@ systemctl status once-update.service
 RAILS_MASTER_KEY=<key> sudo -E bash deploy/once/install.sh
 ```
 
-`bin/once-update` は最新イメージと差分が無ければ「already up to date」を表示して何もしない。
+`bin/once-update` は設定イメージと差分が無ければ「already up to date」を表示して何もしない。
 
 ### ロールバック
 
-1. `IMAGE` を**以前のタグ**に指定して再起動する:
+1. `IMAGE` を**以前のタグ**に指定して install.sh を再実行する:
 
    ```bash
    IMAGE=ghcr.io/REPLACE_ME/beams:<以前のタグ> \
    RAILS_MASTER_KEY=<key> sudo -E bash deploy/once/install.sh
    ```
 
-   永続データは `beams_storage` に残るため、コンテナを差し替えてもデータは保持される。
+   再実行で `/etc/beams/beams.env` の `IMAGE` がその旧タグに更新される。自動アップデート（`bin/once-update` / timer）も `EnvironmentFile` 経由でこの `IMAGE` を尊重するため、**ロールバックを巻き戻さない**。永続データは `beams_storage` に残るため、コンテナを差し替えてもデータは保持される。
 2. データ自体を以前の状態へ戻す必要がある場合は、バックアップ世代からの復旧（[docs/RESTORE.md](RESTORE.md) の `rake beams:restore[generation]`）を行う。
 
 ---

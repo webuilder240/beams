@@ -6,12 +6,18 @@ module Beams
   module Once
     # Beams::Once::Updater performs the ONCE auto-update on the host.
     #
-    # It pulls the latest image, compares the digest of the image the running
-    # container was created from against the digest of the freshly-pulled
-    # image, and only recreates the container when they differ. The container
-    # is recreated with the exact same `docker run` arguments the installer
+    # It pulls the configured image, compares the local image ID the running
+    # container was created from against the local image ID of the
+    # freshly-pulled image, and only recreates the container when they differ
+    # (i.e. the same tag now resolves to a new image). The container is
+    # recreated with the exact same `docker run` arguments the installer
     # (deploy/once/install.sh) uses, so persistent data on the `beams_storage`
     # volume and the host env file are preserved.
+    #
+    # The image defaults to ENV["IMAGE"] (written to /etc/beams/beams.env by the
+    # installer) and falls back to the IMAGE constant, so a rollback performed by
+    # re-running install.sh with IMAGE=<old tag> is respected by the timer and is
+    # not undone by re-pulling :latest.
     #
     # This class is Rails-independent and depends only on stdlib so it can run
     # under the host's system ruby (no bundler / no config/environment). Shell
@@ -27,15 +33,15 @@ module Beams
       HTTPS_PORT = "443:443"
       RESTART_POLICY = "unless-stopped"
 
-      attr_reader :image, :container, :volume, :env_file
-
       # @param runner [#call] receives a command array, returns stdout String.
-      # @param image [String] image reference to pull/run.
+      # @param image [String] image reference to pull/run. Defaults to
+      #   ENV["IMAGE"] (set via --env-file by install.sh), then the IMAGE
+      #   constant, so rollbacks pinning an older tag are respected.
       # @param container [String] container name.
       # @param volume [String] named volume for /rails/storage.
       # @param env_file [String] host env file passed via --env-file.
       def initialize(runner: method(:default_run),
-                     image: IMAGE,
+                     image: ENV.fetch("IMAGE", IMAGE),
                      container: CONTAINER,
                      volume: VOLUME,
                      env_file: ENV_FILE)
@@ -46,15 +52,15 @@ module Beams
         @env_file = env_file
       end
 
-      # Pull the latest image and recreate the container only when the digest
-      # changed.
+      # Pull the configured image and recreate the container only when the local
+      # image ID changed (same tag now resolves to a new image).
       #
       # @return [Hash] { updated:, current:, latest: }
       def update!
         run(pull_command)
 
-        current = current_image_digest
-        latest = latest_image_digest
+        current = current_image_id
+        latest = latest_image_id
 
         return { updated: false, current: current, latest: latest } if current == latest
 
@@ -67,13 +73,13 @@ module Beams
 
       private
 
-      # Digest (image id) the running container was created from.
-      def current_image_digest
+      # Local image ID the running container was created from.
+      def current_image_id
         run(inspect_command("{{.Image}}", @container)).strip
       end
 
-      # Digest (image id) of the freshly-pulled image.
-      def latest_image_digest
+      # Local image ID of the freshly-pulled image.
+      def latest_image_id
         run(inspect_command("{{.Id}}", @image)).strip
       end
 

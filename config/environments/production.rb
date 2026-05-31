@@ -35,7 +35,8 @@ Rails.application.configure do
   # TLS 終端越し運用（ONCE/Thruster）。`TLS_DOMAIN` 設定時のみ Thruster が
   # HTTPS(443) で終端するため、その場合だけ SSL を強制する。未設定なら HTTP(80)
   # のみで従来どおり動く（Beams::Once::TlsConfig が判定する）。
-  if Beams::Once::TlsConfig.new.enabled?
+  tls_config = Beams::Once::TlsConfig.new
+  if tls_config.enabled?
     # Assume all access to the app is happening through a SSL-terminating reverse proxy.
     config.assume_ssl = true
 
@@ -43,7 +44,7 @@ Rails.application.configure do
     config.force_ssl = true
 
     # Skip http-to-https redirect for the default health check endpoint.
-    config.ssl_options = Beams::Once::TlsConfig.new.ssl_options
+    config.ssl_options = tls_config.ssl_options
   end
 
   # Log to STDOUT with the current request id as a default log tag.

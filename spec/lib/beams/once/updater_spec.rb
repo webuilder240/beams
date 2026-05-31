@@ -81,10 +81,72 @@ RSpec.describe Beams::Once::Updater do
     end
   end
 
-  it "shares constants with the installer (image/container/volume/env file/ports)" do
+  describe "image selection (rollback safety)" do
+    it "uses an injected image for both pull and run" do
+      pinned = "ghcr.io/REPLACE_ME/beams:v1"
+      runner = FakeRunner.new(
+        "inspect --format {{.Image}} beams" => "sha256:old\n",
+        "inspect --format {{.Id}} #{pinned}" => "sha256:new\n"
+      )
+
+      result = described_class.new(runner: runner, image: pinned).update!
+
+      commands = runner.calls.map { |c| c.join(" ") }
+      expect(commands).to include("docker pull #{pinned}")
+      run_command = commands.find { |c| c.start_with?("docker run") }
+      expect(run_command).to include(pinned)
+      expect(run_command).not_to include("ghcr.io/REPLACE_ME/beams:latest")
+      expect(result[:updated]).to be(true)
+    end
+
+    it "honours ENV['IMAGE'] when no image is injected" do
+      env_image = "ghcr.io/REPLACE_ME/beams:v2"
+      original = ENV["IMAGE"]
+      ENV["IMAGE"] = env_image
+      begin
+        runner = FakeRunner.new(
+          "inspect --format {{.Image}} beams" => "sha256:old\n",
+          "inspect --format {{.Id}} #{env_image}" => "sha256:new\n"
+        )
+
+        commands = described_class.new(runner: runner).tap(&:update!)
+        commands = runner.calls.map { |c| c.join(" ") }
+        expect(commands).to include("docker pull #{env_image}")
+        expect(commands.find { |c| c.start_with?("docker run") }).to include(env_image)
+      ensure
+        if original.nil?
+          ENV.delete("IMAGE")
+        else
+          ENV["IMAGE"] = original
+        end
+      end
+    end
+
+    it "falls back to the IMAGE constant when neither injected nor in ENV" do
+      original = ENV["IMAGE"]
+      ENV.delete("IMAGE")
+      begin
+        runner = FakeRunner.new(
+          "inspect --format {{.Image}} beams" => "sha256:same\n",
+          "inspect --format {{.Id}} #{described_class::IMAGE}" => "sha256:same\n"
+        )
+        described_class.new(runner: runner).update!
+        commands = runner.calls.map { |c| c.join(" ") }
+        expect(commands).to include("docker pull #{described_class::IMAGE}")
+      ensure
+        ENV["IMAGE"] = original unless original.nil?
+      end
+    end
+  end
+
+  it "shares constants with the installer (image/container/volume/env file/ports/mount/restart)" do
     expect(described_class::IMAGE).to eq("ghcr.io/REPLACE_ME/beams:latest")
     expect(described_class::CONTAINER).to eq("beams")
     expect(described_class::VOLUME).to eq("beams_storage")
     expect(described_class::ENV_FILE).to eq("/etc/beams/beams.env")
+    expect(described_class::MOUNT).to eq("/rails/storage")
+    expect(described_class::HTTP_PORT).to eq("80:80")
+    expect(described_class::HTTPS_PORT).to eq("443:443")
+    expect(described_class::RESTART_POLICY).to eq("unless-stopped")
   end
 end

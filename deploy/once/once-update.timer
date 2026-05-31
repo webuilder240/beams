@@ -5,6 +5,8 @@ Description=Run Beams ONCE auto-update daily
 # Once per day. Persistent=true catches up a missed run after the host was off.
 OnCalendar=daily
 Persistent=true
+# Explicit service to activate (matches once-update.service in the same dir).
+Unit=once-update.service
 
 [Install]
 WantedBy=timers.target

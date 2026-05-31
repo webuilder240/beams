@@ -185,3 +185,13 @@ C と D は共有定数（IMAGE / コンテナ名 / ボリューム / env ファ
 ### Tester 指摘対応（2026-05-31）
 
 - 受け入れ条件A最終項目（`grep -rniE "kamal"` が docs/tasks 除き 0 件）が未達：グループEの §2 追記で `docs/PRODUCT_PLAN.md:46` 地の文に literal "Kamal" が再混入していた。当該箇所を「従来のデプロイ基盤を廃し」に固有名詞を使わずリワード。`grep -rniE "kamal" . --exclude-dir=.git --exclude-dir=node_modules | grep -v "docs/tasks/"` → **0 件**を確認。`bin/rubocop` exit 0、`bundle exec rspec` 518 examples / 0 failures / カバレッジ 98.66%（ドキュメントのみ・不変）。
+
+### Reviewer 指摘対応（リファクタ・2026-06-01）
+
+- **should-2（機能改善・振る舞い変更）**: ロールバック後に timer が `:latest` を pull して巻き戻す問題を解消。`Updater#initialize` の image 既定を `ENV.fetch("IMAGE", IMAGE)` に変更（注入 > ENV["IMAGE"] > 定数フォールバック）。`once-update.service` に `EnvironmentFile=/etc/beams/beams.env` を追加し install.sh が書いた `IMAGE` を timer 実行に伝える。`docs/INSTALL.md` §8 ロールバックと §7 を整合更新。TDD: spec に「ENV['IMAGE'] 設定時にそれで pull/run」を先に追加→ Red（`docker pull <env_image>` 不在）を確認→ 実装で Green。ENV 操作の example は `ensure` で元値を復元。
+- **should-1（命名・doc）**: `current_image_digest`/`latest_image_digest` → `current_image_id`/`latest_image_id` にリネーム（実体はローカルイメージID）。コメント・クラス doc・`docs/INSTALL.md` §7 の「ダイジェスト」表現を「ローカルイメージID（同タグ更新の有無）」に修正。戻り値キー `current`/`latest` は据え置き。
+- **should-3（テスト拡充）**: 定数 pin テストに `HTTP_PORT`/`HTTPS_PORT`/`MOUNT`/`RESTART_POLICY` の期待値を追加し、install.sh とのドリフト検知を強化。
+- **should-4（重複生成解消）**: `production.rb` で `Beams::Once::TlsConfig.new` を `tls_config` に束ね、`enabled?`/`ssl_options` を同一インスタンスから参照（挙動不変。production 実ブートで unset→assume/force=false、set→true・/up 除外を再確認）。
+- **nice-to-have**: `once-update.timer` に `Unit=once-update.service` を明示。`updater.rb` の未使用 `attr_reader :image, :container, :volume, :env_file` を削除（内部 `@ivar` のみ使用、外部/テスト参照なし）。
+- **見送り（nice-to-have）**: `FakeRunner` の include マッチ（2キー）は現状実害が無く、キー重複の懸念も無いため**今回は変更しない**。
+- 検証: `bin/rubocop` no offenses（exit 0）、`bundle exec rspec` **521 examples / 0 failures / カバレッジ 98.66%**（updater spec +3）、`bash -n deploy/once/install.sh` OK、`ruby -c bin/once-update` Syntax OK、install.sh ⇔ updater.rb の定数・run 引数の一致を再 grep 確認。
