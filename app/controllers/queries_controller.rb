@@ -9,8 +9,13 @@ class QueriesController < ApplicationController
   end
 
   def show
-    # 結果エリア初期表示用に直近の実行を読み込む（トピック10）。
-    @latest_execution = @query.query_executions.order(created_at: :desc).first
+    # 実行履歴一覧（トピック17）: 直近 20 件を新しい順で読み込む。
+    @executions = @query.query_executions.recent.limit(20)
+
+    # query_result エリアの初期描画は「最新の成功実行」を優先する。これにより
+    # 成功のあとに失敗/実行中の実行を始めても直前の成功結果を見失わない（トピック17）。
+    # 成功実行が無ければ最新の実行（実行中/失敗など）で状態表示し、それも無ければ nil。
+    @latest_execution = @query.latest_succeeded_execution || @executions.first
 
     return if params[:query_params].blank?
 

@@ -64,6 +64,8 @@
     <%= render "query_executions/state", execution: @latest_execution %>
   </div>
 
+  <%= render "query_executions/history", executions: @executions, query: @query %>
+
   <div>
     <%= button_to "削除", query_path(@query), method: :delete,
           form: { data: { turbo_confirm: "本当に削除しますか？" }, class: "inline" },

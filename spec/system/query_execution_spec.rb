@@ -72,6 +72,49 @@ RSpec.describe "Query execution", type: :system do
     expect(page).to have_content("invalid query: boom")
   end
 
+  it "lists execution history newest-first and re-displays a past result (トピック17)" do
+    stub_bigquery(rows: [ { n: 1 } ], fields: [ { name: "n", type: "INTEGER" } ])
+    query = create(:query, user: user, title: "履歴クエリ",
+                   sql_body: "SELECT 1 AS n", bigquery_connection: connection)
+    log_in
+    visit query_path(query)
+
+    # 2 回実行して履歴を 2 件にする。
+    click_button "実行"
+    visit query_path(query)
+    click_button "実行"
+
+    visit query_path(query)
+    expect(page).to have_content("実行履歴")
+    # 成功実行は履歴に並び、状態バッジ・行数が見える。
+    expect(page).to have_css("#query_history_rows tr", minimum: 2)
+    expect(page).to have_content("succeeded")
+
+    # 過去実行の「結果を表示」で結果テーブルが再描画される（rack_test: 遷移）。
+    first(:link, "結果を表示").click
+    expect(page).to have_content("n")
+    expect(page).to have_content("1")
+  end
+
+  it "keeps a failed execution with its error message in the history (トピック17)" do
+    client = instance_double(Google::Cloud::Bigquery::Project)
+    allow(client).to receive(:query_job).and_raise(Google::Cloud::Error.new("invalid query: histfail"))
+    allow_any_instance_of(Bigquery::Connection).to receive(:bigquery).and_return(client)
+
+    query = create(:query, user: user, title: "履歴失敗クエリ",
+                   sql_body: "SELECT bad", bigquery_connection: connection)
+    log_in
+    visit query_path(query)
+    click_button "実行"
+
+    visit query_path(query)
+    expect(page).to have_content("実行履歴")
+    within("#query_history_rows") do
+      expect(page).to have_content("failed")
+      expect(page).to have_content("invalid query: histfail")
+    end
+  end
+
   it "shows the truncation banner when results exceed the row limit" do
     rows = Array.new(10_001) { |i| { n: i } }
     stub_bigquery(rows: rows, fields: [ { name: "n", type: "INTEGER" } ])

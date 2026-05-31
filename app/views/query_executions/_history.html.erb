@@ -1,0 +1,42 @@
+<%#
+  実行履歴一覧（トピック17）。直近 N 件を新しい順で表示する。各行:
+  status バッジ / 開始・終了時刻 / 所要時間 / 行数 / 切り詰めフラグ /
+  「結果を表示」リンク（GET /queries/:query_id/executions/:id で query_result を再描画）。
+  CSV リンクは最新の成功実行（latest/csv が指す実行）のみ表示する（司令塔決定）。
+
+  ライブ追記（broadcast_result の turbo_stream.prepend）が #query_history_rows を
+  ターゲットにするため、行の入れ物に同 id を付与する。
+%>
+<% locals = local_assigns
+   executions = locals.fetch(:executions)
+   query = locals.fetch(:query)
+   latest_succeeded_id = locals.key?(:latest_succeeded_id) ?
+     locals[:latest_succeeded_id] : query.latest_succeeded_execution&.id %>
+
+<section class="space-y-2">
+  <h2 class="text-sm font-medium text-gray-700">実行履歴</h2>
+
+  <% if executions.blank? %>
+    <p id="query_history_rows" class="text-sm text-gray-500">まだ実行履歴はありません。</p>
+  <% else %>
+    <div class="overflow-x-auto rounded border border-gray-200">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">状態</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">開始</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">終了</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">所要</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700">行数</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700"></th>
+          </tr>
+        </thead>
+        <tbody id="query_history_rows" class="divide-y divide-gray-100">
+          <%= render partial: "query_executions/history_row",
+                collection: executions, as: :execution,
+                locals: { query: query, latest_succeeded_id: latest_succeeded_id } %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</section>

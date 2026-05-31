@@ -130,6 +130,43 @@ RSpec.describe "Queries", type: :request do
         get query_path(query), params: { query_params: { a: "1", b: "2" } }
         expect(response.body).to include("パラメータを受け付けました")
       end
+
+      describe "execution history (トピック17)" do
+        it "renders the most recent executions newest-first with a result-display link" do
+          query = create(:query, user: user, sql_body: "SELECT 1")
+          older = create(:query_execution, :succeeded, query: query, created_at: 2.hours.ago,
+                         result_row_count: 1)
+          older.store_result([ { "name" => "n", "type" => "INTEGER" } ], [ [ 7 ] ])
+          older.save!
+          newer = create(:query_execution, :failed, query: query, created_at: 1.hour.ago,
+                         error_message: "boom history")
+
+          get query_path(query)
+
+          expect(response).to have_http_status(:ok)
+          # 新しい順で並ぶ（failed が succeeded より前）。各行は dom_id で識別。
+          expect(response.body.index("id=\"#{ActionView::RecordIdentifier.dom_id(newer)}\""))
+            .to be < response.body.index("id=\"#{ActionView::RecordIdentifier.dom_id(older)}\"")
+          expect(response.body).to include("boom history")
+          # 成功実行には結果再表示リンクが出る。
+          expect(response.body).to include(query_execution_path(query, older))
+        end
+
+        it "initially renders the latest succeeded result even when a newer execution failed" do
+          query = create(:query, user: user, sql_body: "SELECT 1")
+          succeeded = create(:query_execution, :succeeded, query: query,
+                             created_at: 2.hours.ago, result_row_count: 1)
+          succeeded.store_result([ { "name" => "n", "type" => "INTEGER" } ], [ [ 42 ] ])
+          succeeded.save!
+          create(:query_execution, :failed, query: query, created_at: 1.hour.ago,
+                 error_message: "later failure")
+
+          get query_path(query)
+
+          # query_result エリアの初期描画は最新の成功結果を優先する
+          expect(response.body).to include("42")
+        end
+      end
     end
 
     describe "GET /queries/:id/edit" do
