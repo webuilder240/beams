@@ -53,6 +53,55 @@ RSpec.describe QueryExecution, type: :model do
     end
   end
 
+  describe ".recent" do
+    it "orders executions by created_at descending (newest first)" do
+      query = create(:query)
+      older = create(:query_execution, query: query, created_at: 2.hours.ago)
+      newer = create(:query_execution, query: query, created_at: 1.hour.ago)
+      newest = create(:query_execution, query: query, created_at: Time.current)
+
+      expect(query.query_executions.recent.to_a).to eq([ newest, newer, older ])
+    end
+  end
+
+  describe "#duration" do
+    it "returns the elapsed seconds between started_at and finished_at" do
+      execution = build(:query_execution,
+                        started_at: Time.utc(2026, 5, 31, 12, 0, 0),
+                        finished_at: Time.utc(2026, 5, 31, 12, 0, 3))
+      expect(execution.duration).to eq(3.0)
+    end
+
+    it "returns nil when started_at is missing" do
+      expect(build(:query_execution, started_at: nil, finished_at: Time.current).duration).to be_nil
+    end
+
+    it "returns nil when finished_at is missing" do
+      expect(build(:query_execution, started_at: Time.current, finished_at: nil).duration).to be_nil
+    end
+  end
+
+  describe "#succeeded_with_result?" do
+    it "is true for a succeeded execution that has a result blob" do
+      execution = create(:query_execution, :succeeded)
+      execution.store_result([ { "name" => "n", "type" => "INTEGER" } ], [ [ 1 ] ])
+      execution.save!
+      expect(execution).to be_succeeded_with_result
+    end
+
+    it "is false for a succeeded execution without a result blob" do
+      execution = create(:query_execution, :succeeded)
+      expect(execution).not_to be_succeeded_with_result
+    end
+
+    it "is false for a failed execution even with a blob" do
+      execution = create(:query_execution, :failed)
+      execution.store_result([ { "name" => "n", "type" => "INTEGER" } ], [ [ 1 ] ])
+      execution.save!
+      expect(execution).not_to be_succeeded_with_result
+    end
+  end
+
   describe "#store_result and #result (JSON + gzip round trip)" do
     let(:execution) { create(:query_execution) }
     let(:schema) { [ { "name" => "id", "type" => "INTEGER" }, { "name" => "name", "type" => "STRING" } ] }
