@@ -44,7 +44,7 @@
 | 13 | [共有・権限（組織フルオープン）](13-sharing-permissions.md) | §4.9 | 03, 07 | 6 | ✅完了 |
 | 14 | [探しやすさ・一覧検索](14-search-listing.md) | §4.11 | 07, 12 | 10 | ✅完了 |
 | 15 | [SQLite 自動バックアップ・復旧](15-backup-restore.md) | §2.1, §6.3 | 01, 02 | 16 | ✅完了 |
-| 16 | [フォームUIのTailwindスタイル統一（不具合修正）](16-form-styling-consistency.md) | §3 | 07, 11, 12 | 約10 | 未着手 |
+| 16 | [フォームUIのTailwindスタイル統一（不具合修正）](16-form-styling-consistency.md) | §3 | 07, 11, 12 | 約10 | ✅完了 |
 | 17 | [クエリ実行結果のレンダリング修正・実行履歴表示](17-query-result-history.md) | §4.6 | 07, 10 | 約12 | 未着手 |
 
 > 16・17 は `localhost:3000` での動作確認で見つかった不具合・改善の追加タスク（MVP 後）。
