@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## AgentTeam 運用（複数エージェントで開発するとき必読）
+
+複数エージェント（司令塔 + Coder + Tester + Reviewer）で開発する場合は **[docs/AGENT_TEAM.md](docs/AGENT_TEAM.md)** を唯一の正の運用規約とする。スラッシュコマンド `/breakdown`（タスク分解）・`/agent-team`（実行）と `reviewer` スキルがこれに従う。要点: 司令塔は実装しない（実装は必ず Coder）／直列実行・並行起動しない／実装は専用ブランチ＋worktree隔離／報告を鵜呑みにせず実測検証・偽の数値禁止／DBマイグレーションとPR作成・マージは承認ゲート。
+
 ## コーディングの制約条件（必読）
 
 実装時は以下を必ず守ること。各タスクの「完了」はこれらを満たすことを含む。
