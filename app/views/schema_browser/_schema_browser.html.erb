@@ -1,0 +1,68 @@
+<%#
+  スキーマブラウザのツリー（データセット → テーブル → カラム）。
+  Stimulus コントローラ schema-browser が折りたたみ展開と名前挿入イベントを担う。
+  名前クリックで `schema-browser:insert`（detail に名前）を dispatch する。
+  実際のエディタ配線はトピック07で行う。
+%>
+<div class="schema-browser" data-controller="schema-browser">
+  <div class="schema-browser__toolbar">
+    <%= button_to "スキーマを更新", refresh_schema_caches_path,
+          method: :post, class: "schema-browser__refresh" %>
+    <% if schema && schema[:fetched_at] %>
+      <span class="schema-browser__fetched-at">
+        最終取得: <%= l(schema[:fetched_at].in_time_zone, format: :short) rescue schema[:fetched_at] %>
+      </span>
+    <% end %>
+  </div>
+
+  <% datasets = (schema && schema[:datasets]) || [] %>
+  <% if datasets.empty? %>
+    <p class="schema-browser__empty">データセットがありません。</p>
+  <% else %>
+    <ul class="schema-browser__datasets">
+      <% datasets.each do |dataset| %>
+        <li class="schema-browser__dataset" data-schema-browser-target="dataset">
+          <button type="button"
+                  class="schema-browser__toggle"
+                  data-action="schema-browser#toggleDataset">
+            <%= dataset[:name].presence || dataset[:dataset_id] %>
+            <small>(<%= dataset[:dataset_id] %>)</small>
+          </button>
+
+          <ul class="schema-browser__tables" data-schema-browser-target="tables">
+            <% Array(dataset[:tables]).each do |table| %>
+              <li class="schema-browser__table" data-schema-browser-target="table">
+                <button type="button"
+                        class="schema-browser__toggle"
+                        data-action="schema-browser#toggleTable">
+                  <%= table[:table_id] %>
+                  <small><%= table[:table_type] %></small>
+                </button>
+
+                <span class="schema-browser__insertable"
+                      data-action="click->schema-browser#insert"
+                      data-name="<%= table[:table_id] %>">挿入</span>
+
+                <ul class="schema-browser__columns" data-schema-browser-target="columns">
+                  <% Array(table[:columns]).each do |column| %>
+                    <li class="schema-browser__column">
+                      <span class="schema-browser__column-name schema-browser__insertable"
+                            data-action="click->schema-browser#insert"
+                            data-name="<%= column[:column_name] %>">
+                        <%= column[:column_name] %>
+                      </span>
+                      <small class="schema-browser__column-type"><%= column[:data_type] %></small>
+                      <% unless column[:is_nullable] %>
+                        <small class="schema-browser__column-required">NOT NULL</small>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              </li>
+            <% end %>
+          </ul>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

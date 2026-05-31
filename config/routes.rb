@@ -26,6 +26,16 @@ Rails.application.routes.draw do
     resources :connections, except: [ :show ]
   end
 
+  # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）
+  get "schema_browser" => "schema_browsers#show", as: :schema_browser
+
+  # スキーマキャッシュの手動更新（TTL を無視して再同期）
+  resources :schema_caches, only: [] do
+    collection do
+      post :refresh
+    end
+  end
+
   # 初回セットアップウィザード（ユーザー 0 件のときに誘導）
   get "setup" => "setup_wizard#index", as: :setup
   get "setup/step1" => "setup_wizard#step1", as: :setup_step1
