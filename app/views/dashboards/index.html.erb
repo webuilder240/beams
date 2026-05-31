@@ -1,0 +1,36 @@
+<% content_for :title, "ダッシュボード" %>
+
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">ダッシュボード</h1>
+    <%= link_to "新規作成", new_dashboard_path,
+          class: "rounded bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" %>
+  </div>
+
+  <% if @dashboards.empty? %>
+    <p class="rounded border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+      まだダッシュボードがありません。
+    </p>
+  <% else %>
+    <ul class="divide-y divide-gray-100 rounded border border-gray-200 bg-white">
+      <% @dashboards.each do |dashboard| %>
+        <li class="flex items-center justify-between px-4 py-3">
+          <div>
+            <%= link_to dashboard.title, dashboard_path(dashboard),
+                  class: "text-base font-medium text-blue-600 hover:underline" %>
+            <p class="text-xs text-gray-500">
+              更新: <%= l(dashboard.updated_at.in_time_zone, format: :short) rescue dashboard.updated_at %>
+            </p>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <%= link_to "詳細", dashboard_path(dashboard), class: "text-gray-600 hover:underline" %>
+            <%= link_to "編集", edit_dashboard_path(dashboard), class: "text-gray-600 hover:underline" %>
+            <%= button_to "削除", dashboard_path(dashboard), method: :delete,
+                  form: { data: { turbo_confirm: "削除しますか？" } },
+                  class: "text-red-600 hover:underline" %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

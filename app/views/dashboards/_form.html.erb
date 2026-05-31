@@ -1,0 +1,27 @@
+<%= form_with model: dashboard, class: "space-y-4" do |f| %>
+  <% if dashboard.errors.any? %>
+    <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+      <ul class="list-disc list-inside text-sm">
+        <% dashboard.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :title, "タイトル", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :title, class: "w-full rounded border-gray-300 text-sm" %>
+  </div>
+
+  <div>
+    <%= f.label :description, "説明", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_area :description, rows: 3, class: "w-full rounded border-gray-300 text-sm" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.submit (dashboard.persisted? ? "ダッシュボードを更新する" : "ダッシュボードを作成する"),
+          class: "rounded bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" %>
+    <%= link_to "キャンセル", dashboards_path, class: "text-sm text-gray-600 hover:underline" %>
+  </div>
+<% end %>
