@@ -8,6 +8,7 @@ class Query < ApplicationRecord
 
   has_many :query_parameters, -> { order(:id) }, dependent: :destroy
   has_many :query_executions, dependent: :destroy
+  has_one :visualization, dependent: :destroy
 
   validates :title, presence: true
   validates :sql_body, presence: true
