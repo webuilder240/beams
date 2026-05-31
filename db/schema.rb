@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_120000) do
   create_table "application_settings", force: :cascade do |t|
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
@@ -37,6 +37,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_110000) do
     t.index ["user_id"], name: "index_queries_on_user_id"
   end
 
+  create_table "query_parameters", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "param_type", null: false
+    t.integer "query_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["query_id", "name"], name: "index_query_parameters_on_query_id_and_name", unique: true
+    t.index ["query_id"], name: "index_query_parameters_on_query_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", null: false
@@ -48,4 +58,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_110000) do
 
   add_foreign_key "queries", "bigquery_connections"
   add_foreign_key "queries", "users"
+  add_foreign_key "query_parameters", "queries"
 end
