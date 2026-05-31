@@ -53,7 +53,19 @@ bin/rails db:test:prepare  # テスト用DBをschema.rbから再構築
 
 ## アーキテクチャ
 
-**Rails 8.1.3 / Ruby 4.0.5** のSNSサービス。アプリケーションモジュール名は `SampleSnsService`。
+**Rails 8.1.3 / Ruby 4.0.5**。リポジトリ名は `sample_sns_service`（アプリケーションモジュール名も `SampleSnsService`）だが、**実体は BigQuery 専用 BI ツール「Beams」**（Redash 後継）。方針は `docs/PRODUCT_PLAN.md`、機能ごとの進行状況は `docs/tasks/`、設計判断は `docs/adr/` を参照。
+
+### ドメインモデル
+中心は「BigQuery への接続 → クエリ実行 → 可視化 → ダッシュボード集約」の流れ。サービスクラス禁止のため、ドメインロジックは AR モデルのメソッドか `app/models/` 配下の PORO に置かれている。
+
+- `Bigquery::Connection` — BigQuery 接続情報（認証情報・プロジェクト）。`Query` の実行基盤。
+- `Query` → `QueryParameter`（パラメータ化クエリ）/ `QueryExecution`（実行履歴）/ `Visualization`（可視化、has_one）。`belongs_to :user`, `belongs_to :bigquery_connection`。
+- `Dashboard` → `Widget`（`belongs_to :query`）でクエリ結果をダッシュボードに配置。
+- `DryRun` / `CostEstimate` — クエリ実行前のスキャン量見積もり・コスト保護用 PORO（`LimitExceededError` で上限超過を表現）。
+- `ApplicationSetting` — アプリ全体設定（セットアップウィザードで構築）。
+
+### 運用スクリプト（バックアップ/リストア）
+SQLite DB のバックアップ・リストアは `lib/beams/`（`backup.rb` / `restore.rb` / `procfile_reader.rb`）のモジュール + `lib/tasks/beams.rake` のラッパーで提供（`rake beams:backup`, `beams:backup:list`, `beams:restore[generation]`）。手順は `docs/RESTORE.md`。テストは `spec/lib/`。
 
 ### Solid Stack（SQLite完結構成）
 本番環境は単一インフラ（Docker + SQLite）で動作する。4つのSQLiteデータベースを用途別に分離している：
@@ -80,9 +92,9 @@ Kamal を使用。`config/deploy.yml` を参照。
 
 
 ### CI（GitHub Actions）
-PRおよびmainへのpushで以下が並列実行される：
+PRおよびmainへのpushで以下が並列実行される（`.github/workflows/ci.yml`）：
 1. `scan_ruby` — Brakeman + bundler-audit
 2. `scan_js` — importmap audit
-3. `lint` — RuboCop
-4. `test` — Minitest
-5. `system-test` — システムテスト（失敗時スクリーンショットをartifactに保存）
+3. `lint` — RuboCop（`bin/rubocop -f github`）
+4. `test` — `bin/rails db:test:prepare && bundle exec rspec`（RSpec。Minitest は使っていない）
+5. `system-test` — `bundle exec rspec spec/system`（Playwright browsers + `tailwindcss:build` を事前実行。失敗時スクリーンショットをartifactに保存）
