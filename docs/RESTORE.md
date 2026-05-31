@@ -5,9 +5,8 @@ Beams の SQLite データベース（`production` / `cache` / `queue` / `cable`
 
 ## 仕組み
 
-- バックアップは SQLite のオンラインバックアップ API
-  (`SQLite3::Database#backup`) で一貫スナップショットを取得する。WAL モードで
-  書き込み中でも壊れたバックアップにならない。
+- バックアップは SQLite のオンラインバックアップ（`VACUUM INTO`）で一貫スナップ
+  ショットを取得する。WAL モードで書き込み中でも壊れたバックアップにならない。
 - 1 回の実行で `<BEAMS_BACKUP_DIR>/<timestamp>/` ディレクトリを作り、各 DB を
   `*.sqlite3.gz`（gzip 圧縮）として保存し、`manifest.json`（取得時刻・対象 DB・
   サイズ・`PRAGMA integrity_check` 結果）を残す。
