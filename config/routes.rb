@@ -26,6 +26,9 @@ Rails.application.routes.draw do
     resources :connections, except: [ :show ]
   end
 
+  # クエリエディタ（CodeMirror 6・保存クエリの CRUD）
+  resources :queries
+
   # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）
   get "schema_browser" => "schema_browsers#show", as: :schema_browser
 

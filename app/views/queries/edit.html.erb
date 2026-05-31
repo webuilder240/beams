@@ -1,0 +1,15 @@
+<% content_for :title, "クエリ編集" %>
+
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">クエリ編集</h1>
+    <%= link_to "詳細へ", query_path(@query), class: "text-sm text-blue-600 hover:underline" %>
+  </div>
+
+  <%= render "form",
+        query: @query,
+        url: query_path(@query),
+        method: :patch,
+        submit_label: "更新",
+        connections: @connections %>
+</div>

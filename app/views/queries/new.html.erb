@@ -1,0 +1,12 @@
+<% content_for :title, "新規クエリ" %>
+
+<div class="max-w-3xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">新規クエリ</h1>
+
+  <%= render "form",
+        query: @query,
+        url: queries_path,
+        method: :post,
+        submit_label: "保存",
+        connections: @connections %>
+</div>

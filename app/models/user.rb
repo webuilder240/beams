@@ -3,6 +3,8 @@ class User < ApplicationRecord
 
   has_secure_password
 
+  has_many :queries, dependent: :destroy
+
   normalizes :email, with: ->(email) { email.strip.downcase }
 
   validates :email,
