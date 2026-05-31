@@ -54,9 +54,7 @@ module Beams
           gz_path = File.join(generation_dir, "#{name}.sqlite3.gz")
           next unless File.exist?(gz_path)
 
-          entry = restore_one(name, gz_path, target_path)
-          done << entry
-          entry
+          restore_one(name, gz_path, target_path, done)
         end
       rescue StandardError
         rollback(done)
@@ -97,13 +95,19 @@ module Beams
       target
     end
 
-    def restore_one(name, gz_path, target_path)
+    # Restore a single database. The entry (including the safety copy taken
+    # before any destructive step) is registered in `done` *immediately* so a
+    # failure in a later step can be rolled back.
+    def restore_one(name, gz_path, target_path, done)
       FileUtils.mkdir_p(File.dirname(target_path))
       safety_copy = move_aside(target_path)
+      entry = { name: name, target: target_path, safety_copy: safety_copy }
+      done << entry
+
       cleanup_sidecars(target_path)
       decompress(gz_path, target_path)
 
-      { name: name, target: target_path, safety_copy: safety_copy }
+      entry
     end
 
     # Move the existing db file to a timestamped safety copy. Returns the
@@ -119,7 +123,7 @@ module Beams
 
     # Remove leftover WAL/SHM sidecar files so the restored file is opened clean.
     def cleanup_sidecars(target_path)
-      ["#{target_path}-wal", "#{target_path}-shm"].each do |f|
+      [ "#{target_path}-wal", "#{target_path}-shm" ].each do |f|
         File.delete(f) if File.exist?(f)
       end
     end
