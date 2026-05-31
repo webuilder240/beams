@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
   create_table "application_settings", force: :cascade do |t|
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
@@ -24,6 +24,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_140000) do
     t.string "project_id", null: false
     t.text "service_account_json", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "dashboards", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id"], name: "index_dashboards_on_user_id"
   end
 
   create_table "queries", force: :cascade do |t|
@@ -87,9 +96,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_140000) do
     t.index ["query_id"], name: "index_visualizations_on_query_id", unique: true
   end
 
+  create_table "widgets", force: :cascade do |t|
+    t.integer "column_span", default: 1, null: false
+    t.datetime "created_at", null: false
+    t.integer "dashboard_id", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "query_id", null: false
+    t.string "title_override"
+    t.datetime "updated_at", null: false
+    t.index ["dashboard_id", "position"], name: "index_widgets_on_dashboard_id_and_position"
+    t.index ["query_id"], name: "index_widgets_on_query_id"
+  end
+
+  add_foreign_key "dashboards", "users"
   add_foreign_key "queries", "bigquery_connections"
   add_foreign_key "queries", "users"
   add_foreign_key "query_executions", "queries"
   add_foreign_key "query_parameters", "queries"
   add_foreign_key "visualizations", "queries"
+  add_foreign_key "widgets", "dashboards"
+  add_foreign_key "widgets", "queries"
 end
