@@ -27,3 +27,13 @@
 - **司令塔→人間**: マイグレーション承認を依頼（司令塔レビュー済み、論点4点とも Coder 推奨に同意。特に position 非unique は move_up/down のスワップ中間状態で一時重複しうるため妥当）。
 - **人間→司令塔**: ✅**承認・実行する**。`db:migrate` 実行を許可。
 - **司令塔→Coder**: マイグレーション実行＋トピック12 本体（Dashboard/Widget モデル / DashboardsController CRUD / WidgetsController create/destroy/move_up/move_down / Turbo Frames ウィジェット一覧・並べ替え / 1〜2カラムグリッド / ウィジェット内 topic-11 チャート再利用 / 「未実行」プレースホルダー）を TDD で実装するよう指示。
+- **Coder**: マイグレーション実行（`db:migrate` → `db:test:prepare`）。`db/schema.rb` が `version: 20260531150001` に更新、`dashboards`/`widgets` 反映を確認。
+- **Coder**: 本体を TDD（Red→Green→Refactor）で実装。
+  - **Dashboard モデル**（`app/models/dashboard.rb`）: `belongs_to :user` / `has_many :widgets, dependent: :destroy` / `validates :title, presence, length<=255` / `#ordered_widgets`（`widgets.order(:position)`）。factory・spec。
+  - **Widget モデル**（`app/models/widget.rb`）: `belongs_to :dashboard`/`:query` / `validates :position`(整数・0以上)・`:column_span`(in [1,2]) / `#display_title`（`title_override` 空なら `query.title`）/ 並べ替えを **モデルメソッド** `#move_up!`/`#move_down!`（隣接スワップ・端は no-op、`*Service` 禁止に適合）として実装。factory・spec。
+  - **DashboardsController**: index(全件 `updated_at DESC`)/show/new/create/edit/update/destroy。**組織フルオープン（§4.9）= owner-scope せず `Dashboard.find`**、`create`/`update` で `user=current_user`。未ログインはログインへ 302。
+  - **WidgetsController**: create(末尾=max position+1)/destroy/move_up/move_down。各アクション Turbo Stream で `<turbo-frame id="widgets">` 再描画（共通パーシャル `_widgets_stream`）。
+  - **ビュー**: dashboards index(空時「まだダッシュボードがありません」)/show(`turbo-frame#widgets`＋追加フォーム=クエリ`<select>`＋column_span 1/2 `<select>`)/new/edit/_form(エラー表示)、widgets `_widget`（`display_title`・最新結果テーブル/チャート・上へ/下へ/削除・`未実行` プレースホルダー）。1〜2カラムグリッドは show のインライン `<style>`（`.dashboard-grid` / `.widget-span-2`）。
+  - **チャート再利用**: ウィジェットは `query.visualization&.display_mode == "chart"` のとき topic-11 の `visualizations/_chart` を、それ以外は `visualizations/_result_table` を render（helper `chart_config_for` 等を再利用）。
+  - **System spec**（`spec/system/dashboards_spec.rb`）: rack_test で 空状態→作成→ウィジェット2追加→下へ並べ替え→リロード順序保持→ウィジェット削除→ダッシュボード削除で widget CASCADE。`未実行` プレースホルダー。バリデーションエラー。`js: true` でチャートウィジェットの canvas 描画を最小確認。
+- **Coder→司令塔**: 本体実装完了。`bundle exec rspec` **425 examples, 0 failures**、SimpleCov **98.87%**（≥85）。`bin/rubocop` 0 offense、`bin/brakeman` 0 警告、`bin/importmap audit` 0。Tester へ引き継ぎ依頼。
