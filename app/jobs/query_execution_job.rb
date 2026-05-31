@@ -38,7 +38,10 @@ class QueryExecutionJob < ApplicationJob
 
   # Turbo Streams（SolidCable）へ結果/エラーを差し込む。クラスメソッドにして
   # ジョブ spec ではここをスタブし、ブロードキャスト spec で実体を検証する。
+  # query_result の置換に加え、履歴一覧の先頭へ新規行を prepend する（トピック17）。
   def self.broadcast_result(execution)
+    query = execution.query
+
     partial, locals =
       if execution.failed?
         [ "query_executions/error", { execution: execution } ]
@@ -47,10 +50,18 @@ class QueryExecutionJob < ApplicationJob
       end
 
     Turbo::StreamsChannel.broadcast_replace_to(
-      execution.query,
+      query,
       target: "query_result",
       partial: partial,
       locals: locals
+    )
+
+    # 履歴一覧（#query_history_rows）の先頭へ完了した実行の行を追記する。
+    Turbo::StreamsChannel.broadcast_prepend_to(
+      query,
+      target: "query_history_rows",
+      partial: "query_executions/history_row",
+      locals: { execution: execution, query: query, latest_succeeded_id: query.latest_succeeded_execution&.id }
     )
   end
 

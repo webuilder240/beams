@@ -25,12 +25,29 @@ RSpec.describe "QueryExecutionJob.broadcast_result" do
     execution = create(:query_execution, :failed, query: query)
 
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to)
 
     QueryExecutionJob.broadcast_result(execution)
 
     expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
       query,
       hash_including(target: "query_result", partial: "query_executions/error")
+    )
+  end
+
+  it "prepends a new history row to query_history_rows on the query stream (トピック17)" do
+    execution = create(:query_execution, :succeeded, query: query)
+    execution.store_result([ { "name" => "n", "type" => "INTEGER" } ], [ [ 1 ] ])
+    execution.save!
+
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to)
+
+    QueryExecutionJob.broadcast_result(execution)
+
+    expect(Turbo::StreamsChannel).to have_received(:broadcast_prepend_to).with(
+      query,
+      hash_including(target: "query_history_rows", partial: "query_executions/history_row")
     )
   end
 end
