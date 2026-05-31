@@ -30,7 +30,7 @@
 | 12 | ダッシュボード | ✅完了 | Coder/Tester | [progress/12-dashboard.md](progress/12-dashboard.md) |
 | 13 | 共有・権限（組織フルオープン） | ✅完了 | Coder/Tester | [progress/13-sharing-permissions.md](progress/13-sharing-permissions.md) |
 | 14 | 探しやすさ・一覧改善 | ✅完了 | Coder/Tester | [progress/14-search-listing.md](progress/14-search-listing.md) |
-| 15 | SQLite自動バックアップ | ⏳未着手 | - | - |
+| 15 | SQLite自動バックアップ・復旧 | ✅完了 | Coder/Tester | [progress/15-backup-restore.md](progress/15-backup-restore.md) |
 
 ---
 
@@ -48,3 +48,4 @@
 | 12 | `20260531150000_create_dashboards` / `20260531150001_create_widgets` | [migrations/12-dashboards-widgets-migration.md](migrations/12-dashboards-widgets-migration.md) | ✅承認・実行済み |
 
 > ※ 05（セットアップウィザード）・06（スキーマブラウザ）は新規マイグレーション無し（06 は SolidCache 方式採用のため当初案のテーブルを廃止、[ADR 0001](../adr/0001-bigquery-schema-cache.md) 参照）。
+> ※ 13（共有・権限）・14（探しやすさ）・15（バックアップ）はいずれも**新規マイグレーション無し**（13/14 は既存 `user_id`・`title` カラムを使用、15 はスキーマ変更なしの運用スクリプト）。承認ゲート対象外。
