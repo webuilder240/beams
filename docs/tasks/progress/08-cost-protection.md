@@ -2,8 +2,8 @@
 
 > タスク `docs/tasks/08-cost-protection.md` の作業ログ（時系列）。司令塔・Coder・Tester のアクションを記録。
 
-- **ステータス**: 🔄実装完了・Tester引き継ぎ待ち
-- **担当**: Coder（→ Tester）
+- **ステータス**: ✅完了
+- **担当**: Coder / Tester
 
 ## 司令塔メモ（着手時の判断・未決事項の決定）
 
@@ -45,3 +45,6 @@
 - **マイグレーション追加**: なし（既存 `maximum_bytes_billed` カラムの活用のみ。新規テーブル/カラム不要）。
 - **タスク doc / overview**: `08-cost-protection.md` の実装チェックボックス（グループ1〜6）を完了に・ステータス「完了」、`00-overview.md` 表の 08 を「完了」に更新。「動作確認」節は**実 BigQuery 接続が必要な手動確認のため未チェック**（Tester/手動で実施）。
 - **Coder→司令塔**: 実装完了。Tester へ引き継ぎ。
+- **司令塔→Tester**: トピック08 の QA（接続GB上限・dry-run弾き・ジョブ付与を含む）を依頼。
+- **Tester→司令塔**: トピック08 QA **PASS**。全受け入れ条件＋ボス追加要望✅。CostEstimate換算（5GiB→{gb:5.0,yen:4.75}）・over_limit?・接続GB上限（10GB→10737418240 bytes・空欄nil維持・job_options/dry_run両系統反映）を rails runner で実機確認。rspec 208例0失敗・カバレッジ99.74%、rubocop no offenses、brakeman 0（SQLi警告なし）、importmap audit クリーン。差し戻し不要（軽微注記: member拒否はroot リダイレクト方式＝既存と一貫、実BigQuery目視項目は自動範囲外）。
+- **司令塔**: トピック08 を **✅完了** と確定。
