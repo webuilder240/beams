@@ -32,6 +32,8 @@
           </div>
           <div class="flex items-center gap-4">
             <% if logged_in? %>
+              <%= link_to "ダッシュボード", dashboards_path, class: "text-sm text-blue-600 hover:underline" %>
+              <%= link_to "クエリ", queries_path, class: "text-sm text-blue-600 hover:underline" %>
               <span class="text-sm text-gray-600"><%= current_user.email %></span>
               <% if current_user.admin? %>
                 <%= link_to "ユーザー管理", admin_users_path, class: "text-sm text-blue-600 hover:underline" %>
