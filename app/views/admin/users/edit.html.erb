@@ -1,0 +1,44 @@
+<% content_for :title, "ユーザー編集" %>
+
+<div class="max-w-md mx-auto space-y-8">
+  <h1 class="text-2xl font-bold">ユーザー編集</h1>
+
+  <% if flash[:alert] %>
+    <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3"><%= flash[:alert] %></div>
+  <% end %>
+
+  <%# 基本情報（メール・ロール）の更新 %>
+  <%= form_with model: @user, url: admin_user_path(@user), method: :patch, local: true, class: "space-y-4" do |f| %>
+    <%= render "errors", user: @user %>
+
+    <div>
+      <%= f.label :email, "メールアドレス", class: "block text-sm font-medium mb-1" %>
+      <%= f.email_field :email, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.label :role, "ロール", class: "block text-sm font-medium mb-1" %>
+      <%= f.select :role, User::ROLES, {}, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <%= f.submit "更新",
+            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+      <%= link_to "戻る", admin_users_path, class: "text-gray-600 hover:underline" %>
+    </div>
+  <% end %>
+
+  <%# パスワード再発行 %>
+  <div class="border-t border-gray-200 pt-6">
+    <h2 class="text-lg font-semibold mb-3">パスワード再発行</h2>
+    <%= form_with url: reset_password_admin_user_path(@user), method: :patch, local: true, class: "space-y-4" do %>
+      <div>
+        <%= label_tag "user_password", "新しいパスワード", class: "block text-sm font-medium mb-1" %>
+        <%= password_field_tag "user[password]", nil, autocomplete: "new-password",
+              class: "w-full rounded border border-gray-300 px-3 py-2" %>
+      </div>
+      <%= submit_tag "パスワードを再発行",
+            class: "rounded bg-amber-600 text-white px-4 py-2 font-medium hover:bg-amber-700" %>
+    <% end %>
+  </div>
+</div>

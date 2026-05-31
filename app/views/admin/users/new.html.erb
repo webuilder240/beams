@@ -1,0 +1,31 @@
+<% content_for :title, "新規ユーザー" %>
+
+<div class="max-w-md mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">新規ユーザー</h1>
+
+  <%= form_with model: @user, url: admin_users_path, method: :post, local: true, class: "space-y-4" do |f| %>
+    <%= render "errors", user: @user %>
+
+    <div>
+      <%= f.label :email, "メールアドレス", class: "block text-sm font-medium mb-1" %>
+      <%= f.email_field :email, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.label :password, "パスワード", class: "block text-sm font-medium mb-1" %>
+      <%= f.password_field :password, autocomplete: "new-password",
+            class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div>
+      <%= f.label :role, "ロール", class: "block text-sm font-medium mb-1" %>
+      <%= f.select :role, User::ROLES, {}, class: "w-full rounded border border-gray-300 px-3 py-2" %>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <%= f.submit "作成",
+            class: "rounded bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-700" %>
+      <%= link_to "キャンセル", admin_users_path, class: "text-gray-600 hover:underline" %>
+    </div>
+  <% end %>
+</div>
