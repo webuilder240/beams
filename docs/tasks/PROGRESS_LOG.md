@@ -45,5 +45,6 @@
 | 09 | `20260531120000_create_query_parameters` | [migrations/09-query-parameters-migration.md](migrations/09-query-parameters-migration.md) | ✅承認・実行済み |
 | 10 | `20260531130000_create_query_executions` | [migrations/10-query-executions-migration.md](migrations/10-query-executions-migration.md) | ✅承認・実行済み |
 | 11 | `20260531140000_create_visualizations`（counter対応で修正後に再承認） | [migrations/11-visualizations-migration.md](migrations/11-visualizations-migration.md) | ✅承認・実行済み |
+| 12 | `20260531150000_create_dashboards` / `20260531150001_create_widgets` | [migrations/12-dashboards-widgets-migration.md](migrations/12-dashboards-widgets-migration.md) | ✅承認・実行済み |
 
 > ※ 05（セットアップウィザード）・06（スキーマブラウザ）は新規マイグレーション無し（06 は SolidCache 方式採用のため当初案のテーブルを廃止、[ADR 0001](../adr/0001-bigquery-schema-cache.md) 参照）。

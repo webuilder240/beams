@@ -23,3 +23,7 @@
 ### 2026-05-31
 
 - **司令塔**: トピック11完了（Tester PASS）を受け、依存（11・03・07・10）充足済みのトピック12に着手。新規 Coder をアサイン。`dashboards`/`widgets` の2テーブルのマイグレーションが必要 → 承認ゲート。まず確認用ドキュメント作成を指示（承認まで `db:migrate` 禁止）。
+- **Coder→司令塔**: 確認ドキュメント `migrations/12-dashboards-widgets-migration.md`（2テーブル統合）＋マイグレーション2件（`20260531150000_create_dashboards`・`20260531150001_create_widgets`、未実行）作成。論点4点（user_id NOT NULL / 複合index[dashboard_id,position]・position非unique / CASCADE はアプリ層 dependent / column_span はアプリ層 validation）を推奨付きで提起。既存 `Query#latest_succeeded_execution`・`QueryExecution#result`・`Query has_one :visualization` のシグネチャ確認。
+- **司令塔→人間**: マイグレーション承認を依頼（司令塔レビュー済み、論点4点とも Coder 推奨に同意。特に position 非unique は move_up/down のスワップ中間状態で一時重複しうるため妥当）。
+- **人間→司令塔**: ✅**承認・実行する**。`db:migrate` 実行を許可。
+- **司令塔→Coder**: マイグレーション実行＋トピック12 本体（Dashboard/Widget モデル / DashboardsController CRUD / WidgetsController create/destroy/move_up/move_down / Turbo Frames ウィジェット一覧・並べ替え / 1〜2カラムグリッド / ウィジェット内 topic-11 チャート再利用 / 「未実行」プレースホルダー）を TDD で実装するよう指示。
