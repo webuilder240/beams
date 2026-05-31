@@ -29,7 +29,7 @@
 | 11 | 可視化 | ✅完了 | Coder/Tester | [progress/11-visualization.md](progress/11-visualization.md) |
 | 12 | ダッシュボード | ✅完了 | Coder/Tester | [progress/12-dashboard.md](progress/12-dashboard.md) |
 | 13 | 共有・権限（組織フルオープン） | ✅完了 | Coder/Tester | [progress/13-sharing-permissions.md](progress/13-sharing-permissions.md) |
-| 14 | 探しやすさ・一覧検索 | ⏳未着手 | - | - |
+| 14 | 探しやすさ・一覧改善 | ✅完了 | Coder/Tester | [progress/14-search-listing.md](progress/14-search-listing.md) |
 | 15 | SQLite自動バックアップ | ⏳未着手 | - | - |
 
 ---
