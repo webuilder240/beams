@@ -26,7 +26,7 @@
 | 08 | コスト保護★ | ✅完了 | Coder/Tester | [progress/08-cost-protection.md](progress/08-cost-protection.md) |
 | 09 | パラメータ化クエリ | ✅完了 | Coder/Tester | [progress/09-parameterized-query.md](progress/09-parameterized-query.md) |
 | 10 | 非同期実行・結果保存 | ✅完了 | Coder/Tester | [progress/10-query-execution.md](progress/10-query-execution.md) |
-| 11 | 可視化 | ⏳未着手 | - | - |
+| 11 | 可視化 | 🔄進行中 | Coder | [progress/11-visualization.md](progress/11-visualization.md) |
 | 12 | ダッシュボード | ⏳未着手 | - | - |
 | 13 | 共有・権限 | ⏳未着手 | - | - |
 | 14 | 探しやすさ・一覧検索 | ⏳未着手 | - | - |
@@ -44,5 +44,6 @@
 | 08 | `20260531110000_create_application_settings` | [migrations/08-application-settings-migration.md](migrations/08-application-settings-migration.md) | ✅承認・実行済み |
 | 09 | `20260531120000_create_query_parameters` | [migrations/09-query-parameters-migration.md](migrations/09-query-parameters-migration.md) | ✅承認・実行済み |
 | 10 | `20260531130000_create_query_executions` | [migrations/10-query-executions-migration.md](migrations/10-query-executions-migration.md) | ✅承認・実行済み |
+| 11 | `20260531140000_create_visualizations`（counter対応で修正後に再承認） | [migrations/11-visualizations-migration.md](migrations/11-visualizations-migration.md) | ✅承認・実行済み |
 
 > ※ 05（セットアップウィザード）・06（スキーマブラウザ）は新規マイグレーション無し（06 は SolidCache 方式採用のため当初案のテーブルを廃止、[ADR 0001](../adr/0001-bigquery-schema-cache.md) 参照）。
