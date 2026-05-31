@@ -30,4 +30,16 @@
 - **司令塔→人間**: 修正版マイグレーションの承認を依頼。
 - **人間→司令塔**: ✅承認。`db:migrate` 実行を許可。
 - **司令塔→Coder**: マイグレーション実行＋トピック04 本実装（TDD）を指示。
+- **Coder**: `bin/rails db:migrate` 実行（`bigquery_connections` 作成）＋ `bin/rails db:test:prepare`。schema.rb 反映確認。
+- **Coder（コミット1: google-cloud-bigquery gem 導入）**: `gem "google-cloud-bigquery"`（1.64.0）追加・`bundle install`。`require 'google/cloud/bigquery'` → `ok` 確認。Gemfile.lock コミット。→ commit `b4a2716`
+- **Coder（コミット2: Bigquery::Connection モデルと暗号化）**: TDD。
+  - 先に `spec/factories/bigquery_connections.rb` と `spec/models/bigquery/connection_spec.rb`（バリデーション/暗号化の生データ検証/`#bigquery` モック、17例）を作成し **Red 確認**（`uninitialized constant Bigquery`）。
+  - `app/models/bigquery.rb`（`table_name_prefix "bigquery_"`）＋ `app/models/bigquery/connection.rb`（`encrypts :service_account_json`、バリデーション、`#bigquery`）実装 → **17例 green**。
+  - 実装判断: `#bigquery` は `JSON.parse` したハッシュを `Google::Cloud::Bigquery.new(credentials:)` に渡す（一時ファイル不要・メモ化）。→ commit `fb20391`
+- **Coder（コミット3: Bigquery::Connections 管理 UI）**: TDD。
+  - 先に `spec/requests/bigquery/connections_spec.rb`（admin CRUD・member/未認証拒否・SA JSON 非露出、13例）を作成し、ルート追加後 **Red 確認**（コントローラ無し）。
+  - `Bigquery::ConnectionsController`（`require_admin`、CRUD）＋ ビュー（index/new/edit/_form/_errors）＋ ダッシュボードリンク実装 → **13例 green**。
+  - セキュリティ実装: 編集画面で SA JSON 平文を再表示しない（`value: ""`）＋ 空欄なら既存値保持（`connection_update_params` で空欄キー削除）。
+  - `spec/system/bigquery/connections_spec.rb`（rack_test、作成→編集→削除・SA JSON 非露出・member 拒否、3例）→ green。→ commit `507d240`
+- **Coder（完了確認）**: `bundle exec rspec` **全 81例 green / SimpleCov 99.3%**。`bin/rubocop` **0 offenses**。`bin/brakeman --no-pager` **0 warnings**。04-bigquery-connection.md 全チェック・ステータス完了、00-overview.md 表を完了に更新。**追加マイグレーションなし**（bigquery_connections の範囲内）。→ Tester へ引き継ぎ。
 </content>
