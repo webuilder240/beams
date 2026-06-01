@@ -1,11 +1,11 @@
-# ウィジェットの追加・削除・並べ替え（トピック12）。並べ替えは `position` カラム＋
-# 「上へ/下へ」（隣接スワップ。端は no-op）。各アクションは Turbo Stream で
+# ウィジェットの追加・削除・並べ替え（トピック12/19）。並べ替えは D&D（SortableJS +
+# Stimulus コントローラ + PATCH reorder）。各アクションは Turbo Stream で
 # `<turbo-frame id="widgets">` 相当を再描画し、ページリロードなしで反映する。
 # 組織フルオープン（§4.9）のため owner-scope しない。
 class WidgetsController < ApplicationController
   before_action :require_login
   before_action :set_dashboard
-  before_action :set_widget, only: [ :destroy, :move_up, :move_down ]
+  before_action :set_widget, only: [ :destroy ]
 
   def create
     @widget = @dashboard.widgets.new(widget_params)
@@ -23,13 +23,8 @@ class WidgetsController < ApplicationController
     respond_with_widgets(notice: "ウィジェットを削除しました。")
   end
 
-  def move_up
-    @widget.move_up!
-    respond_with_widgets
-  end
-
-  def move_down
-    @widget.move_down!
+  def reorder
+    @dashboard.reorder_widgets!(params[:widget_ids])
     respond_with_widgets
   end
 

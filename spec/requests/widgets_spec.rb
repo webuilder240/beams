@@ -58,33 +58,60 @@ RSpec.describe "Widgets", type: :request do
     end
   end
 
-  describe "POST move_up / move_down" do
+  describe "PATCH /dashboards/:dashboard_id/widgets/reorder" do
     before { login_as(user) }
 
     let!(:w1) { create(:widget, dashboard: dashboard, query: query, position: 0) }
     let!(:w2) { create(:widget, dashboard: dashboard, query: query, position: 1) }
     let!(:w3) { create(:widget, dashboard: dashboard, query: query, position: 2) }
 
-    it "moves a widget up, swapping with the previous one" do
-      post move_up_dashboard_widget_path(dashboard, w2)
+    it "reorders widgets and responds with turbo stream" do
+      patch reorder_dashboard_widgets_path(dashboard),
+            params: { widget_ids: [ w3.id, w1.id, w2.id ] },
+            headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(w3.reload.position).to eq(0)
       expect(w1.reload.position).to eq(1)
-      expect(w2.reload.position).to eq(0)
-    end
-
-    it "is a no-op when moving up the first widget" do
-      post move_up_dashboard_widget_path(dashboard, w1)
-      expect(dashboard.ordered_widgets.to_a).to eq([ w1, w2, w3 ])
-    end
-
-    it "moves a widget down, swapping with the next one" do
-      post move_down_dashboard_widget_path(dashboard, w2)
-      expect(w3.reload.position).to eq(1)
       expect(w2.reload.position).to eq(2)
     end
 
-    it "is a no-op when moving down the last widget" do
-      post move_down_dashboard_widget_path(dashboard, w3)
-      expect(dashboard.ordered_widgets.to_a).to eq([ w1, w2, w3 ])
+    it "redirects to dashboard when request is HTML (fallback)" do
+      patch reorder_dashboard_widgets_path(dashboard),
+            params: { widget_ids: [ w2.id, w1.id, w3.id ] }
+
+      expect(response).to redirect_to(dashboard_path(dashboard))
+    end
+
+    it "redirects unauthenticated requests to login" do
+      # ログアウト状態でリクエスト
+      delete session_path
+      patch reorder_dashboard_widgets_path(dashboard),
+            params: { widget_ids: [ w1.id ] }
+
+      expect(response).to redirect_to(new_session_path)
+    end
+
+    it "handles missing widget_ids gracefully (empty array)" do
+      patch reorder_dashboard_widgets_path(dashboard),
+            params: { widget_ids: [] },
+            headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "ignores widget IDs from other dashboards" do
+      other_dashboard = create(:dashboard, user: user)
+      other_widget = create(:widget, dashboard: other_dashboard, query: query, position: 0)
+
+      patch reorder_dashboard_widgets_path(dashboard),
+            params: { widget_ids: [ other_widget.id, w1.id, w2.id ] },
+            headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response).to have_http_status(:ok)
+      # 他ダッシュボードのウィジェットの position は変わらない
+      expect(other_widget.reload.position).to eq(0)
     end
   end
 end
