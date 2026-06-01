@@ -54,9 +54,8 @@ Rails.application.routes.draw do
   # 1〜2カラムグリッドにまとめる。閲覧・編集は全ログインユーザーに許可（§4.9）。
   resources :dashboards do
     resources :widgets, only: [ :create, :destroy ] do
-      member do
-        post :move_up
-        post :move_down
+      collection do
+        patch :reorder
       end
     end
   end

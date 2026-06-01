@@ -70,44 +70,4 @@ RSpec.describe Widget, type: :model do
     end
   end
 
-  describe "reordering" do
-    let(:dashboard) { create(:dashboard) }
-    let!(:w1) { create(:widget, dashboard: dashboard, position: 0) }
-    let!(:w2) { create(:widget, dashboard: dashboard, position: 1) }
-    let!(:w3) { create(:widget, dashboard: dashboard, position: 2) }
-
-    describe "#move_up!" do
-      it "swaps position with the previous widget" do
-        w2.move_up!
-        expect(w1.reload.position).to eq(1)
-        expect(w2.reload.position).to eq(0)
-      end
-
-      it "does nothing for the first widget (no-op)" do
-        expect { w1.move_up! }.not_to(change { dashboard.ordered_widgets.pluck(:id) })
-      end
-
-      it "keeps ordering consistent after moving up" do
-        w3.move_up!
-        expect(dashboard.ordered_widgets.to_a).to eq([ w1, w3, w2 ])
-      end
-    end
-
-    describe "#move_down!" do
-      it "swaps position with the next widget" do
-        w2.move_down!
-        expect(w3.reload.position).to eq(1)
-        expect(w2.reload.position).to eq(2)
-      end
-
-      it "does nothing for the last widget (no-op)" do
-        expect { w3.move_down! }.not_to(change { dashboard.ordered_widgets.pluck(:id) })
-      end
-
-      it "keeps ordering consistent after moving down" do
-        w1.move_down!
-        expect(dashboard.ordered_widgets.to_a).to eq([ w2, w1, w3 ])
-      end
-    end
-  end
 end

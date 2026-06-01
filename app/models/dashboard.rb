@@ -20,4 +20,19 @@ class Dashboard < ApplicationRecord
   def ordered_widgets
     widgets.order(:position)
   end
+
+  # D&D で確定した順序で position を一括更新する（トピック19）。
+  # ordered_ids に含まれるこのダッシュボード所属の ID のみを対象とし、
+  # 他ダッシュボードの ID や存在しない ID は無視する。
+  # position は 0 始まりの連番で付け直す。トランザクションで実行。
+  def reorder_widgets!(ordered_ids)
+    own_ids = widgets.pluck(:id)
+    filtered = Array(ordered_ids).map(&:to_i).select { |id| own_ids.include?(id) }
+
+    transaction do
+      filtered.each_with_index do |id, index|
+        widgets.where(id: id).update_all(position: index)
+      end
+    end
+  end
 end
