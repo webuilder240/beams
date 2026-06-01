@@ -47,3 +47,11 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
 ### マネージャー所見・要追跡（Tester/Reviewerへ申し送り）
 
 - **system spec のD&D忠実度**: 並び替えテストは SortableJS の実ドラッグを発火させず、JSで DOM を並べ替えてから `ctrl.onEnd()` を**直接呼ぶ**方式（Coderコメント: Capybara/Playwrightのポインタ操作では発火が不安定なため）。「reorder送信→position永続化→リロード保持」は検証できるが、「SortableJSで実際にドラッグできるか（handle/draggable設定の妥当性）」は未検証。タスク受け入れ条件「Playwrightで実D&D」に対する忠実度をTesterが評価し、Reviewerにも見解を求める。
+
+## Tester QA結果（2026-06-01、Tester独立検証）
+
+- Tester自身の実測: 全スイート `bundle exec rspec` **510 examples, 0 failures**、SimpleCov **98.87%**。`bin/rails routes | grep widget` で reorder/create/destroy のみ（move 系なし）。
+- 受け入れ条件1〜7: **全てPASS**（実装本体＝モデル/コントローラ/ルート/ビューは要件充足）。
+- **D&D忠実度: 要修正（受け入れ条件未達）**。system spec の並び替えテストが DOM 直接操作＋`onEnd()` 直呼びで、SortableJS の実ドラッグ・`handle` 設定の機能を未検証。タスク受け入れ条件「Playwrightで実D&Dを行い順序が変わることを検証」に対し未達。
+- **総合判定: 要修正**（修正点は system spec の1点のみ。実装ロジックは修正不要）。
+- **マネージャー処置**: フロー通り Coder に差し戻し。system spec を Playwright の実ポインタ操作（`with_playwright_page` 経由の mouse down→move→up）で SortableJS に実ドラッグを発火させる方式へ修正させる（SortableJS は既定で HTML5 ネイティブ drag のため、合成マウスイベントで駆動するには `forceFallback: true` 併用が有効）。
