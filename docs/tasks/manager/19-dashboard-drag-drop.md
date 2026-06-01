@@ -78,3 +78,16 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
   - nth-2: `onEnd(event)` で `oldIndex === newIndex`（順序不変）のとき fetch をスキップ（無駄な PATCH 防止）。
   - nth-3: `dashboard_spec.rb` のトランザクションテストが名（all-or-nothing）と実体（正常系）の乖離 → 実際にロールバックを検証する内容へ書き直し。
 - **マネージャー処置**: 上記 should 4件＋nice-to-have 3件を Coder にリファクタ依頼（外部から見た振る舞いを変えない／green・カバレッジ85%以上・rubocop クリーン維持）。見送り: なし。
+
+## リファクタ完了・マネージャー最終検証（2026-06-01）
+
+- Coder リファクタコミット **`4846f8b`**（`git cat-file -t` で commit 確認）。Reviewer 指摘 should×4・nice-to-have×3 を全件対応（実読確認）:
+  - `reorder_widgets!` は単一 `CASE WHEN id=? THEN ? … END` の `update_all`（プレースホルダでパラメータ化＝SQLi 安全）へ一括化。
+  - `sortable_controller.js`: `response.ok` false で throw＋`.catch` でログ／`disconnect` で `this.sortable = null`／`onEnd(event)` で `oldIndex===newIndex` 時 fetch スキップ／`connect` で `data-sortable-ready` マーカー（待機判定用 data 属性のみ）。
+  - `dashboard_spec.rb`: トランザクションテストを実ロールバック検証（`ActiveRecord::Rollback` で全 position が元値のまま）へ書き直し。
+- **マネージャー実測再現**（worktree、`db:test:prepare`＋`tailwindcss:build` 後）:
+  - 非system フルスイート: **433 examples, 0 failures**、Line Coverage **98.67% (964/977)**。
+  - `spec/system/dashboards_spec.rb`: **9 examples, 0 failures**。D&D 単体（`drag-and-drop`）は**3連続すべて `1 example, 0 failures`**（フレークなし）。
+  - `bin/rubocop`: **145 files inspected, no offenses detected**。
+- **完了判定**: タスク `19-dashboard-drag-drop.md` の全チェックボックス充足、Tester PASS（D&D忠実度解消）、Reviewer 指摘対応済み、マネージャー再現で green・カバレッジ85%以上・rubocop クリーンを確認。→ **トピック19 完了**。
+- 補足: DBマイグレーションなし（承認ゲート対象外）。push/PR は未実施（ユーザー明示依頼時のみ）。

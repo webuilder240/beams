@@ -34,7 +34,7 @@
 | 16 | フォームUIのTailwindスタイル統一 | ✅完了 | Coder/Tester | [progress/16-form-styling-consistency.md](progress/16-form-styling-consistency.md) |
 | 17 | クエリ実行結果のレンダリング修正・実行履歴表示 | ✅完了 | Coder/Tester | [progress/17-query-result-history.md](progress/17-query-result-history.md) |
 | 18 | KamalからONCE配信への移行 | ✅完了 | Coder/Tester | [manager/18-once-distribution.md](manager/18-once-distribution.md) |
-| 19 | ダッシュボードD&D並び替え（Hotwire/SortableJS） | 🚧実装中 | Coder/Tester | [manager/19-dashboard-drag-drop.md](manager/19-dashboard-drag-drop.md) |
+| 19 | ダッシュボードD&D並び替え（Hotwire/SortableJS） | ✅完了 | Coder/Tester/Reviewer | [manager/19-dashboard-drag-drop.md](manager/19-dashboard-drag-drop.md) |
 
 ---
 
