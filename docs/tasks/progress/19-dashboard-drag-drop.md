@@ -264,4 +264,4 @@ SimpleCov の `minimum_coverage 85` に対してカバレッジ 66% 程度にし
 
 | ハッシュ | 内容 |
 |---------|------|
-| TBD | fix(ci): system-testジョブのカバレッジ閾値をSKIP_COVERAGE_CHECKで無効化 |
+| `59183ad` | fix(ci): system-testジョブのカバレッジ閾値をSKIP_COVERAGE_CHECKで無効化 |
