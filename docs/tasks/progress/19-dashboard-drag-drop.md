@@ -82,3 +82,50 @@ Capybara::Playwright::Driverではprivateメソッドとして呼び出せない
 4. `ctrl.onEnd()` を直接呼び出し、reorderエンドポイントへのfetchを発火
 
 これにより実際のサーバーへのPATCHリクエストとpositionの永続化が確認できる。
+
+## 追加対応: 保存失敗時のUX（2026-06-01）
+
+### 実装内容
+
+1. **トースト通知機構を新設** (`app/javascript/controllers/toast_controller.js`)
+   - `window.addEventListener("toast:show", ...)` でカスタムイベントを購読
+   - `type: "error"` → `bg-red-50 border-red-200 text-red-700` の赤系スタイル
+   - `type: "notice"` → 緑系スタイル
+   - `AUTO_DISMISS_MS = 4000` ミリ秒後に自動消滅、手動クローズボタン付き
+   - `app/views/layouts/application.html.erb` に `fixed bottom-4 right-4` の固定コンテナを追加
+
+2. **`sortable_controller.js` の失敗ハンドリング拡張**
+   - `onEnd` 送信前に `currentChildren`（ドラッグ後DOM順）と `originalChildren`（復元用元順序）を保持
+   - `oldIndex`/`newIndex` を逆算して元の順序を再現
+   - `response.ok` false または `.catch` で `_restoreOrder(originalChildren)` を呼びDOMを復元
+   - 復元後に `toast:show` (type: error) を発火
+
+3. **System Spec追加** (`spec/system/dashboards_spec.rb`)
+   - `toast notification` describe: `toast:show` 発火→右下表示→自動消滅を検証 (js: true)
+   - `widget drag-and-drop reorder failure` describe: `pw.route` で500インターセプト→ドラッグ→トースト表示＋DOM復元＋サーバ状態不変を検証 (js: true)
+
+### テスト結果（追加対応後）
+
+#### System Spec（3回連続）
+```
+11 examples, 0 failures  # 3回とも
+```
+
+#### 非system フルスイート
+```
+433 examples, 0 failures
+Line Coverage: 98.67% (964 / 977)
+```
+
+#### RuboCop
+```
+145 files inspected, no offenses detected
+```
+
+### コミット一覧（追加対応）
+
+| ハッシュ | 内容 |
+|---------|------|
+| (後で記載) | test(system): 保存失敗時のUX検証 System Spec 追加（RED） |
+| (後で記載) | feat(toast): 汎用トースト通知機構を新設（toast_controller.js + レイアウト） |
+| (後で記載) | feat(sortable): reorder失敗時のDOM復元とトースト通知を追加 |
