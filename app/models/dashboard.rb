@@ -26,7 +26,7 @@ class Dashboard < ApplicationRecord
   # 他ダッシュボードの ID や存在しない ID は無視する。
   # position は 0 始まりの連番で付け直す。トランザクションで実行。
   #
-  # 呼び出し元（WidgetsController#reorder / sortable_controller.js）は、
+  # 呼び出し元（WidgetOrdersController#update / sortable_controller.js）は、
   # グリッド上の全ウィジェット ID を「並び替え後の順序」で送ってくる前提。
   # 部分配列でも動作するが、その場合は配列に含まれた ID のみが 0,1,2… に
   # 振り直され、含まれない ID の position はそのまま残る。

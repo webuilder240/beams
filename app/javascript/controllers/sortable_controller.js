@@ -3,7 +3,7 @@ import Sortable from "sortablejs"
 
 // D&D 並び替えコントローラ（トピック19）。
 // SortableJS をグリッド要素に適用し、ドロップ確定時（onEnd）に
-// DOM 順から data-widget-id を集めて reorder エンドポイントへ PATCH 送信する。
+// DOM 順から data-widget-id を集めて widget_order エンドポイントへ PATCH 送信する。
 // 失敗時（4xx/5xx・ネットワークエラー）は DOM をドラッグ前の順序へ復元し、
 // toast:show（type: error）カスタムイベントで画面にエラー通知する。
 export default class extends Controller {

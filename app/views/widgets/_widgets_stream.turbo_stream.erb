@@ -1,6 +1,6 @@
 <%#
   ウィジェット一覧（Turbo Frame `widgets`）を丸ごと差し替える共通ストリーム。
-  create / destroy / reorder の各アクションから再利用する。
+  create / destroy（WidgetsController）/ update（WidgetOrdersController）から再利用する。
 %>
 <%= turbo_stream.replace "widgets" do %>
   <%= turbo_frame_tag "widgets" do %>
