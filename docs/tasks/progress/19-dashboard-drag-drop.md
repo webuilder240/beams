@@ -171,3 +171,63 @@ Security Warnings: 0  (SQL Injection 警告 消滅)
 | ハッシュ | 内容 |
 |---------|------|
 | `007d02d` | fix(models): reorder_widgets! をWidget.updateイディオムに書き換えBrakeman警告を解消 |
+
+## PR #4 レビュー指摘対応（2026-06-01）
+
+### 依頼1: コントローラアクション名をCRUDのみにする
+
+#### 対応内容
+
+- `config/routes.rb`: `widgets` の `collection { patch :reorder }` を削除し、`resource :widget_order, only: [:update]` に切り出し。
+  - ルート: `PATCH /dashboards/:dashboard_id/widget_order`、ヘルパ: `dashboard_widget_order_path`
+- `app/controllers/widget_orders_controller.rb` 新規作成: `update` のみの CRUD コントローラ
+- `app/views/widget_orders/update.turbo_stream.erb` 新規作成（`render "widgets/widgets_stream"` 再利用）
+- `app/views/widgets/reorder.turbo_stream.erb` 削除
+- `WidgetsController#reorder` 削除（`create`/`destroy` は維持）
+- `app/views/widgets/_widgets.html.erb`: `data-sortable-url-value` を `dashboard_widget_order_path` に変更
+- `spec/requests/widgets_spec.rb`: `reorder` describe ブロック削除
+- `spec/requests/widget_orders_spec.rb` 新規作成: (a)正常系 (b)未ログイン (c)空配列 (d)他ダッシュボードID無視
+- `spec/system/dashboards_spec.rb`: Playwright インターセプトパターン `**/widgets/reorder` → `**/widget_order` 変更
+
+### 依頼2: CI の test ジョブで tailwind をビルド
+
+- `.github/workflows/ci.yml`: `test` ジョブの `Run tests` ステップに `bin/rails tailwindcss:build` を追加
+
+### テスト結果（対応後）
+
+#### フルスイート（system 含む）
+```
+513 examples, 0 failures
+Line Coverage: 98.88% (973 / 984)
+```
+
+#### system spec（3回連続）
+```
+79 examples, 0 failures  # 3回とも
+```
+
+#### Brakeman
+```
+Security Warnings: 0
+```
+
+#### RuboCop
+```
+147 files inspected, no offenses detected
+```
+
+### ルート確認（bin/rails routes | grep widget）
+```
+              dashboard_widgets POST   /dashboards/:dashboard_id/widgets(.:format)          widgets#create
+               dashboard_widget DELETE /dashboards/:dashboard_id/widgets/:id(.:format)      widgets#destroy
+         dashboard_widget_order PATCH  /dashboards/:dashboard_id/widget_order(.:format)     widget_orders#update
+                                PUT    /dashboards/:dashboard_id/widget_order(.:format)     widget_orders#update
+```
+（`reorder` ルートは削除済み）
+
+### コミット
+
+| ハッシュ | 内容 |
+|---------|------|
+| `f0dcefc` | refactor(routes): reorderをwidget_orderリソースのupdateへ |
+| `9491d27` | fix(ci): testジョブでtailwindをビルド |
