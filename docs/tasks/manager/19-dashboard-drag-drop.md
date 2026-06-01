@@ -64,3 +64,17 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
   - 非system フルスイート: **433 examples, 0 failures**、Line Coverage **98.67% (961/974)**（基線維持）。
   - `bin/rubocop`: **145 files inspected, no offenses detected**。
 - **判定**: Tester の唯一の指摘（D&D忠実度）は実ポインタ操作テストで**解消**。実ドラッグの結果として並び替え→PATCH→position永続化→リロード保持を検証できている。→ Tester PASS 相当としてフェーズ6（Reviewer）へ進む。
+
+## Reviewer レビュー結果（2026-06-01、`reviewer` スキル）
+
+- **`must`: なし**。設計制約違反なし（serviceクラス禁止◯ / リアクティブライブラリ不使用◯ / rubocop omakase 準拠）。
+- **`should`（マネージャー: 全件対応とする）**:
+  - should-1: `Dashboard#reorder_widgets!` のループ内 `update_all` が N+1 SQL → 単一 `CASE WHEN` UPDATE 等へ一括化。
+  - should-2: `sortable_controller.js` の `fetch` にエラーハンドリングなし（4xx/5xx・ネットワークエラーで DOM とサーバが無音 desync）→ `response.ok` false で reject＋`.catch` でログ。
+  - should-3: Turbo Frame 再描画時の `Sortable` 旧インスタンス参照保持 → `disconnect` で `this.sortable = null` を明示。
+  - should-4: system spec の固定 `sleep`（1.0/2.0）がフレーク要因 → DOM 変化を待つポーリング（`have_css` の `wait:` 等）へ置換。
+- **`nice-to-have`（マネージャー: 安価で有益な3件を対応とする）**:
+  - nth-1: `reorder_widgets!` に「呼び出し元は全ウィジェット ID を送る前提」のコメント明記。
+  - nth-2: `onEnd(event)` で `oldIndex === newIndex`（順序不変）のとき fetch をスキップ（無駄な PATCH 防止）。
+  - nth-3: `dashboard_spec.rb` のトランザクションテストが名（all-or-nothing）と実体（正常系）の乖離 → 実際にロールバックを検証する内容へ書き直し。
+- **マネージャー処置**: 上記 should 4件＋nice-to-have 3件を Coder にリファクタ依頼（外部から見た振る舞いを変えない／green・カバレッジ85%以上・rubocop クリーン維持）。見送り: なし。
