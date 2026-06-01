@@ -130,3 +130,44 @@ Line Coverage: 98.67% (964 / 977)
 | `12f8da7` | feat(toast): 汎用トースト通知機構を新設（toast_controller.js + レイアウト固定コンテナ） |
 | `01dab58` | feat(sortable): reorder失敗時のDOM復元とトースト通知を追加 |
 | `58f569c` | docs(progress): トピック19追加対応のチェックボックスを完了化し進捗ログを更新 |
+
+## Brakeman SQL Injection 修正（2026-06-01）
+
+### 問題
+`reorder_widgets!` の `update_all(["position = #{case_sql}", ...])` にて Brakeman が
+SQL Injection（Confidence: Weak）を検知。CI の `scan_ruby` が赤になるリグレッション。
+
+### 対応（コードで解決、ignore 未使用）
+
+- `Widget.update(filtered, attrs)` に書き換え（生SQL文字列補間を排除）。
+  - `attrs` は `filtered.each_with_index.map { |_id, index| { position: index } }` で生成。
+  - `transaction` ブロックで囲み、契約不変を維持。
+  - ウィジェット数は実運用で少数のため複数 UPDATE でも問題なし。
+
+### 検証結果
+
+#### Brakeman
+```
+Security Warnings: 0  (SQL Injection 警告 消滅)
+```
+
+#### spec/models/dashboard_spec.rb
+```
+19 examples, 0 failures
+```
+
+#### RuboCop
+```
+145 files inspected, no offenses detected
+```
+
+#### spec/models（全体）
+```
+224 examples, 0 failures
+```
+
+### コミット
+
+| ハッシュ | 内容 |
+|---------|------|
+| TBD | fix(models): reorder_widgets! をWidget.updateイディオムに書き換えBrakeman警告を解消 |

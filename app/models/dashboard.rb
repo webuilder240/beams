@@ -31,20 +31,17 @@ class Dashboard < ApplicationRecord
   # 部分配列でも動作するが、その場合は配列に含まれた ID のみが 0,1,2… に
   # 振り直され、含まれない ID の position はそのまま残る。
   #
-  # SQL は CASE 式を用いた単一 UPDATE で発行する（N+1 回避）。SQLite で動作。
+  # Widget.update(ids, attrs) で ID ごとに UPDATE を発行する（Brakeman 安全）。
+  # ウィジェット数は実運用で少数のため複数 UPDATE でも問題ない。
   def reorder_widgets!(ordered_ids)
     own_ids = widgets.pluck(:id)
     filtered = Array(ordered_ids).map(&:to_i).select { |id| own_ids.include?(id) }
     return if filtered.empty?
 
-    # CASE WHEN id = ? THEN ? ... END で各 ID の新 position を一括指定する。
-    when_clauses = filtered.each_index.map { "WHEN id = ? THEN ?" }.join(" ")
-    case_args = filtered.each_with_index.flat_map { |id, index| [ id, index ] }
-    case_sql = "CASE #{when_clauses} END"
+    attrs = filtered.each_with_index.map { |_id, index| { position: index } }
 
     transaction do
-      widgets.where(id: filtered)
-             .update_all([ "position = #{case_sql}", *case_args ])
+      Widget.update(filtered, attrs)
     end
   end
 end
