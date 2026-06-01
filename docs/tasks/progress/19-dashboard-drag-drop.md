@@ -231,3 +231,37 @@ Security Warnings: 0
 |---------|------|
 | `f0dcefc` | refactor(routes): reorderをwidget_orderリソースのupdateへ |
 | `9491d27` | fix(ci): testジョブでtailwindをビルド |
+
+## CI カバレッジ閾値是正（2026-06-01）
+
+### 問題
+PR #4 の `system-test` ジョブが `spec/system` のみ実行するため、
+SimpleCov の `minimum_coverage 85` に対してカバレッジ 66% 程度にしか達せず exit 2 で失敗していた。
+
+### 対応
+
+1. `spec/spec_helper.rb`: `minimum_coverage 85` を `unless ENV["SKIP_COVERAGE_CHECK"]` でガード。
+   - `test` ジョブ（system 以外を全実行）では環境変数なし → 85% 閾値が引き続き適用される。
+   - `system-test` ジョブ（部分実行）では `SKIP_COVERAGE_CHECK=1` で閾値をスキップ。
+
+2. `.github/workflows/ci.yml`: `system-test` ジョブの `Run System Tests` ステップ `env:` に
+   `SKIP_COVERAGE_CHECK: "1"` を追加（`test` ジョブには追加しない）。
+
+### 検証結果
+
+| 実行条件 | examples | failures | Coverage | exit code |
+|---------|---------|---------|---------|-----------|
+| `SKIP_COVERAGE_CHECK=1 bundle exec rspec spec/system` | 79 | 0 | 66.05% | 0 |
+| `bundle exec rspec spec/system` | 79 | 0 | 66.05% | 2（閾値未達） |
+| `bundle exec rspec`（全体・env変数なし） | 513 | 0 | 98.88% | 0 |
+
+#### RuboCop
+```
+147 files inspected, no offenses detected
+```
+
+### コミット
+
+| ハッシュ | 内容 |
+|---------|------|
+| TBD | fix(ci): system-testジョブのカバレッジ閾値をSKIP_COVERAGE_CHECKで無効化 |
