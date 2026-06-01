@@ -206,7 +206,7 @@ RSpec.describe "Dashboards", type: :system do
 
       # reorder エンドポイントを 500 でインターセプト（実ドラッグ前に登録）
       page.driver.with_playwright_page do |pw|
-        pw.route("**/widgets/reorder", ->(route, _request) {
+        pw.route("**/widget_order", ->(route, _request) {
           route.fulfill(status: 500, contentType: "text/plain", body: "Internal Server Error")
         })
       end

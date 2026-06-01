@@ -1,6 +1,6 @@
-# ウィジェットの追加・削除・並べ替え（トピック12/19）。並べ替えは D&D（SortableJS +
-# Stimulus コントローラ + PATCH reorder）。各アクションは Turbo Stream で
+# ウィジェットの追加・削除（トピック12）。各アクションは Turbo Stream で
 # `<turbo-frame id="widgets">` 相当を再描画し、ページリロードなしで反映する。
+# 並べ替えは WidgetOrdersController（トピック19）を参照。
 # 組織フルオープン（§4.9）のため owner-scope しない。
 class WidgetsController < ApplicationController
   before_action :require_login
@@ -21,11 +21,6 @@ class WidgetsController < ApplicationController
   def destroy
     @widget.destroy
     respond_with_widgets(notice: "ウィジェットを削除しました。")
-  end
-
-  def reorder
-    @dashboard.reorder_widgets!(params[:widget_ids])
-    respond_with_widgets
   end
 
   private
