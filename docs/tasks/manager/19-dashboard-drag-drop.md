@@ -103,3 +103,15 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
   - 非system フルスイート: **433 examples, 0 failures**、Line Coverage **98.67% (964/977)**。
   - `bin/rubocop`: **145 files inspected, no offenses detected**。
 - **判定**: 追加対応の全チェックボックス充足、マネージャー再現で green・カバレッジ85%以上・rubocop クリーン。`feat/19-reorder-failure-toast` は ff マージ済みのため削除。push/PR は未実施（ユーザー明示依頼時のみ）。
+
+## Brakeman リグレッション解消（PR作成前、2026-06-01）
+
+- **検知**: PR 作成準備中のマネージャー実測で `bin/brakeman --no-pager` が **SQL Injection（Weak）1件**（`app/models/dashboard.rb` の `reorder_widgets!` 一括 UPDATE の生SQL補間）。**main 基線は 0 件**＝新規リグレッション。`bin/brakeman` は警告時 exit 非ゼロのため CI `scan_ruby` が赤になる。
+- **処置**: 抑制（brakeman.ignore）ではなく**発生源で解消**する方針で Coder（worktree隔離 `agent-a9c34971398102dc0`、派生ブランチ `feat/19-brakeman-fix`）に依頼。
+- **Coder 対応コミット**（`git cat-file -t` で commit 確認、`feat/19` に ff 統合済み）: `007d02d`（`reorder_widgets!` を生SQL補間 → `Widget.update(filtered, attrs)` のイディオムへ書き換え）/ `03a0892`（進捗ログ）。`brakeman.ignore` 未使用。契約（所属IDのみ・0始まり連番・トランザクション）は不変。
+- **マネージャー実測再現**（worktree、`db:test:prepare`＋`tailwindcss:build` 後）:
+  - `bin/brakeman --no-pager`: **Security Warnings 0**（解消確認）。
+  - `bundle exec rspec`（全体、system含む）: **512 examples, 0 failures**、Line Coverage **98.87% (964/975)**。
+  - `bin/rubocop`: **145 files inspected, no offenses detected**。
+  - 注: Coder 報告の「全体で 55 failures」は worktree で `tailwindcss:build` 未実行だったための環境起因（system spec のアセット欠落）。マネージャーが tailwind ビルド後に再現し 0 failures を確認＝実リグレッションではない。
+- **判定**: Brakeman リグレッション解消。トピック19の全受け入れ条件（rspec green・カバレッジ85%以上・rubocop クリーン・brakeman リグレッションなし）を満たす。
