@@ -1,6 +1,9 @@
 require "simplecov"
 SimpleCov.start "rails" do
-  minimum_coverage 85
+  # system-test ジョブは spec/system のみ実行するため全体カバレッジに達しない。
+  # 包括的な test ジョブ（system 以外を全実行）で 85% を担保し、
+  # 部分実行時は SKIP_COVERAGE_CHECK で閾値チェックを無効化する。
+  minimum_coverage 85 unless ENV["SKIP_COVERAGE_CHECK"]
   add_filter "/app/controllers/application_controller.rb"
   add_filter "/app/models/application_record.rb"
   add_filter "/app/jobs/application_job.rb"
