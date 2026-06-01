@@ -91,3 +91,15 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
   - `bin/rubocop`: **145 files inspected, no offenses detected**。
 - **完了判定**: タスク `19-dashboard-drag-drop.md` の全チェックボックス充足、Tester PASS（D&D忠実度解消）、Reviewer 指摘対応済み、マネージャー再現で green・カバレッジ85%以上・rubocop クリーンを確認。→ **トピック19 完了**。
 - 補足: DBマイグレーションなし（承認ゲート対象外）。push/PR は未実施（ユーザー明示依頼時のみ）。
+
+## 追加対応: 保存失敗時のUX（フォローアップ、2026-06-01）
+
+- **ボス決定**: D&D 保存失敗時に (1) 並び順をドラッグ前へ復元、(2) 画面右下のトーストでエラー通知。トーストは汎用機構として新設。
+- **ブランチ運用**: 本体作業ツリーは `feat/19-dashboard-drag-drop`（ユーザーがローカル起動中）のまま維持し、派生ブランチ `feat/19-reorder-failure-toast` を切って Coder（worktree隔離 `agent-ae046231b7ed3085f`）が実装。完了後 `feat/19` へ **ff-only マージ**で統合。
+- **Coder 実装コミット**（`git cat-file -t` で commit 確認、`feat/19` に統合済み）: `b355495`(system spec RED) / `12f8da7`(toast機構) / `01dab58`(sortable失敗ハンドリング=DOM復元+toast) / `58f569c`・`1b4783c`(進捗ログ)。
+- **実装概要**: `toast_controller.js`（`toast:show` カスタムイベント購読・右下固定・4秒自動消滅・手動クローズ・HTMLエスケープ済み・error/notice配色）＋レイアウトに固定コンテナ。`sortable_controller.js` は `onEnd` で `oldIndex/newIndex` から元順序を逆算保持し、失敗時に `_restoreOrder`（appendChild）でDOM復元→`toast:show`(error) 発火。成功系・順序不変スキップは不変。
+- **マネージャー実測再現**（worktree、`db:test:prepare`＋`tailwindcss:build` 後）:
+  - `spec/system/dashboards_spec.rb`: **11 examples, 0 failures**。新規2例（toast表示・reorder失敗時の復元&トースト）は**3連続すべて `2 examples, 0 failures`**（フレークなし）。
+  - 非system フルスイート: **433 examples, 0 failures**、Line Coverage **98.67% (964/977)**。
+  - `bin/rubocop`: **145 files inspected, no offenses detected**。
+- **判定**: 追加対応の全チェックボックス充足、マネージャー再現で green・カバレッジ85%以上・rubocop クリーン。`feat/19-reorder-failure-toast` は ff マージ済みのため削除。push/PR は未実施（ユーザー明示依頼時のみ）。
