@@ -183,9 +183,9 @@ RSpec.describe "Dashboards", type: :system do
       expect(page).to have_content("1番目クエリ", wait: 10)
       expect(page).to have_content("2番目クエリ", wait: 10)
 
-      # Stimulus コントローラ（importmap 経由）のロード完了を待つ
-      expect(page).to have_css('[data-controller="sortable"]', wait: 10)
-      sleep 1.0
+      # SortableJS の初期化完了を待つ（connect() で data-sortable-ready="true" が立つ）。
+      # 固定 sleep ではなく属性の出現をポーリングすることでフレークを減らす。
+      expect(page).to have_css('[data-sortable-ready="true"]', wait: 10)
 
       # 実ポインタ操作で SortableJS（forceFallback: true）に実ドラッグを発火させる。
       # w1 のドラッグハンドルをつかみ → w2 の位置を通過させて → w2 の下端でドロップ。
@@ -212,9 +212,9 @@ RSpec.describe "Dashboards", type: :system do
         pw.mouse.up
       end
 
-      # D&D完了とサーバへのPATCHリクエスト完了を待つ（Turbo Stream 再描画後の順序を確認）
-      expect(page).to have_css("article[data-widget-id='#{w2.id}']", wait: 10)
-      sleep 2.0
+      # ドロップ後の PATCH 完了 → Turbo Stream 再描画を、DOM 反映の出現で待つ
+      # （固定 sleep を排し、グリッド先頭ウィジェットが「2番目クエリ」になるまでポーリング）。
+      expect(page).to have_css(".dashboard-grid > article:first-child h2", text: "2番目クエリ", wait: 10)
 
       # 実ドラッグの結果としてサーバの position が永続化されていることを確認
       expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "2番目クエリ", "1番目クエリ" ])

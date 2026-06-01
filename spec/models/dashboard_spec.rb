@@ -126,17 +126,27 @@ RSpec.describe Dashboard, type: :model do
       expect(w1.reload.position).to eq(1)
     end
 
-    it "runs in a transaction (all-or-nothing)" do
-      # 内部で例外が出ても途中更新が残らないことを確認（トランザクション保証）
-      allow(dashboard.widgets).to receive(:find_by).and_call_original
-      original_positions = [ w1.position, w2.position, w3.position ]
+    it "rolls back all position updates when an error occurs mid-transaction" do
+      # 並び替え後と確実に異なる初期値にしておき、ロールバック後に元の値へ戻ることを検証する。
+      w1.update!(position: 10)
+      w2.update!(position: 20)
+      w3.update!(position: 30)
 
-      dashboard.reorder_widgets!([ w1.id, w2.id, w3.id ])
+      # transaction ブロック内の UPDATE 直後に ActiveRecord::Rollback を起こし、
+      # コミットを妨げる（ActiveRecord の transaction はブロック内例外でロールバックする）。
+      allow(dashboard).to receive(:transaction).and_wrap_original do |original, &block|
+        original.call do
+          block.call
+          raise ActiveRecord::Rollback, "forced rollback for spec"
+        end
+      end
 
-      expect([ w1.reload.position, w2.reload.position, w3.reload.position ])
-        .to eq([ 0, 1, 2 ])
-      # もとの期待値が変更されているので反転はしない（正常系の確認）
-      expect(original_positions).to eq([ 0, 1, 2 ])
+      dashboard.reorder_widgets!([ w3.id, w1.id, w2.id ])
+
+      # ロールバックされ、全 position が元の値のまま（並び替えは反映されない）。
+      expect(w1.reload.position).to eq(10)
+      expect(w2.reload.position).to eq(20)
+      expect(w3.reload.position).to eq(30)
     end
   end
 end

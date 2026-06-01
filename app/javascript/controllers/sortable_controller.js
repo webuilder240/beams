@@ -18,15 +18,27 @@ export default class extends Controller {
       forceFallback: true,
       onEnd: this.onEnd.bind(this)
     })
+
+    // SortableJS の初期化完了マーカー（System Spec の待機判定用。振る舞いには影響しない）。
+    this.element.dataset.sortableReady = "true"
   }
 
   disconnect() {
     if (this.sortable) {
       this.sortable.destroy()
+      this.sortable = null
     }
   }
 
-  onEnd() {
+  // onEnd は SortableJS のドロップ確定時に呼ばれる。
+  // event は SortableJS の Sortable.Event で、event.oldIndex / event.newIndex に
+  // ドラッグ要素の移動前後のインデックスが入る（同じなら順序変化なし）。
+  onEnd(event) {
+    // 順序が変わっていなければサーバへ送る必要はない（無駄な PATCH を防ぐ）。
+    if (event && event.oldIndex === event.newIndex) {
+      return
+    }
+
     const widgetIds = Array.from(this.element.children)
       .map(el => el.dataset.widgetId)
       .filter(id => id !== undefined)
@@ -46,14 +58,19 @@ export default class extends Controller {
       body: body.toString()
     })
       .then(response => {
-        if (response.ok) {
-          return response.text()
+        if (!response.ok) {
+          throw new Error(`Reorder request failed: ${response.status}`)
         }
+        return response.text()
       })
       .then(html => {
         if (html) {
           Turbo.renderStreamMessage(html)
         }
+      })
+      .catch(error => {
+        // ネットワークエラー / 4xx・5xx 応答。無音で握りつぶさずログに残す。
+        console.error("[sortable] reorder failed", error)
       })
   }
 }
