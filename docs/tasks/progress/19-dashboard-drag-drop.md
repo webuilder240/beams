@@ -126,6 +126,7 @@ Line Coverage: 98.67% (964 / 977)
 
 | ハッシュ | 内容 |
 |---------|------|
-| (後で記載) | test(system): 保存失敗時のUX検証 System Spec 追加（RED） |
-| (後で記載) | feat(toast): 汎用トースト通知機構を新設（toast_controller.js + レイアウト） |
-| (後で記載) | feat(sortable): reorder失敗時のDOM復元とトースト通知を追加 |
+| `b355495` | test(system): 保存失敗時のUX検証 System Spec 追加（toast通知・DOM復元・サーバ状態不変） |
+| `12f8da7` | feat(toast): 汎用トースト通知機構を新設（toast_controller.js + レイアウト固定コンテナ） |
+| `01dab58` | feat(sortable): reorder失敗時のDOM復元とトースト通知を追加 |
+| `58f569c` | docs(progress): トピック19追加対応のチェックボックスを完了化し進捗ログを更新 |
