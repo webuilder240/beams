@@ -1,13 +1,16 @@
 <%#
   ウィジェット一覧（1〜2カラムグリッド）。CSS Grid を 2 カラムで敷き、各ウィジェットは
   `column_span`（1/2）に応じて span を切り替える（1カラム時もグリッドで縦積みになる）。
+  D&D 並び替えは SortableJS + Stimulus `sortable` コントローラで実現（トピック19）。
 %>
 <% if widgets.empty? %>
   <p class="rounded border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
     まだウィジェットがありません。上のフォームからクエリを選んで追加してください。
   </p>
 <% else %>
-  <div class="dashboard-grid">
+  <div class="dashboard-grid"
+       data-controller="sortable"
+       data-sortable-url-value="<%= reorder_dashboard_widgets_path(dashboard) %>">
     <%= render partial: "widgets/widget", collection: widgets, as: :widget %>
   </div>
 <% end %>
