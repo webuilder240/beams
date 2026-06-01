@@ -170,4 +170,4 @@ Security Warnings: 0  (SQL Injection 警告 消滅)
 
 | ハッシュ | 内容 |
 |---------|------|
-| TBD | fix(models): reorder_widgets! をWidget.updateイディオムに書き換えBrakeman警告を解消 |
+| `007d02d` | fix(models): reorder_widgets! をWidget.updateイディオムに書き換えBrakeman警告を解消 |
