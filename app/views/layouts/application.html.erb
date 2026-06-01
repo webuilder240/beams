@@ -51,5 +51,10 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <%= yield %>
     </main>
+
+    <%# 汎用トースト通知コンテナ（画面右下固定）。toast:show カスタムイベントで表示 %>
+    <div data-controller="toast"
+         class="fixed bottom-4 right-4 z-50 flex flex-col items-end w-80">
+    </div>
   </body>
 </html>
