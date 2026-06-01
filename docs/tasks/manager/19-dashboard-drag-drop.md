@@ -55,3 +55,12 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
 - **D&D忠実度: 要修正（受け入れ条件未達）**。system spec の並び替えテストが DOM 直接操作＋`onEnd()` 直呼びで、SortableJS の実ドラッグ・`handle` 設定の機能を未検証。タスク受け入れ条件「Playwrightで実D&Dを行い順序が変わることを検証」に対し未達。
 - **総合判定: 要修正**（修正点は system spec の1点のみ。実装ロジックは修正不要）。
 - **マネージャー処置**: フロー通り Coder に差し戻し。system spec を Playwright の実ポインタ操作（`with_playwright_page` 経由の mouse down→move→up）で SortableJS に実ドラッグを発火させる方式へ修正させる（SortableJS は既定で HTML5 ネイティブ drag のため、合成マウスイベントで駆動するには `forceFallback: true` 併用が有効）。
+
+## Coder 差し戻し対応・マネージャー再検証（2026-06-01）
+
+- Coder 修正コミット **`1f072cf`**（`git cat-file -t` で commit 確認）: `sortable_controller.js` に `forceFallback: true` 追加、system spec を `page.driver.with_playwright_page` 経由の実ポインタ操作（`.drag-handle` を `mouse.down` → `steps:` 付き複数 `mouse.move` → `mouse.up`）へ置換。`insertBefore`/`ctrl.onEnd()` 直呼びは削除（`grep` で残存なし確認）。既存 onEnd→PATCH→Turbo Stream フローは不変。
+- **マネージャー実測再現**（worktree、`db:test:prepare`＋`tailwindcss:build` 後）:
+  - `spec/system/dashboards_spec.rb`: **9 examples, 0 failures**。D&D単体テストはフレーク確認で**計3回**（Coder1＋マネージャー2）すべて `1 example, 0 failures`。
+  - 非system フルスイート: **433 examples, 0 failures**、Line Coverage **98.67% (961/974)**（基線維持）。
+  - `bin/rubocop`: **145 files inspected, no offenses detected**。
+- **判定**: Tester の唯一の指摘（D&D忠実度）は実ポインタ操作テストで**解消**。実ドラッグの結果として並び替え→PATCH→position永続化→リロード保持を検証できている。→ Tester PASS 相当としてフェーズ6（Reviewer）へ進む。
