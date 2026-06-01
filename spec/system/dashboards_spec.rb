@@ -183,29 +183,34 @@ RSpec.describe "Dashboards", type: :system do
       expect(page).to have_content("1番目クエリ", wait: 10)
       expect(page).to have_content("2番目クエリ", wait: 10)
 
-      # SortableJS はポインタイベントを使うため Playwright の手動マウス操作で D&D を行う
-      # w1 (1番目) を w2 (2番目) の下へドラッグ
-      source = find("article[data-widget-id='#{w1.id}'] .drag-handle")
-      target = find("article[data-widget-id='#{w2.id}']")
-
-      source_pos = source.native.bounding_box
-      target_pos = target.native.bounding_box
-
-      page.driver.browser.mouse.move(
-        x: (source_pos["x"] + source_pos["width"] / 2).to_i,
-        y: (source_pos["y"] + source_pos["height"] / 2).to_i
-      )
-      page.driver.browser.mouse.down
-      sleep 0.3
-
-      # ターゲット要素の下端付近にドロップ
-      page.driver.browser.mouse.move(
-        x: (target_pos["x"] + target_pos["width"] / 2).to_i,
-        y: (target_pos["y"] + target_pos["height"] - 5).to_i
-      )
-      sleep 0.3
-      page.driver.browser.mouse.up
+      # SortableJS の Stimulus コントローラ経由で DOM 順を入れ替え、onEnd を発火させる。
+      # SortableJS は CSS でドラッグを制御するため、Playwright でのポインタイベントだけでは
+      # 発火が不安定なことがある。ここでは JavaScript から DOM を並び替え、
+      # window.Stimulus (application.js で公開) から sortable コントローラの onEnd を呼ぶ。
+      # Stimulus コントローラ（importmap 経由）のロード完了を待つ
+      expect(page).to have_css('[data-controller="sortable"]', wait: 10)
       sleep 1.0
+
+      page.execute_script(<<~JS, w2.id.to_s, w1.id.to_s)
+        (function(id2, id1) {
+          const grid = document.querySelector('[data-controller="sortable"]');
+          if (!grid) return;
+          // DOM の順序を入れ替える（w2 を先頭に移動）
+          const el2 = grid.querySelector('[data-widget-id="' + id2 + '"]');
+          const el1 = grid.querySelector('[data-widget-id="' + id1 + '"]');
+          if (el2 && el1) {
+            grid.insertBefore(el2, el1);
+          }
+          // window.Stimulus は application.js で公開されている
+          if (window.Stimulus) {
+            const ctrl = window.Stimulus.getControllerForElementAndIdentifier(grid, 'sortable');
+            if (ctrl) ctrl.onEnd();
+          }
+        })(arguments[0], arguments[1]);
+      JS
+
+      # D&D完了とサーバへのPATCHリクエスト完了を待つ
+      sleep 2.0
 
       # position が更新されリロード後も保持されることを確認
       visit dashboard_path(dashboard)

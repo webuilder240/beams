@@ -69,5 +69,4 @@ RSpec.describe Widget, type: :model do
       expect(widget.display_title).to eq("カスタム名")
     end
   end
-
 end
