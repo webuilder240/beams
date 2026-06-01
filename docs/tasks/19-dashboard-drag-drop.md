@@ -4,7 +4,7 @@
 > 技術要件は **Hotwire スタック（Turbo + Stimulus + importmap）** で実現し、Vue/React 等のリアクティブライブラリは使わない。
 > D&D の操作には **SortableJS** を importmap 経由で導入し、Stimulus コントローラでラップする。
 
-- **ステータス**: 🚧未着手
+- **ステータス**: ✅完了
 - **依存**: [[12-dashboard]]（`Dashboard` / `Widget` / `position` カラム / グリッド表示が完了していること）
 - **関連計画書**: §4.8（並べ替え。元はD&Dなしだったが、本トピックでD&Dへ拡張する）
 
@@ -36,52 +36,52 @@
 
 ### SortableJS 導入（importmap）
 
-- [ ] `config/importmap.rb` に SortableJS を pin（`pin "sortablejs", to: "https://esm.sh/sortablejs@1.15.6"` 等、esm.sh の安定版）
+- [x] `config/importmap.rb` に SortableJS を pin（`pin "sortablejs", to: "https://esm.sh/sortablejs@1.15.6"` 等、esm.sh の安定版）
   - 受け入れ条件: `bin/importmap json`（または起動）で `sortablejs` が解決される。既存 pin を壊さない。
 
 ### Stimulus コントローラ（D&D + 永続化呼び出し）
 
-- [ ] `app/javascript/controllers/sortable_controller.js` を新規作成 — SortableJS をグリッド要素に適用。各ウィジェット要素は `data-widget-id` を持つ。ドロップ確定（`onEnd`）時に現在の DOM 順から widget ID 配列を集め、`reorder` エンドポイントへ `PATCH`（CSRF トークン付与、`Turbo` または `fetch` で送信）する。
+- [x] `app/javascript/controllers/sortable_controller.js` を新規作成 — SortableJS をグリッド要素に適用。各ウィジェット要素は `data-widget-id` を持つ。ドロップ確定（`onEnd`）時に現在の DOM 順から widget ID 配列を集め、`reorder` エンドポイントへ `PATCH`（CSRF トークン付与、`Turbo` または `fetch` で送信）する。
   - 値（values）: `url`（reorder のパス）。targets はグリッド自身（コントローラを root に付与）。
   - 受け入れ条件: コントローラが Stimulus に自動登録され、グリッドで D&D ハンドルが機能する（System Spec `js: true` で確認）。
-- [ ] 送信は Hotwire 流儀で行う（`Turbo.fetch` か標準 `fetch` + `X-CSRF-Token` ヘッダ、`Accept: text/vnd.turbo-stream.html`）。リアクティブライブラリは使わない。
+- [x] 送信は Hotwire 流儀で行う（`Turbo.fetch` か標準 `fetch` + `X-CSRF-Token` ヘッダ、`Accept: text/vnd.turbo-stream.html`）。リアクティブライブラリは使わない。
   - 受け入れ条件: D&D 後にサーバの `position` が更新される（System Spec で `dashboard.reload.ordered_widgets` を検証）。
 
 ### ルート
 
-- [ ] `config/routes.rb` — `member { post :move_up; post :move_down }` を削除し、widgets コレクションに `collection { patch :reorder }` を追加（`PATCH /dashboards/:dashboard_id/widgets/reorder`、`reorder_dashboard_widgets_path`）。
+- [x] `config/routes.rb` — `member { post :move_up; post :move_down }` を削除し、widgets コレクションに `collection { patch :reorder }` を追加（`PATCH /dashboards/:dashboard_id/widgets/reorder`、`reorder_dashboard_widgets_path`）。
   - 受け入れ条件: `bin/rails routes | grep widgets` に `reorder` が出て、`move_up`/`move_down` が消えている。
 
 ### モデル（一括並び替えロジック／service クラス禁止）
 
-- [ ] `Dashboard#reorder_widgets!(ordered_ids)` を追加（`app/models/dashboard.rb`）— 渡された widget ID 配列の順に `position` を 0,1,2,… で一括更新。**そのダッシュボードに属する ID のみ**を対象にし、配列に無い既存ウィジェットや他ダッシュボードの ID は無視/除外する。トランザクションで実行。
+- [x] `Dashboard#reorder_widgets!(ordered_ids)` を追加（`app/models/dashboard.rb`）— 渡された widget ID 配列の順に `position` を 0,1,2,… で一括更新。**そのダッシュボードに属する ID のみ**を対象にし、配列に無い既存ウィジェットや他ダッシュボードの ID は無視/除外する。トランザクションで実行。
   - 受け入れ条件: `dashboard.reorder_widgets!([w3.id, w1.id, w2.id])` 後に `ordered_widgets` が `[w3, w1, w2]` 順（RSpec モデルスペック）。他ダッシュボードの ID を混ぜても無視される。
-- [ ] `Widget#move_up!`/`move_down!`/`swap_with`/`previous_sibling`/`next_sibling` を削除（D&D に置き換えるため）。
+- [x] `Widget#move_up!`/`move_down!`/`swap_with`/`previous_sibling`/`next_sibling` を削除（D&D に置き換えるため）。
   - 受け入れ条件: 当該メソッドが `widget.rb` から消えている。`grep -rn "move_up\|move_down\|swap_with" app/` がヒットしない。
 
 ### コントローラ
 
-- [ ] `WidgetsController#reorder` を追加し、`move_up`/`move_down` アクションを削除（`app/controllers/widgets_controller.rb`）。`reorder` は `params[:widget_ids]`（配列）を受け、`@dashboard.reorder_widgets!(params[:widget_ids])` を呼ぶ。応答は Turbo Stream で `<turbo-frame id="widgets">` を再描画、HTML フォールバックは詳細へリダイレクト（または `head :ok`）。
+- [x] `WidgetsController#reorder` を追加し、`move_up`/`move_down` アクションを削除（`app/controllers/widgets_controller.rb`）。`reorder` は `params[:widget_ids]`（配列）を受け、`@dashboard.reorder_widgets!(params[:widget_ids])` を呼ぶ。応答は Turbo Stream で `<turbo-frame id="widgets">` を再描画、HTML フォールバックは詳細へリダイレクト（または `head :ok`）。
   - 受け入れ条件: `PATCH reorder` に順序配列を送ると `position` が更新され、Turbo Stream 応答が返る（RSpec リクエストスペック）。
-- [ ] `before_action :set_widget` の対象から `move_up`/`move_down` を外す（reorder は単一 widget を取らない）。
+- [x] `before_action :set_widget` の対象から `move_up`/`move_down` を外す（reorder は単一 widget を取らない）。
   - 受け入れ条件: reorder で `set_widget` が走らない（`params[:id]` を要求しない）。
 
 ### ビュー
 
-- [ ] `app/views/widgets/_widget.html.erb` — 「↑ 上へ」「↓ 下へ」ボタンを削除し、ドラッグハンドル（例: `⠿` アイコン、`cursor: move`）を追加。`<article>` に `data-widget-id="<%= widget.id %>"` を付与。削除ボタンは残す。
+- [x] `app/views/widgets/_widget.html.erb` — 「↑ 上へ」「↓ 下へ」ボタンを削除し、ドラッグハンドル（例: `⠿` アイコン、`cursor: move`）を追加。`<article>` に `data-widget-id="<%= widget.id %>"` を付与。削除ボタンは残す。
   - 受け入れ条件: ウィジェットに上へ/下へボタンが無く、ドラッグハンドルがある。
-- [ ] `app/views/widgets/_widgets.html.erb` — `.dashboard-grid` に Stimulus コントローラ（`data-controller="sortable"`、`data-sortable-url-value="<%= reorder_dashboard_widgets_path(dashboard) %>"`）を付与。
+- [x] `app/views/widgets/_widgets.html.erb` — `.dashboard-grid` に Stimulus コントローラ（`data-controller="sortable"`、`data-sortable-url-value="<%= reorder_dashboard_widgets_path(dashboard) %>"`）を付与。
   - 受け入れ条件: グリッドに `data-controller="sortable"` が付き、reorder URL が値として渡る。
-- [ ] D&D 操作領域・ハンドルの最小スタイル（`show.html.erb` の `<style>` か Tailwind クラス）。ドラッグ中のプレースホルダ表示は SortableJS のクラスに任せる。
+- [x] D&D 操作領域・ハンドルの最小スタイル（`show.html.erb` の `<style>` か Tailwind クラス）。ドラッグ中のプレースホルダ表示は SortableJS のクラスに任せる。
   - 受け入れ条件: ハンドルが視認でき、D&D 操作ができる。
 
 ### テスト
 
-- [ ] `spec/models/dashboard_spec.rb` に `reorder_widgets!` のスペックを追加 — 並び替え結果、他ダッシュボード ID の無視、対象外 ID の扱い。
+- [x] `spec/models/dashboard_spec.rb` に `reorder_widgets!` のスペックを追加 — 並び替え結果、他ダッシュボード ID の無視、対象外 ID の扱い。
   - 受け入れ条件: `bundle exec rspec spec/models/dashboard_spec.rb` green。
-- [ ] `spec/requests/widgets_spec.rb` — `move_up`/`move_down` のスペックを削除し、`PATCH reorder` のスペックを追加（正常系・未ログインリダイレクト・不正/欠落パラメータの境界）。
+- [x] `spec/requests/widgets_spec.rb` — `move_up`/`move_down` のスペックを削除し、`PATCH reorder` のスペックを追加（正常系・未ログインリダイレクト・不正/欠落パラメータの境界）。
   - 受け入れ条件: `bundle exec rspec spec/requests/widgets_spec.rb` green。
-- [ ] `spec/system/dashboards_spec.rb` — `rack_test` の「↓ 下へ」並び替え検証ブロックを、`js: true`（Playwright）の D&D 並び替え検証に置き換える。CRUD/追加/削除の他の rack_test は維持（並び替え部分のみ切り出して js:true 化）。
+- [x] `spec/system/dashboards_spec.rb` — `rack_test` の「↓ 下へ」並び替え検証ブロックを、`js: true`（Playwright）の D&D 並び替え検証に置き換える。CRUD/追加/削除の他の rack_test は維持（並び替え部分のみ切り出して js:true 化）。
   - 受け入れ条件: `bundle exec rspec spec/system/dashboards_spec.rb` green（並び替えは Playwright で実 D&D を行い、`dashboard.reload.ordered_widgets` の順序が変わることを検証）。
 
 ## 動作確認

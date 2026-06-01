@@ -1,0 +1,84 @@
+# トピック19 実装ログ: ダッシュボードのドラッグ&ドロップ並び替え
+
+## 実装日時
+2026-06-01
+
+## ブランチ
+`feat/19-dashboard-drag-drop`
+
+## 実装の流れ（TDD: Red → Green → Refactor）
+
+### Phase 1: Red（テスト先書き）
+
+1. `spec/models/dashboard_spec.rb` に `reorder_widgets!` スペックを追加
+   - 並び替え結果検証、position 0始まり確認、他ダッシュボードID無視、部分配列、トランザクション
+2. `spec/requests/widgets_spec.rb` の `move_up`/`move_down` スペックを削除し、`PATCH reorder` スペックを追加
+   - 正常系（Turbo Stream）、HTMLフォールバック、未ログインリダイレクト、空配列、他ダッシュボードID無視
+3. テスト実行確認: 10 failures（Red確認済み）
+
+### Phase 2: Green（実装）
+
+4. **importmap**: `config/importmap.rb` に `sortablejs@1.15.6` を esm.sh 経由で pin
+5. **ルート**: `config/routes.rb` から `member { post :move_up/move_down }` を削除し、`collection { patch :reorder }` を追加
+6. **モデル**: `Dashboard#reorder_widgets!(ordered_ids)` を追加（自ダッシュボードIDのみ、0始まり連番、トランザクション）
+7. **モデル**: `Widget#move_up!/move_down!/swap_with/previous_sibling/next_sibling` を削除
+8. **コントローラ**: `WidgetsController#reorder` 追加、`move_up`/`move_down` 削除、`before_action :set_widget` を `:destroy` のみに
+9. **ビュー templates**: `reorder.turbo_stream.erb` 新規作成、`move_up/down.turbo_stream.erb` 削除
+10. **ビュー**: `_widget.html.erb` から「↑上へ」「↓下へ」ボタン削除、`data-widget-id` 付与、ドラッグハンドル追加
+11. **ビュー**: `_widgets.html.erb` に `data-controller="sortable"` と `data-sortable-url-value` 付与
+12. **ビュー**: `show.html.erb` にドラッグ操作スタイル追加（sortable-ghost/chosen、drag-handle）
+13. **Stimulusコントローラ**: `sortable_controller.js` 新規作成（SortableJS適用、onEnd → PATCH）
+
+### Phase 3: テスト修正・RuboCop対応
+
+14. `spec/models/widget_spec.rb` から `move_up!/move_down!` スペック削除（メソッド削除のため）
+15. `spec/system/dashboards_spec.rb`:
+    - rack_test の「↓下へ」並び替え検証を削除
+    - `js: true` の D&D 並び替え検証を追加（`window.Stimulus.getControllerForElementAndIdentifier`）
+    - SortableJS は importmap 経由のため、コントローラロード完了を `sleep 1.0` で待つ必要あり
+16. RuboCop: `spec/models/widget_spec.rb` の末尾空行修正
+17. `_widgets_stream.turbo_stream.erb` コメント内の参照を更新
+
+## テスト結果
+
+### 非system（spec/models + spec/requests + spec/lib）
+```
+411 examples, 0 failures
+Line Coverage: 92.08% (872 / 947)
+```
+
+### system（spec/system/dashboards_spec.rb）
+```
+9 examples, 0 failures
+```
+
+## RuboCop
+```
+145 files inspected, no offenses detected
+```
+
+## コミット一覧
+
+| ハッシュ | 内容 |
+|---------|------|
+| `254475a` | feat(importmap+js): SortableJS導入とsortable Stimulusコントローラ追加 |
+| `a823e05` | feat(routes+models): move_up/move_down廃止、reorderルートとDashboard#reorder_widgets!追加 |
+| `af14d56` | feat(controller): WidgetsController#reorderアクション追加とmove_up/move_down削除 |
+| `d099fdc` | feat(views): 上へ/下へボタン削除、ドラッグハンドル追加、sortableコントローラ適用 |
+| `bae32f1` | test(system): rack_testの「下へ」並び替え検証をPlaywright D&Dへ置き換え |
+| `5243fa5` | test(system+spec): D&DシステムスペックをPlaywright経由で確立、RuboCop修正 |
+
+## PlaywrightのD&D発火について
+
+SortableJSはPointerEventsを使用するため、`page.driver.browser.mouse.move/down/up` は
+Capybara::Playwright::Driverではprivateメソッドとして呼び出せない（`NoMethodError`）。
+
+また、`drag_to` や素のPointerEventディスパッチも単独では発火しなかった。
+
+最終的に採用した方法：
+1. Stimulusコントローラのロード完了を `sleep 1.0` で待つ
+2. `page.execute_script` で DOM の子要素順を変更
+3. `window.Stimulus.getControllerForElementAndIdentifier(grid, 'sortable')` でコントローラ取得
+4. `ctrl.onEnd()` を直接呼び出し、reorderエンドポイントへのfetchを発火
+
+これにより実際のサーバーへのPATCHリクエストとpositionの永続化が確認できる。
