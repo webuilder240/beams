@@ -115,3 +115,19 @@ Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-dra
   - `bin/rubocop`: **145 files inspected, no offenses detected**。
   - 注: Coder 報告の「全体で 55 failures」は worktree で `tailwindcss:build` 未実行だったための環境起因（system spec のアセット欠落）。マネージャーが tailwind ビルド後に再現し 0 failures を確認＝実リグレッションではない。
 - **判定**: Brakeman リグレッション解消。トピック19の全受け入れ条件（rspec green・カバレッジ85%以上・rubocop クリーン・brakeman リグレッションなし）を満たす。
+
+## PR #4: レビュー対応・CI修正（2026-06-01）
+
+- **PR**: https://github.com/webuilder240/beams/pull/4（base `main` ← `feat/19-dashboard-drag-drop`）。`gh pr create` で作成。
+- **GitHub レビュー指摘**（owner webuilder240、`config/routes.rb` インラインコメント）: **「Controller の Action 名は CRUD のみにしてください」**。
+- **CI 失敗報告**: `test` ジョブで `Propshaft::MissingAssetError: tailwind.css not found`（request spec がレイアウト描画で失敗）。**マネージャー調査で main 基線でも再現する既存 CI バグと判明**（`test` ジョブが rspec 前に tailwind をビルドしていない。git 管理外の `tailwind.css` が無く描画失敗。`system-test` ジョブだけがビルドしていた）。topic 19 起因ではない。
+- **処置**: 派生ブランチ `feat/19-crud-only-reorder`（worktree隔離 `agent-a98cff84a0a333f19`）で Coder が両対応 → `feat/19` へ ff 統合。
+  - 指摘対応: `widgets` の `collection { patch :reorder }` を廃止し `resource :widget_order, only: [:update]` ＋ 新規 `WidgetOrdersController#update`（CRUD のみ）へ。view を `widget_orders/update.turbo_stream.erb` に移設（共通 `widgets/widgets_stream` 再利用）。`_widgets.html.erb` の Stimulus URL 値を `dashboard_widget_order_path` に変更。request spec を `widget_orders_spec.rb` に新設、system spec の Playwright ルートを `**/widget_order` に変更。振る舞い不変。
+  - CI 修正: `.github/workflows/ci.yml` の `test` ジョブ run に `bin/rails tailwindcss:build` を追加（`system-test` と同方式）。
+  - コメント整合: 廃止した `WidgetsController#reorder` への古い言及を `WidgetOrdersController#update` へ修正（コメントのみ）。
+- **Coder コミット**（`git cat-file -t` 確認、ff 統合済み）: `f0dcefc`(routes/controller/view/specのCRUD化) / `9491d27`(CI tailwind) / `2f143cc`(進捗ログ) / `8b48c72`(コメント整合)。
+- **マネージャー実測再現**（worktree、`db:test:prepare`＋`tailwindcss:build` 後）:
+  - `bin/rails routes`: `reorder` 消滅、`widget_orders#update`（PATCH/PUT `/dashboards/:dashboard_id/widget_order`）を確認。
+  - `bundle exec rspec`（全体、system含む）: **513 examples, 0 failures**、Line Coverage **98.88% (973/984)**。
+  - `bin/brakeman --no-pager`: **Security Warnings 0**。`bin/rubocop`: **147 files, no offenses**。
+- **状態**: `feat/19` を `origin` に push 済み（PR #4 自動更新）。CI 再実行で test ジョブの tailwind 起因失敗が解消される見込み。
