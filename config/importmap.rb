@@ -24,3 +24,6 @@ pin "w3c-keyname", to: "https://esm.sh/w3c-keyname@2.2.8"
 # Chart.js (CDN pin via esm.sh)。`chart.js/auto` は全コントローラ自動登録ビルド。
 pin "chart.js", to: "https://esm.sh/chart.js@4.4.9"
 pin "chart.js/auto", to: "https://esm.sh/chart.js@4.4.9/auto"
+
+# SortableJS（ドラッグ&ドロップ並び替え。トピック19）
+pin "sortablejs", to: "https://esm.sh/sortablejs@1.15.6"
