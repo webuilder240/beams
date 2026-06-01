@@ -23,4 +23,27 @@
 
 | グループ | 内容 | 状態 | マネージャー実測 |
 |---|---|:---:|---|
-| — | （Coder 着手前） | 🚧 | — |
+| 全体 | D&D並び替え実装（importmap+Stimulus / routes+model / controller / views / test移行） | ✅Coder完了・マネージャー検証済 | 下記参照 |
+
+## マネージャー実測検証（2026-06-01）
+
+Coder（worktree `agent-a5f693816eb9d756e`、ブランチ `feat/19-dashboard-drag-drop`）の報告を実測で再現。
+
+- **コミット実在**: 7件すべて `git cat-file -t` で commit 確認、`feat/19-dashboard-drag-drop` に所属（`8b393be` 分解docの上に積層）。
+  - `254475a` importmap+JS / `a823e05` routes+models / `af14d56` controller / `d099fdc` views / `bae32f1`・`5243fa5` test / `0d58571` 実装ログ
+- **非system フルスイート**（`rspec --exclude-pattern "spec/system/**/*"`、`db:test:prepare` 後）: **433 examples, 0 failures**、Line Coverage **98.67% (961/974)**。基線（433/0, 98.68%）からリグレッションなし。
+- **system spec**（`spec/system/dashboards_spec.rb`, Playwright）: **9 examples, 0 failures**。
+- **`bin/rubocop`**: **145 files inspected, no offenses detected**。
+- **要件外/逆実装チェック**: `grep -rn "move_up|move_down|swap_with" app/ config/routes.rb spec/` → 残存なし（旧「上へ/下へ」完全撤去を確認）。
+- **要件充足（実読確認）**:
+  - `config/importmap.rb`: `pin "sortablejs", to: "https://esm.sh/sortablejs@1.15.6"`（esm.sh方式）✓
+  - `app/javascript/controllers/sortable_controller.js`: SortableJS適用、`onEnd`でDOM順→`widget_ids[]`をPATCH（CSRF/Turbo Stream受信）✓
+  - `config/routes.rb`: `collection { patch :reorder }`、`member move_up/down` 削除 ✓
+  - `Dashboard#reorder_widgets!`: 所属IDのみフィルタ・0始まり連番・トランザクション ✓ / `Widget#move_up!`系 削除 ✓
+  - `WidgetsController#reorder`: `params[:widget_ids]`受け→`reorder_widgets!`→Turbo Stream再描画。`set_widget`対象から move 系除外 ✓
+  - ビュー: 上へ/下へボタン削除・`drag-handle`追加・`data-widget-id`付与・削除ボタン維持、グリッドに `data-controller="sortable"`+`data-sortable-url-value` ✓
+- **DBマイグレーション**: なし（`position` 既存）。承認ゲート対象外。
+
+### マネージャー所見・要追跡（Tester/Reviewerへ申し送り）
+
+- **system spec のD&D忠実度**: 並び替えテストは SortableJS の実ドラッグを発火させず、JSで DOM を並べ替えてから `ctrl.onEnd()` を**直接呼ぶ**方式（Coderコメント: Capybara/Playwrightのポインタ操作では発火が不安定なため）。「reorder送信→position永続化→リロード保持」は検証できるが、「SortableJSで実際にドラッグできるか（handle/draggable設定の妥当性）」は未検証。タスク受け入れ条件「Playwrightで実D&D」に対する忠実度をTesterが評価し、Reviewerにも見解を求める。
