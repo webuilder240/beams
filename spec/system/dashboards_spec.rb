@@ -70,7 +70,7 @@ RSpec.describe "Dashboards", type: :system do
   end
 
   describe "CRUD and widget flow (rack_test)" do
-    it "creates a dashboard, adds widgets, reorders, and deletes" do
+    it "creates a dashboard, adds widgets, and deletes" do
       seed_query_with_result(title: "売上クエリ")
       seed_query_with_result(title: "ユーザクエリ")
 
@@ -103,15 +103,6 @@ RSpec.describe "Dashboards", type: :system do
 
       # column_span: 2 のウィジェットは幅広（widget-span-2）
       expect(page).to have_css(".widget-span-2")
-
-      # 「下へ」で 1 番目を下に移動 → 順序入れ替わり
-      within(".widget-span-1") { click_button "↓ 下へ" }
-      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "ユーザクエリ", "売上クエリ" ])
-
-      # リロードしても順序が保持される
-      visit dashboard_path(dashboard)
-      titles = page.all("article h2").map(&:text)
-      expect(titles.first).to include("ユーザクエリ")
 
       # ウィジェット削除
       expect {
@@ -175,6 +166,54 @@ RSpec.describe "Dashboards", type: :system do
       expect(page).to have_content("ログアウト", wait: 10)
       visit dashboard_path(dashboard)
       expect(page).to have_css("canvas", wait: 10)
+    end
+  end
+
+  describe "widget drag-and-drop reorder", :js do
+    it "reorders widgets by drag-and-drop and persists position" do
+      q1 = seed_query_with_result(title: "1番目クエリ")
+      q2 = seed_query_with_result(title: "2番目クエリ")
+      dashboard = create(:dashboard, user: user, title: "D&DテストD")
+      w1 = create(:widget, dashboard: dashboard, query: q1, position: 0)
+      w2 = create(:widget, dashboard: dashboard, query: q2, position: 1)
+
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboard_path(dashboard)
+      expect(page).to have_content("1番目クエリ", wait: 10)
+      expect(page).to have_content("2番目クエリ", wait: 10)
+
+      # SortableJS はポインタイベントを使うため Playwright の手動マウス操作で D&D を行う
+      # w1 (1番目) を w2 (2番目) の下へドラッグ
+      source = find("article[data-widget-id='#{w1.id}'] .drag-handle")
+      target = find("article[data-widget-id='#{w2.id}']")
+
+      source_pos = source.native.bounding_box
+      target_pos = target.native.bounding_box
+
+      page.driver.browser.mouse.move(
+        x: (source_pos["x"] + source_pos["width"] / 2).to_i,
+        y: (source_pos["y"] + source_pos["height"] / 2).to_i
+      )
+      page.driver.browser.mouse.down
+      sleep 0.3
+
+      # ターゲット要素の下端付近にドロップ
+      page.driver.browser.mouse.move(
+        x: (target_pos["x"] + target_pos["width"] / 2).to_i,
+        y: (target_pos["y"] + target_pos["height"] - 5).to_i
+      )
+      sleep 0.3
+      page.driver.browser.mouse.up
+      sleep 1.0
+
+      # position が更新されリロード後も保持されることを確認
+      visit dashboard_path(dashboard)
+      titles = page.all("article h2", wait: 10).map(&:text)
+      expect(titles.first).to include("2番目クエリ")
+      expect(titles.last).to include("1番目クエリ")
+
+      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "2番目クエリ", "1番目クエリ" ])
     end
   end
 end
