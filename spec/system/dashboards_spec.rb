@@ -183,42 +183,47 @@ RSpec.describe "Dashboards", type: :system do
       expect(page).to have_content("1番目クエリ", wait: 10)
       expect(page).to have_content("2番目クエリ", wait: 10)
 
-      # SortableJS の Stimulus コントローラ経由で DOM 順を入れ替え、onEnd を発火させる。
-      # SortableJS は CSS でドラッグを制御するため、Playwright でのポインタイベントだけでは
-      # 発火が不安定なことがある。ここでは JavaScript から DOM を並び替え、
-      # window.Stimulus (application.js で公開) から sortable コントローラの onEnd を呼ぶ。
       # Stimulus コントローラ（importmap 経由）のロード完了を待つ
       expect(page).to have_css('[data-controller="sortable"]', wait: 10)
       sleep 1.0
 
-      page.execute_script(<<~JS, w2.id.to_s, w1.id.to_s)
-        (function(id2, id1) {
-          const grid = document.querySelector('[data-controller="sortable"]');
-          if (!grid) return;
-          // DOM の順序を入れ替える（w2 を先頭に移動）
-          const el2 = grid.querySelector('[data-widget-id="' + id2 + '"]');
-          const el1 = grid.querySelector('[data-widget-id="' + id1 + '"]');
-          if (el2 && el1) {
-            grid.insertBefore(el2, el1);
-          }
-          // window.Stimulus は application.js で公開されている
-          if (window.Stimulus) {
-            const ctrl = window.Stimulus.getControllerForElementAndIdentifier(grid, 'sortable');
-            if (ctrl) ctrl.onEnd();
-          }
-        })(arguments[0], arguments[1]);
-      JS
+      # 実ポインタ操作で SortableJS（forceFallback: true）に実ドラッグを発火させる。
+      # w1 のドラッグハンドルをつかみ → w2 の位置を通過させて → w2 の下端でドロップ。
+      # 中間ステップを挟む（steps:）ことで SortableJS が確実にドラッグを追従する。
+      page.driver.with_playwright_page do |pw|
+        handle = pw.query_selector("article[data-widget-id='#{w1.id}'] .drag-handle")
+        target = pw.query_selector("article[data-widget-id='#{w2.id}']")
+        hb = handle.bounding_box
+        tb = target.bounding_box
 
-      # D&D完了とサーバへのPATCHリクエスト完了を待つ
+        sx = hb["x"] + hb["width"] / 2
+        sy = hb["y"] + hb["height"] / 2
+        # w2 の下端付近（中央より下）にドロップして w1 を w2 の後ろへ移動させる
+        tx = tb["x"] + tb["width"] / 2
+        ty = tb["y"] + tb["height"] - 5
+
+        pw.mouse.move(sx, sy)
+        pw.mouse.down
+        # ハンドルから少し動かしてドラッグ開始を確実にし、複数ステップで対象まで移動
+        pw.mouse.move(sx + 5, sy + 5, steps: 5)
+        pw.mouse.move(tx, ty, steps: 15)
+        # ドロップ位置で一度静止させて SortableJS の並べ替えを確定させる
+        pw.mouse.move(tx, ty, steps: 5)
+        pw.mouse.up
+      end
+
+      # D&D完了とサーバへのPATCHリクエスト完了を待つ（Turbo Stream 再描画後の順序を確認）
+      expect(page).to have_css("article[data-widget-id='#{w2.id}']", wait: 10)
       sleep 2.0
 
-      # position が更新されリロード後も保持されることを確認
+      # 実ドラッグの結果としてサーバの position が永続化されていることを確認
+      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "2番目クエリ", "1番目クエリ" ])
+
+      # リロード後も順序が保持される
       visit dashboard_path(dashboard)
       titles = page.all("article h2", wait: 10).map(&:text)
       expect(titles.first).to include("2番目クエリ")
       expect(titles.last).to include("1番目クエリ")
-
-      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "2番目クエリ", "1番目クエリ" ])
     end
   end
 end

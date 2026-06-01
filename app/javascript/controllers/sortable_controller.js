@@ -13,6 +13,9 @@ export default class extends Controller {
       handle: ".drag-handle",
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
+      // HTML5 ネイティブ drag ではなくポインタ/マウスイベント駆動にする。
+      // 合成マウスイベント（テストの Playwright 操作）でも安定して発火させるため。
+      forceFallback: true,
       onEnd: this.onEnd.bind(this)
     })
   }
