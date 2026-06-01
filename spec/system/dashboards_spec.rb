@@ -169,6 +169,85 @@ RSpec.describe "Dashboards", type: :system do
     end
   end
 
+  describe "toast notification", :js do
+    it "shows a toast message when toast:show event is fired and auto-dismisses" do
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboards_path
+
+      # toast:show カスタムイベントを発火してトーストが表示されることを確認
+      page.execute_script(
+        "window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'テストエラーメッセージ', type: 'error' } }))"
+      )
+
+      # 右下にエラートーストが表示される
+      expect(page).to have_css("[data-controller='toast']", wait: 5)
+      expect(page).to have_content("テストエラーメッセージ", wait: 5)
+
+      # 自動消滅（5秒以内）
+      expect(page).not_to have_content("テストエラーメッセージ", wait: 8)
+    end
+  end
+
+  describe "widget drag-and-drop reorder failure", :js do
+    it "restores DOM order and shows error toast when reorder fails" do
+      q1 = seed_query_with_result(title: "失敗テスト1番目")
+      q2 = seed_query_with_result(title: "失敗テスト2番目")
+      dashboard = create(:dashboard, user: user, title: "失敗D&DテストD")
+      w1 = create(:widget, dashboard: dashboard, query: q1, position: 0)
+      w2 = create(:widget, dashboard: dashboard, query: q2, position: 1)
+
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboard_path(dashboard)
+      expect(page).to have_content("失敗テスト1番目", wait: 10)
+      expect(page).to have_content("失敗テスト2番目", wait: 10)
+      expect(page).to have_css('[data-sortable-ready="true"]', wait: 10)
+
+      # reorder エンドポイントを 500 でインターセプト（実ドラッグ前に登録）
+      page.driver.with_playwright_page do |pw|
+        pw.route("**/widgets/reorder", ->(route, _request) {
+          route.fulfill(status: 500, contentType: "text/plain", body: "Internal Server Error")
+        })
+      end
+
+      # 実ポインタ操作で SortableJS（forceFallback: true）に実ドラッグを発火させる
+      page.driver.with_playwright_page do |pw|
+        handle = pw.query_selector("article[data-widget-id='#{w1.id}'] .drag-handle")
+        target = pw.query_selector("article[data-widget-id='#{w2.id}']")
+        hb = handle.bounding_box
+        tb = target.bounding_box
+
+        sx = hb["x"] + hb["width"] / 2
+        sy = hb["y"] + hb["height"] / 2
+        tx = tb["x"] + tb["width"] / 2
+        ty = tb["y"] + tb["height"] - 5
+
+        pw.mouse.move(sx, sy)
+        pw.mouse.down
+        pw.mouse.move(sx + 5, sy + 5, steps: 5)
+        pw.mouse.move(tx, ty, steps: 15)
+        pw.mouse.move(tx, ty, steps: 5)
+        pw.mouse.up
+      end
+
+      # (a) エラートーストが右下に表示される
+      expect(page).to have_css("[data-controller='toast']", wait: 10)
+      expect(page).to have_content("並び替えの保存に失敗しました", wait: 10)
+
+      # (b) 並び順がドラッグ前（w1 先頭）に戻る
+      expect(page).to have_css(
+        ".dashboard-grid > article:first-child h2",
+        text: "失敗テスト1番目",
+        wait: 10
+      )
+
+      # (c) サーバの position は変化していない
+      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title })
+        .to eq([ "失敗テスト1番目", "失敗テスト2番目" ])
+    end
+  end
+
   describe "widget drag-and-drop reorder", :js do
     it "reorders widgets by drag-and-drop and persists position" do
       q1 = seed_query_with_result(title: "1番目クエリ")
