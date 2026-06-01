@@ -93,6 +93,19 @@
 - [ ] `bin/rubocop` エラーなし、`bundle exec rspec` green、SimpleCov 85% 以上
 - [ ] `bin/brakeman` でリグレッションが出ない（reorder の mass-update 周り）
 
+## 追加対応: 保存失敗時のUX（フォローアップ、ボス承認済み 2026-06-01）
+
+> D&D の保存（`PATCH reorder`）は即時実行されるが、失敗時（4xx/5xx・ネットワークエラー・CSRF欠落）は現状 `console.error` のみで、画面の並び順とサーバ状態が無音でズレる。これを解消する。
+> **ボス決定**: 失敗時は (1) **並び順を元（ドラッグ前＝サーバの状態）に戻す**、(2) **画面右下のトースト**でエラー通知する。トーストは**汎用機構として新設**（他機能でも再利用可能に）。
+
+- [ ] **トースト通知機構を新設**（`app/javascript/controllers/toast_controller.js` ＋ レイアウトに固定コンテナ）— 画面右下に固定表示、一定時間後に自動消滅（手動クローズも可）。`type`（error/notice 等）でスタイル切替。既存の赤系アラート配色（`bg-red-50 border-red-200 text-red-700`）と調和させる。Stimulus の流儀で、カスタムイベント（例: `window.dispatchEvent(new CustomEvent("toast:show", { detail: { message, type } }))`）を購読して表示する再利用可能な作りにする。
+  - 受け入れ条件: 任意の箇所から `toast:show` イベントを発火するとトーストが右下に表示され、数秒後に消える（System Spec `js: true` で確認）。
+- [ ] **`sortable_controller.js` の失敗ハンドリングを拡張**（`app/javascript/controllers/sortable_controller.js`）— `onEnd` で送信前に現在の並び順（widget 要素列）を保持し、`fetch` の `.catch`（および `response.ok` false）時に **DOM をドラッグ前の順序へ復元**してから、`toast:show` を error で発火する。成功時の挙動（Turbo Stream 再描画）は不変。
+  - 受け入れ条件: reorder が失敗すると、グリッドの並びがドラッグ前に戻り、右下にエラートーストが出る。サーバの `position` は変化しない。
+- [ ] **System Spec（`js: true`）追加**（`spec/system/dashboards_spec.rb`）— Playwright のリクエストインターセプト（`page.driver.with_playwright_page { |pw| pw.route("**/widgets/reorder", ...) }` で 500 応答を返す等）で reorder を失敗させ、(a) エラートーストが表示される、(b) 並び順がドラッグ前に戻る、(c) `dashboard.reload.ordered_widgets` の順序が変わっていない、を検証する。
+  - 受け入れ条件: 当該 System Spec が green（実ドラッグ→強制失敗→復元＆トーストを検証）。
+- [ ] 既存テスト（成功系の D&D・モデル・リクエスト）が引き続き green、SimpleCov 85% 以上、`bin/rubocop` クリーン。
+
 ## 未決事項・質問
 
 - SortableJS のバージョンは esm.sh の安定版（1.15 系）を想定。pin が解決できない場合は Coder がマネージャーに相談。
