@@ -53,12 +53,8 @@ Rails.application.routes.draw do
   # ダッシュボード（トピック12）。複数クエリの可視化（ウィジェット）を縦積み/
   # 1〜2カラムグリッドにまとめる。閲覧・編集は全ログインユーザーに許可（§4.9）。
   resources :dashboards do
-    resources :widgets, only: [ :create, :destroy ] do
-      member do
-        post :move_up
-        post :move_down
-      end
-    end
+    resources :widgets, only: [ :create, :destroy ]
+    resource :widget_order, only: [ :update ]
   end
 
   # スキーマブラウザ（データセット→テーブル→カラムのツリー表示）

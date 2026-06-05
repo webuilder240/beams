@@ -84,4 +84,69 @@ RSpec.describe Dashboard, type: :model do
       expect(dashboard.ordered_widgets.to_a).to eq([ w1, w2, w3 ])
     end
   end
+
+  describe "#reorder_widgets!" do
+    let(:dashboard) { create(:dashboard) }
+    let!(:w1) { create(:widget, dashboard: dashboard, position: 0) }
+    let!(:w2) { create(:widget, dashboard: dashboard, position: 1) }
+    let!(:w3) { create(:widget, dashboard: dashboard, position: 2) }
+
+    it "reorders widgets by the given ID array" do
+      dashboard.reorder_widgets!([ w3.id, w1.id, w2.id ])
+
+      expect(dashboard.ordered_widgets.to_a).to eq([ w3, w1, w2 ])
+    end
+
+    it "assigns positions starting from 0" do
+      dashboard.reorder_widgets!([ w2.id, w3.id, w1.id ])
+
+      expect(w2.reload.position).to eq(0)
+      expect(w3.reload.position).to eq(1)
+      expect(w1.reload.position).to eq(2)
+    end
+
+    it "ignores IDs that belong to other dashboards" do
+      other_dashboard = create(:dashboard)
+      other_widget = create(:widget, dashboard: other_dashboard, position: 0)
+
+      expect {
+        dashboard.reorder_widgets!([ other_widget.id, w1.id, w2.id, w3.id ])
+      }.not_to change { other_widget.reload.position }
+
+      # other_widget の ID が混入しても自ダッシュボードのウィジェットは更新される
+      expect(w1.reload.position).to eq(0)
+      expect(w2.reload.position).to eq(1)
+    end
+
+    it "leaves out widgets whose IDs are not in the array unchanged in relative order" do
+      # w3 を配列に含めなくても、w1/w2 は指定順で更新される
+      dashboard.reorder_widgets!([ w2.id, w1.id ])
+
+      expect(w2.reload.position).to eq(0)
+      expect(w1.reload.position).to eq(1)
+    end
+
+    it "rolls back all position updates when an error occurs mid-transaction" do
+      # 並び替え後と確実に異なる初期値にしておき、ロールバック後に元の値へ戻ることを検証する。
+      w1.update!(position: 10)
+      w2.update!(position: 20)
+      w3.update!(position: 30)
+
+      # transaction ブロック内の UPDATE 直後に ActiveRecord::Rollback を起こし、
+      # コミットを妨げる（ActiveRecord の transaction はブロック内例外でロールバックする）。
+      allow(dashboard).to receive(:transaction).and_wrap_original do |original, &block|
+        original.call do
+          block.call
+          raise ActiveRecord::Rollback, "forced rollback for spec"
+        end
+      end
+
+      dashboard.reorder_widgets!([ w3.id, w1.id, w2.id ])
+
+      # ロールバックされ、全 position が元の値のまま（並び替えは反映されない）。
+      expect(w1.reload.position).to eq(10)
+      expect(w2.reload.position).to eq(20)
+      expect(w3.reload.position).to eq(30)
+    end
+  end
 end
