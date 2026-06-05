@@ -60,3 +60,45 @@
 - `find_or_create_for_oauth` 4 分岐の RSpec 追加 + 既存 `user_spec` 全パス
 - 非 system 全体スイート 455 examples / 0 failures（フル運用前のチェックポイント）
 
+### Phase 4: ApplicationSetting 拡張
+
+- `ApplicationSetting` に `DOMAIN_FORMAT` 正規表現を導入し `allowed_email_domain` を `allow_blank: true` で簡易フォーマット検証
+- `spec/models/application_setting_spec.rb` に 6 ケース（空可、単純ドメイン、多段ドメイン、`@` 付きを弾く、空白を弾く、ドットなしを弾く）追加
+
+### Phase 5: OmniAuth コールバック + ルーティング + ビュー
+
+- `spec/support/omniauth.rb` でテストモード有効化 + `mock_oauth_response!` / `mock_oauth_failure!` / `reset_oauth_mocks!` ヘルパ
+- `app/controllers/auth/omniauth_callbacks_controller.rb` 新規 — `google_oauth2`（コールバック）/ `failure`（失敗）/ `passthru`（フォールバック）
+- `config/routes.rb` に `match "/auth/:provider"` / `get "/auth/google_oauth2/callback"` / `get "/auth/failure"` を追加
+- `config/initializers/omniauth.rb` をテストモード対応に拡張（test 環境では実 ENV 不要でダミー provider 登録、本番は ENV 設定時のみ）
+- `spec/requests/auth/omniauth_callbacks_spec.rb`: 既存 email リンク / 自動作成 / 拒否 / failure の 4 ケース
+
+### Phase 6: ログイン画面ボタン + admin 設定 UI
+
+- `app/views/sessions/new.html.erb` に `ENV["GOOGLE_OAUTH_CLIENT_ID"].present?` ガード付き `button_to "/auth/google_oauth2"` を追加
+- `Admin::SettingsController#setting_params` に `:allowed_email_domain` を追加
+- `app/views/admin/settings/edit.html.erb` を「アプリ全体設定」に再構成（コスト単価 / SSO の 2 セクション）
+- `spec/system/sso_spec.rb` 3 ケース（ENV 未設定でボタン非表示 / ENV 設定でボタン表示 / mock 経由で実 Google 通信なしログイン成功）
+- `spec/requests/admin/settings_spec.rb` に `allowed_email_domain` の更新成功・形式 NG ケースを追加
+
+### Phase 7: ドキュメント
+
+- `docs/PRODUCT_PLAN.md` §7 SSO 行に「実装済み（トピック20）」注記
+- `docs/adr/0002-identity-table-separation.md` 新規 — 採用理由・トレードオフ・代替案
+
+## 最終結果
+
+- `bundle exec rspec` 全 549 examples / 0 failures
+- SimpleCov Line Coverage 98.87% (1047 / 1059)
+- `bin/rubocop` クリーン
+- `bin/brakeman --no-pager` Security Warnings: 0
+- `bin/bundler-audit` No vulnerabilities found
+
+## 既存ユーザーログイン手動確認（開発DB）
+
+1. マイグレーション前に `User.create!(email: 'predev@example.com', password: 'secret123', role: 'admin')` を seed
+2. `storage/development.sqlite3.bak-20-sso` にバックアップ
+3. `bin/rails db:migrate` で 3 マイグレーション成功
+4. `BCrypt::Password.new(password_credentials.password_digest).is_password?('secret123') == true` を確認
+5. `bin/rails db:rollback STEP=3` 後 `users.password_digest` 復元と bcrypt 一致を確認 → 再度 `db:migrate` で前進
+

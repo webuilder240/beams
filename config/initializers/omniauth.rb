@@ -4,7 +4,11 @@
 # `:google_oauth2` プロバイダを登録する。未設定の環境では OmniAuth ミドルウェアは
 # 何も提供しないので、自前のメール+パスワード認証だけで運用される（B7-B）。
 Rails.application.config.middleware.use OmniAuth::Builder do
-  if ENV["GOOGLE_OAUTH_CLIENT_ID"].present? && ENV["GOOGLE_OAUTH_CLIENT_SECRET"].present?
+  if Rails.env.test?
+    # テスト時は OmniAuth.config.test_mode = true と `mock_auth` で
+    # 実 Google 通信なしに認証フローを検証する。provider 登録は必要。
+    provider :google_oauth2, "test-client-id", "test-client-secret"
+  elsif ENV["GOOGLE_OAUTH_CLIENT_ID"].present? && ENV["GOOGLE_OAUTH_CLIENT_SECRET"].present?
     provider :google_oauth2,
              ENV["GOOGLE_OAUTH_CLIENT_ID"],
              ENV["GOOGLE_OAUTH_CLIENT_SECRET"],

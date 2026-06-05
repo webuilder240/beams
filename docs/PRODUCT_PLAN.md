@@ -239,7 +239,7 @@ worker: bundle exec bin/jobs          # SolidQueue（別プロセス）
 - **文脈オートコンプリート**（CodeMirror補完＋スキーマキャッシュ）
 - **タグ / お気に入り / SQL全文検索**（SQLiteのFTS5）
 - **公開リンク**（トークン付きURL、ログイン不要閲覧）
-- **SSO / Google OAuthログイン**（オプション）
+- **SSO / Google OAuthログイン**（オプション）✅ 実装済み（[[20-sso]] / トピック20）
 - **クエリベースの動的ドロップダウン**
 
 ---

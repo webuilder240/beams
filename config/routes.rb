@@ -12,6 +12,15 @@ Rails.application.routes.draw do
   # 認証（自前メール+パスワード）
   resource :session, only: [ :new, :create, :destroy ]
 
+  # OAuth ログイン（Google SSO / [[20-sso]]）。
+  # `omniauth-rails_csrf_protection` が POST `/auth/:provider` を要求する。
+  # コールバックは GET `/auth/:provider/callback`、失敗は GET `/auth/failure`。
+  # POST `/auth/:provider` 自体は OmniAuth ミドルウェアが拾うので
+  # ルートはダミー（match）で受けて 404 を避ける。
+  match "/auth/:provider", to: "auth/omniauth_callbacks#passthru", via: [ :get, :post ], constraints: { provider: /google_oauth2/ }, as: :auth_at_provider
+  get "/auth/google_oauth2/callback", to: "auth/omniauth_callbacks#google_oauth2"
+  get "/auth/failure", to: "auth/omniauth_callbacks#failure"
+
   # ユーザー管理（admin 専用）
   namespace :admin do
     resources :users, except: [ :show ] do

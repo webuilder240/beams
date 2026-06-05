@@ -46,6 +46,18 @@ RSpec.describe "Admin::Settings", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         expect(ApplicationSetting.instance.bigquery_yen_per_tb).to eq(950.0)
       end
+
+      it "updates the allowed_email_domain (SSO 設定)" do
+        patch admin_settings_path, params: { application_setting: { bigquery_yen_per_tb: 950.0, allowed_email_domain: "example.com" } }
+        expect(response).to redirect_to(edit_admin_settings_path)
+        expect(ApplicationSetting.instance.allowed_email_domain).to eq("example.com")
+      end
+
+      it "rejects an invalid domain format" do
+        patch admin_settings_path, params: { application_setting: { bigquery_yen_per_tb: 950.0, allowed_email_domain: "@example.com" } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(ApplicationSetting.instance.allowed_email_domain).to be_nil
+      end
     end
   end
 end

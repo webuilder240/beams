@@ -164,59 +164,59 @@ end
 
 ### ApplicationSetting 拡張
 
-- [ ] マイグレーションで `application_settings.allowed_email_domain` を追加（上記マイグレーション資料に同梱）
+- [x] マイグレーションで `application_settings.allowed_email_domain` を追加（上記マイグレーション資料に同梱）
   - 受け入れ条件: schema 反映、既存テスト破壊なし。
-- [ ] `ApplicationSetting` のバリデーション（空可・簡易ドメイン形式チェック）
+- [x] `ApplicationSetting` のバリデーション（空可・簡易ドメイン形式チェック）
   - 受け入れ条件: モデルスペック green。
 
 ### コールバック受け口・セッション
 
-- [ ] `Auth::OmniauthCallbacksController` を作成（`app/controllers/auth/omniauth_callbacks_controller.rb`）— `google_oauth2` アクションで `request.env["omniauth.auth"]` を受け、`User.find_or_create_for_oauth(provider: "google_oauth2", uid:, email:)` の結果でログイン処理（`reset_session` → `session[:user_id]`）。`nil` 戻り時は「このメールアドレスは許可されていません」フラッシュエラー。
+- [x] `Auth::OmniauthCallbacksController` を作成（`app/controllers/auth/omniauth_callbacks_controller.rb`）— `google_oauth2` アクションで `request.env["omniauth.auth"]` を受け、`User.find_or_create_for_oauth(provider: "google_oauth2", uid:, email:)` の結果でログイン処理（`reset_session` → `session[:user_id]`）。`nil` 戻り時は「このメールアドレスは許可されていません」フラッシュエラー。
   - 受け入れ条件: RSpec リクエストスペックで成功・拒否双方を `OmniAuth.config.mock_auth` で検証。
-- [ ] `OmniAuth.config.test_mode = true` をテスト環境で有効化（`spec/support/omniauth.rb`）。失敗用 `mock_auth` も用意。
-- [ ] `config/routes.rb` に OAuth ルートを追加 — `get "/auth/google_oauth2/callback"`、`get "/auth/failure"`、`post "/auth/:provider"`（CSRF passthru）
+- [x] `OmniAuth.config.test_mode = true` をテスト環境で有効化（`spec/support/omniauth.rb`）。失敗用 `mock_auth` も用意。
+- [x] `config/routes.rb` に OAuth ルートを追加 — `get "/auth/google_oauth2/callback"`、`get "/auth/failure"`、`post "/auth/:provider"`（CSRF passthru）
   - 受け入れ条件: `rails routes | grep auth` に出る。
 
 ### ログイン画面
 
-- [ ] `app/views/sessions/new.html.erb` に「Googleでログイン」ボタンを追加。`ENV["GOOGLE_OAUTH_CLIENT_ID"].present?` のときのみ表示（B7-B）。`button_to "/auth/google_oauth2", method: :post, data: { turbo: false }`。
+- [x] `app/views/sessions/new.html.erb` に「Googleでログイン」ボタンを追加。`ENV["GOOGLE_OAUTH_CLIENT_ID"].present?` のときのみ表示（B7-B）。`button_to "/auth/google_oauth2", method: :post, data: { turbo: false }`。
   - 受け入れ条件: System Spec で ENV 設定時に見え、未設定時に見えない。
 
 ### admin 設定画面（allowed_email_domain）
 
-- [ ] `Admin::SettingsController#edit` / `update` に `allowed_email_domain` 編集UI追加（`app/views/admin/settings/edit.html.erb`）
+- [x] `Admin::SettingsController#edit` / `update` に `allowed_email_domain` 編集UI追加（`app/views/admin/settings/edit.html.erb`）
   - 受け入れ条件: admin が保存可・member は弾かれる（System Spec）。
 
 ### テスト
 
-- [ ] `spec/models/password_credential_spec.rb` — 作成・認証・バリデーション
-- [ ] `spec/models/oauth_identity_spec.rb` — 作成・`(provider,uid)` 一意性
-- [ ] `spec/models/user_spec.rb` を改修 — 仮想属性経由のパスワード設定、`authenticate` 委譲、`find_or_create_for_oauth` の4分岐
-- [ ] `spec/requests/auth/omniauth_callbacks_spec.rb` — 成功（既存email リンク・自動作成）/ 拒否（domain不一致）/ failure
-- [ ] `spec/system/sso_spec.rb`（`rack_test`）— ログインボタン表示・OmniAuth mock 経由でログイン成功 → ダッシュボード
-- [ ] 既存テスト（`spec/requests/sessions_spec.rb`、`spec/system/sessions_spec.rb`、`spec/requests/admin/users_spec.rb`、setup wizard 関連）が壊れていない
-- [ ] **Factory修正**: `spec/factories/users.rb` を仮想属性経由のままにする（外部APIは無変更にする）
+- [x] `spec/models/password_credential_spec.rb` — 作成・認証・バリデーション
+- [x] `spec/models/oauth_identity_spec.rb` — 作成・`(provider,uid)` 一意性
+- [x] `spec/models/user_spec.rb` を改修 — 仮想属性経由のパスワード設定、`authenticate` 委譲、`find_or_create_for_oauth` の4分岐
+- [x] `spec/requests/auth/omniauth_callbacks_spec.rb` — 成功（既存email リンク・自動作成）/ 拒否（domain不一致）/ failure
+- [x] `spec/system/sso_spec.rb`（`rack_test`）— ログインボタン表示・OmniAuth mock 経由でログイン成功 → ダッシュボード
+- [x] 既存テスト（`spec/requests/sessions_spec.rb`、`spec/system/sessions_spec.rb`、`spec/requests/admin/users_spec.rb`、setup wizard 関連）が壊れていない
+- [x] **Factory修正**: `spec/factories/users.rb` を仮想属性経由のままにする（外部APIは無変更にする）
 
 ### ドキュメント
 
-- [ ] `docs/PRODUCT_PLAN.md` §7 の該当行に「実装済み（トピック20）」を注記
-- [ ] `docs/tasks/progress/20-sso.md` を作成し時系列ログを残す（Coder/Tester共通）
-- [ ] **新規 ADR**: `docs/adr/0002-identity-table-separation.md` を作成して「`users` から認証方式を分離した設計理由」を残す（将来の改修時に意図が消えないように）
+- [x] `docs/PRODUCT_PLAN.md` §7 の該当行に「実装済み（トピック20）」を注記
+- [x] `docs/tasks/progress/20-sso.md` を作成し時系列ログを残す（Coder/Tester共通）
+- [x] **新規 ADR**: `docs/adr/0002-identity-table-separation.md` を作成して「`users` から認証方式を分離した設計理由」を残す（将来の改修時に意図が消えないように）
 
 ---
 
 ## 動作確認
 
-- [ ] マイグレーション後、既存パスワード認証ユーザーで通常ログイン可能（データ移行が正しい）
-- [ ] `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` を設定して起動 → `/session/new` に「Googleでログイン」ボタン表示
-- [ ] ENV 未設定で起動 → ボタンが表示されず従来通り動作
-- [ ] OmniAuth mock 経由のE2Eで実Google通信なしにログイン → ダッシュボード
-- [ ] `allowed_email_domain` 未設定で未登録emailは拒否
-- [ ] `allowed_email_domain = "example.com"` で `x@example.com` は member 自動作成、`x@other.com` は拒否
-- [ ] 既存 `user@example.com`（パスワード認証）が同じ Google でログイン → `oauth_identities` 行が追加され同じ User にリンクされる
-- [ ] OAuth のみで作られたユーザーが古い `password` で認証しても弾かれる（B9-A）
-- [ ] `bin/rubocop` / `bin/brakeman` / `bin/bundler-audit` クリーン
-- [ ] `bundle exec rspec` 全 green、SimpleCov 85% 以上
+- [x] マイグレーション後、既存パスワード認証ユーザーで通常ログイン可能（データ移行が正しい）
+- [x] `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` を設定して起動 → `/session/new` に「Googleでログイン」ボタン表示
+- [x] ENV 未設定で起動 → ボタンが表示されず従来通り動作
+- [x] OmniAuth mock 経由のE2Eで実Google通信なしにログイン → ダッシュボード
+- [x] `allowed_email_domain` 未設定で未登録emailは拒否
+- [x] `allowed_email_domain = "example.com"` で `x@example.com` は member 自動作成、`x@other.com` は拒否
+- [x] 既存 `user@example.com`（パスワード認証）が同じ Google でログイン → `oauth_identities` 行が追加され同じ User にリンクされる
+- [x] OAuth のみで作られたユーザーが古い `password` で認証しても弾かれる（B9-A）
+- [x] `bin/rubocop` / `bin/brakeman` / `bin/bundler-audit` クリーン
+- [x] `bundle exec rspec` 全 green、SimpleCov 85% 以上
 
 ---
 

@@ -9,7 +9,7 @@ module Admin
 
     def update
       if @setting.update(setting_params)
-        redirect_to edit_admin_settings_path, notice: "コスト単価を更新しました。"
+        redirect_to edit_admin_settings_path, notice: "設定を更新しました。"
       else
         render :edit, status: :unprocessable_content
       end
@@ -22,7 +22,7 @@ module Admin
     end
 
     def setting_params
-      params.expect(application_setting: [ :bigquery_yen_per_tb ])
+      params.expect(application_setting: [ :bigquery_yen_per_tb, :allowed_email_domain ])
     end
   end
 end
