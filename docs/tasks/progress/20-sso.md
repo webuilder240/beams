@@ -37,3 +37,26 @@
 - `bin/bundler-audit` クリーン
 - `config/initializers/omniauth.rb` を作成 — `GOOGLE_OAUTH_CLIENT_ID/SECRET` 揃った時のみ provider 登録（ENV 未設定でも起動成功）
 
+### Phase 2: マイグレーション
+
+- 事前バックアップ: `storage/development.sqlite3.bak-20-sso`
+- 検証用ユーザー `predev@example.com / secret123` を開発DBに登録（事前）
+- `db/migrate/20260606000001_create_password_credentials_and_migrate.rb`（テーブル作成 + データ移行 + `users.password_digest` 削除）
+- `db/migrate/20260606000002_create_oauth_identities.rb`
+- `db/migrate/20260606000003_add_allowed_email_domain_to_application_settings.rb`
+- `bin/rails db:migrate` 成功 → `Migrated 1 / 1 user password_digests`
+- 開発DB で `BCrypt::Password.new(pc.password_digest).is_password?("secret123") == true` を確認
+- `bin/rails db:rollback STEP=3` 成功 → `users.password_digest` 復元と bcrypt 一致を確認
+- 再度 `bin/rails db:migrate` で前進
+- `bin/rails db:test:prepare` 成功
+- `db/schema.rb` に `password_credentials`・`oauth_identities`・`application_settings.allowed_email_domain` 反映、`users.password_digest` 消失を確認
+
+### Phase 3: 識別子モデル + User モデル改修
+
+- `PasswordCredential` モデル（belongs_to :user, has_secure_password, validates :user_id uniqueness）
+- `OauthIdentity` モデル（belongs_to :user, presence + (provider, uid) uniqueness, `for` スコープ）
+- `User` モデルから `has_secure_password` を削除、`attr_accessor :password, :password_confirmation`、`after_save :sync_password_credential`、`authenticate` を委譲、`find_or_create_for_oauth` 追加
+- `User.allowed_oauth_email?` ヘルパで `ApplicationSetting#allowed_email_domain` の判定
+- `find_or_create_for_oauth` 4 分岐の RSpec 追加 + 既存 `user_spec` 全パス
+- 非 system 全体スイート 455 examples / 0 failures（フル運用前のチェックポイント）
+

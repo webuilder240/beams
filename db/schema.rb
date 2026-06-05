@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_06_000003) do
   create_table "application_settings", force: :cascade do |t|
+    t.string "allowed_email_domain"
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -33,6 +34,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["user_id"], name: "index_dashboards_on_user_id"
+  end
+
+  create_table "oauth_identities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["provider", "uid"], name: "index_oauth_identities_on_provider_and_uid", unique: true
+    t.index ["user_id"], name: "index_oauth_identities_on_user_id"
+  end
+
+  create_table "password_credentials", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "password_digest", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id"], name: "index_password_credentials_on_user_id", unique: true
   end
 
   create_table "queries", force: :cascade do |t|
@@ -76,7 +95,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", null: false
-    t.string "password_digest", null: false
     t.string "role", default: "member", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
@@ -109,6 +127,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
   end
 
   add_foreign_key "dashboards", "users"
+  add_foreign_key "oauth_identities", "users"
+  add_foreign_key "password_credentials", "users"
   add_foreign_key "queries", "bigquery_connections"
   add_foreign_key "queries", "users"
   add_foreign_key "query_executions", "queries"

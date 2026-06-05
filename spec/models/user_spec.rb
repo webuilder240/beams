@@ -74,6 +74,86 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe ".find_or_create_for_oauth" do
+    let(:provider) { "google_oauth2" }
+
+    context "when an OauthIdentity already exists" do
+      it "returns the linked user" do
+        existing = create(:user, email: "linked@example.com")
+        existing.oauth_identities.create!(provider: provider, uid: "uid-1")
+
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-1", email: "any@example.com")
+        expect(result).to eq(existing)
+        expect(existing.reload.oauth_identities.count).to eq(1)
+      end
+    end
+
+    context "when a user with the same email exists (no identity yet)" do
+      it "links a new oauth_identity to the existing user (B4-A)" do
+        existing = create(:user, email: "user@example.com")
+
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-2", email: "user@example.com")
+        expect(result).to eq(existing)
+        expect(existing.reload.oauth_identities.pluck(:provider, :uid)).to eq([ [ provider, "uid-2" ] ])
+      end
+
+      it "normalizes the incoming email for matching" do
+        existing = create(:user, email: "mixed@example.com")
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-mixed", email: "  MIXED@Example.COM  ")
+        expect(result).to eq(existing)
+      end
+    end
+
+    context "when no user exists and allowed_email_domain matches" do
+      before do
+        ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      end
+
+      it "creates a new member user with the oauth identity (B5-B)" do
+        expect {
+          described_class.find_or_create_for_oauth(provider: provider, uid: "uid-3", email: "new@example.com")
+        }.to change(described_class, :count).by(1)
+         .and change(OauthIdentity, :count).by(1)
+
+        user = described_class.find_by(email: "new@example.com")
+        expect(user.role).to eq("member")
+        expect(user.password_credential).to be_nil
+        expect(user.oauth_identities.pluck(:provider, :uid)).to eq([ [ provider, "uid-3" ] ])
+      end
+    end
+
+    context "when no user exists and allowed_email_domain does not match" do
+      before do
+        ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      end
+
+      it "returns nil and creates nothing" do
+        expect {
+          result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-x", email: "other@notexample.com")
+          expect(result).to be_nil
+        }.not_to change(described_class, :count)
+      end
+    end
+
+    context "when allowed_email_domain is blank" do
+      it "returns nil for any unregistered email" do
+        expect {
+          result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-y", email: "anyone@anywhere.com")
+          expect(result).to be_nil
+        }.not_to change(described_class, :count)
+      end
+    end
+  end
+
+  describe "OAuth-only user behaviour" do
+    it "cannot authenticate with a password (B9-A)" do
+      ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      described_class.find_or_create_for_oauth(provider: "google_oauth2", uid: "uid-9", email: "oa@example.com")
+      user = described_class.find_by(email: "oa@example.com")
+      expect(user.authenticate("any-password")).to be(false)
+    end
+  end
+
   describe "role predicates" do
     it "#admin? is true for admins" do
       expect(build(:user, :admin).admin?).to be(true)

@@ -119,19 +119,19 @@ end
 
 ### DBマイグレーション（事前承認ゲート）
 
-- [ ] **`docs/tasks/migrations/20-users-oauth-migration.md` を作成し、ボス承認を取る**（マイグレーション実行前に必須）。内容:
+- [x] **`docs/tasks/migrations/20-users-oauth-migration.md` を作成し、ボス承認を取る**（マイグレーション実行前に必須）。内容:
   - 新規テーブル `password_credentials`（`user_id` unique・`password_digest NOT NULL`）
   - 既存 `users.password_digest` → `password_credentials.password_digest` への**データ移行**を `up` 内で実行
   - `users.password_digest` カラムを削除
   - 新規テーブル `oauth_identities`（`user_id`・`provider`・`uid`・`(provider, uid)` unique index）
   - `application_settings.allowed_email_domain` `string null: true` を追加
   - `down` は逆順（`users.password_digest` 復元 + データ書き戻し含む）
-- [ ] 承認後、マイグレーション作成・実行
+- [x] 承認後、マイグレーション作成・実行
   - 受け入れ条件: `bin/rails db:migrate` 成功・`db:rollback` 成功（テストDB / 開発DB双方）。`db/schema.rb` に反映。**既存ユーザーのパスワードでログイン可能**であることを開発DBで実証。
 
 ### `PasswordCredential` モデル新規
 
-- [ ] `app/models/password_credential.rb` を新規作成
+- [x] `app/models/password_credential.rb` を新規作成
   - `belongs_to :user`
   - `has_secure_password`
   - `validates :user_id, uniqueness: true`
@@ -139,7 +139,7 @@ end
 
 ### `OauthIdentity` モデル新規
 
-- [ ] `app/models/oauth_identity.rb` を新規作成
+- [x] `app/models/oauth_identity.rb` を新規作成
   - `belongs_to :user`
   - `validates :provider, :uid, presence: true`
   - `validates :uid, uniqueness: { scope: :provider }`
@@ -148,14 +148,14 @@ end
 
 ### `User` モデル改修
 
-- [ ] `app/models/user.rb` から `has_secure_password` を削除。
-- [ ] 関連を追加: `has_one :password_credential, dependent: :destroy`、`has_many :oauth_identities, dependent: :destroy`。
-- [ ] 仮想属性を追加（B8-A）:
+- [x] `app/models/user.rb` から `has_secure_password` を削除。
+- [x] 関連を追加: `has_one :password_credential, dependent: :destroy`、`has_many :oauth_identities, dependent: :destroy`。
+- [x] 仮想属性を追加（B8-A）:
   - `attr_accessor :password, :password_confirmation`（バリデーション用）
   - `after_save` で `password` が代入されていれば `password_credential ||= build_password_credential; password_credential.update!(password:, password_confirmation:)`
   - `validate` で `password` と `password_confirmation` の一致・最小長を `password` 代入時のみチェック
-- [ ] `User#authenticate(password)` を `password_credential&.authenticate(password) || false` に変更
-- [ ] `User.find_or_create_for_oauth(provider:, uid:, email:)` クラスメソッドを追加 — 以下を行う:
+- [x] `User#authenticate(password)` を `password_credential&.authenticate(password) || false` に変更
+- [x] `User.find_or_create_for_oauth(provider:, uid:, email:)` クラスメソッドを追加 — 以下を行う:
   1. `OauthIdentity.for(provider, uid).first&.user` があればそれを返す
   2. 同じ email の既存 `User` があれば `oauth_identities.create!(provider:, uid:)` を追加して返す（B4-A）
   3. `ApplicationSetting#allowed_email_domain` を満たすなら `role: "member"` で `User` を作成し `oauth_identities.create!(provider:, uid:)` で紐付け（B5-B）
