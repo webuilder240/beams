@@ -111,11 +111,11 @@ end
 
 ### 準備：gem導入・設定
 
-- [ ] `Gemfile` に `omniauth`・`omniauth-google-oauth2`・`omniauth-rails_csrf_protection` を追加し `bundle install`（`Gemfile.lock` 更新）
+- [x] `Gemfile` に `omniauth`・`omniauth-google-oauth2`・`omniauth-rails_csrf_protection` を追加し `bundle install`（`Gemfile.lock` 更新）
   - 受け入れ条件: `bundle list | grep omniauth` に3つ出る。`bin/bundler-audit` が新規警告を出さない。
-- [ ] OmniAuth initializer 追加（`config/initializers/omniauth.rb`）— `ENV["GOOGLE_OAUTH_CLIENT_ID"]` が設定されている時のみ `provider :google_oauth2` を登録。`scope: "email,profile"`、`prompt: "select_account"`。
+- [x] OmniAuth initializer 追加（`config/initializers/omniauth.rb`）— `ENV["GOOGLE_OAUTH_CLIENT_ID"]` が設定されている時のみ `provider :google_oauth2` を登録。`scope: "email,profile"`、`prompt: "select_account"`。
   - 受け入れ条件: ENV 未設定でも起動エラーにならない。
-- [ ] `bin/rubocop` クリーン。
+- [x] `bin/rubocop` クリーン。
 
 ### DBマイグレーション（事前承認ゲート）
 

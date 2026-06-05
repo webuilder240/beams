@@ -20,6 +20,11 @@ gem "jbuilder"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 
+# OAuth ログイン（Google SSO）[トピック20]
+gem "omniauth"
+gem "omniauth-google-oauth2"
+gem "omniauth-rails_csrf_protection"
+
 # Tailwind CSS (standalone CLI, Node不要)
 gem "tailwindcss-rails"
 
