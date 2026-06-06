@@ -57,7 +57,7 @@
 
 ### モデル
 
-- [ ] `Query.title_matching` を `Query.text_matching` にリネームし、`title OR sql_body` のOR検索にする（`app/models/query.rb`）
+- [x] `Query.title_matching` を `Query.text_matching` にリネームし、`title OR sql_body` のOR検索にする（`app/models/query.rb`）
   ```ruby
   scope :text_matching, ->(term) {
     next all if term.blank?
@@ -73,17 +73,17 @@
 
 ### コントローラ
 
-- [ ] `QueriesController#index` のスコープ呼び出しを `text_matching` に変更（`app/controllers/queries_controller.rb`）
+- [x] `QueriesController#index` のスコープ呼び出しを `text_matching` に変更（`app/controllers/queries_controller.rb`）
   - 受け入れ条件: `GET /queries?q=foo` が新スコープで動作する（リクエストスペック）。
 
 ### ビュー
 
-- [ ] `app/views/queries/index.html.erb` の `search_field :q` の `placeholder` を「タイトル/SQL本文で検索」に変更
+- [x] `app/views/queries/index.html.erb` の `search_field :q` の `placeholder` を「タイトル/SQL本文で検索」に変更
   - 受け入れ条件: 画面に新しい placeholder が表示される（System Spec `rack_test`）。
 
 ### テスト
 
-- [ ] `spec/models/query_spec.rb` に `text_matching` のスペックを追加（既存の `title_matching` テストは置換）
+- [x] `spec/models/query_spec.rb` に `text_matching` のスペックを追加（既存の `title_matching` テストは置換）
   - ケース:
     - title のみマッチ
     - sql_body のみマッチ
@@ -92,30 +92,30 @@
     - 空文字・nil（全件返却）
     - LIKE 特殊文字 `%`/`_`/`\` のエスケープ
   - 受け入れ条件: 全 green。
-- [ ] `spec/requests/queries_spec.rb` の検索テストに「SQL本文のみマッチするクエリ」が抽出されるケースを追加
+- [x] `spec/requests/queries_spec.rb` の検索テストに「SQL本文のみマッチするクエリ」が抽出されるケースを追加
   - 受け入れ条件: green。
-- [ ] `spec/system/queries_spec.rb`（`rack_test`）に SQL本文検索の E2E ケースを追加
+- [x] `spec/system/queries_spec.rb`（`rack_test`）に SQL本文検索の E2E ケースを追加
   - タイトル "Untitled"、SQL本文 "SELECT user_id FROM events" のクエリを作り、`q=user_id` で検索 → ヒット
   - 受け入れ条件: green。
 
 ### 既存テストの修正
 
-- [ ] `title_matching` を参照している既存スペック・ヘルパーがあれば `text_matching` に置換（grep 確認）
+- [x] `title_matching` を参照している既存スペック・ヘルパーがあれば `text_matching` に置換（grep 確認）
   - 受け入れ条件: `grep -rn "title_matching" app/ spec/` が0件。
 
 ---
 
 ## 動作確認
 
-- [ ] クエリAをタイトル "売上集計"、SQL本文 `SELECT SUM(amount) FROM orders` で作成
-- [ ] クエリBをタイトル "ユーザー数"、SQL本文 `SELECT COUNT(*) FROM users` で作成
-- [ ] `/queries?q=売上` → クエリAのみヒット（タイトル一致）
-- [ ] `/queries?q=orders` → クエリAのみヒット（SQL本文一致）
-- [ ] `/queries?q=users` → クエリBのみヒット（SQL本文一致）
-- [ ] `/queries?q=` → 全件（並びは `updated_at DESC`）
-- [ ] `/queries?q=%` → 0件（特殊文字がリテラル扱いされること）
-- [ ] `bundle exec rspec` 全 green、SimpleCov 85% 以上
-- [ ] `bin/rubocop` クリーン
+- [x] クエリAをタイトル "売上集計"、SQL本文 `SELECT SUM(amount) FROM orders` で作成
+- [x] クエリBをタイトル "ユーザー数"、SQL本文 `SELECT COUNT(*) FROM users` で作成
+- [x] `/queries?q=売上` → クエリAのみヒット（タイトル一致）
+- [x] `/queries?q=orders` → クエリAのみヒット（SQL本文一致）
+- [x] `/queries?q=users` → クエリBのみヒット（SQL本文一致）
+- [x] `/queries?q=` → 全件（並びは `updated_at DESC`）
+- [x] `/queries?q=%` → 0件（特殊文字がリテラル扱いされること）
+- [x] `bundle exec rspec` 全 green、SimpleCov 85% 以上
+- [x] `bin/rubocop` クリーン
 
 ---
 
