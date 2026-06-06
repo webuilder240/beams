@@ -28,7 +28,7 @@
     </div>
   <% end %>
 
-  <% if ENV["GOOGLE_OAUTH_CLIENT_ID"].present? %>
+  <% if Rails.configuration.x.sso_enabled %>
     <div class="mt-6 pt-6 border-t border-gray-200">
       <p class="text-sm text-gray-600 mb-3 text-center">または</p>
       <%= button_to "Google でログイン",

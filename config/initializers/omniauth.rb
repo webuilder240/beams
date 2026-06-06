@@ -23,3 +23,11 @@ end
 OmniAuth.config.on_failure = proc { |env|
   OmniAuth::FailureEndpoint.new(env).redirect_to_failure
 }
+
+# SSO 有効化フラグを `Rails.configuration.x.sso_enabled` に一元化する（finding D）。
+# view / spec はこのフラグだけを見る。ENV を読むのはこの initializer の 1 箇所のみ。
+# test 環境では mock 認証フローを動かすため常に true で、必要に応じてテスト側で
+# 一時的に false にして「未設定時の表示」を検証する。
+Rails.configuration.x.sso_enabled =
+  Rails.env.test? ||
+  (ENV["GOOGLE_OAUTH_CLIENT_ID"].present? && ENV["GOOGLE_OAUTH_CLIENT_SECRET"].present?)

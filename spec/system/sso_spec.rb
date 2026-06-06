@@ -3,9 +3,13 @@ require "rails_helper"
 RSpec.describe "SSO (Google ログイン)", type: :system do
   let!(:user) { create(:user, email: "existing@example.com") }
 
-  context "when GOOGLE_OAUTH_CLIENT_ID is not set" do
+  # ENV を直接読まず Rails.configuration.x.sso_enabled を直接トグル（finding D/T）。
+  # test 環境のデフォルトは true なので after で必ず true に戻す。
+  after { Rails.configuration.x.sso_enabled = true }
+
+  context "when SSO is disabled" do
     before do
-      ENV.delete("GOOGLE_OAUTH_CLIENT_ID")
+      Rails.configuration.x.sso_enabled = false
       visit new_session_path
     end
 
@@ -14,12 +18,10 @@ RSpec.describe "SSO (Google ログイン)", type: :system do
     end
   end
 
-  context "when GOOGLE_OAUTH_CLIENT_ID is set" do
+  context "when SSO is enabled" do
     before do
-      ENV["GOOGLE_OAUTH_CLIENT_ID"] = "dummy-id"
+      Rails.configuration.x.sso_enabled = true
     end
-
-    after { ENV.delete("GOOGLE_OAUTH_CLIENT_ID") }
 
     it "shows the Google login button on the login page (B7-B)" do
       visit new_session_path
