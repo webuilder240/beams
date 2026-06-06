@@ -12,16 +12,23 @@ module Beams
     # from the https redirect so the ONCE health check (and local probes
     # over plain HTTP) continue to receive 200 OK without a 301 hop.
     class SslMode
+      # `/up` exclusion is value-stable across requests, so we freeze the
+      # options hash once at load time rather than rebuilding it per request.
+      SSL_OPTIONS = {
+        redirect: { exclude: ->(request) { request.path == "/up" } }
+      }.freeze
+
       def initialize(env: ENV)
         @env = env
       end
 
+      # ONCE 規約に厳密準拠: "true" 以外（未設定 / 空文字 / 任意の文字列）は SSL 有効。
       def enabled?
         @env["DISABLE_SSL"] != "true"
       end
 
       def ssl_options
-        { redirect: { exclude: ->(request) { request.path == "/up" } } }
+        SSL_OPTIONS
       end
     end
   end
