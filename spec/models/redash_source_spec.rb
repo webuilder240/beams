@@ -101,6 +101,52 @@ RSpec.describe RedashSource, type: :model do
       allow(Resolv).to receive(:getaddresses).and_return([ "203.0.113.10" ])
       expect(record).to be_valid
     end
+
+    # S1: IPv6 リテラル URL の正しい範囲チェック
+    describe "IP literal hosts (S1)" do
+      it "rejects an IPv6 loopback literal without DNS resolution" do
+        expect(Resolv).not_to receive(:getaddresses)
+        record = RedashSource.new(valid_attributes.merge(url: "https://[::1]/"))
+        expect(record).not_to be_valid
+        expect(record.errors[:url]).to be_present
+      end
+
+      it "rejects an IPv6 link-local literal" do
+        expect(Resolv).not_to receive(:getaddresses)
+        record = RedashSource.new(valid_attributes.merge(url: "https://[fe80::1]/"))
+        expect(record).not_to be_valid
+        expect(record.errors[:url]).to be_present
+      end
+
+      it "accepts an IPv6 documentation-prefix literal (2001:db8::/32 is not forbidden)" do
+        expect(Resolv).not_to receive(:getaddresses)
+        record = RedashSource.new(valid_attributes.merge(url: "https://[2001:db8::1]/"))
+        expect(record).to be_valid
+      end
+
+      it "rejects an IPv4 private literal without DNS resolution" do
+        expect(Resolv).not_to receive(:getaddresses)
+        record = RedashSource.new(valid_attributes.merge(url: "https://10.0.0.1/"))
+        expect(record).not_to be_valid
+        expect(record.errors[:url]).to be_present
+      end
+    end
+  end
+
+  describe ".guard_url!" do
+    it "returns a GuardedTarget exposing the parsed URI and resolved IP" do
+      allow(Resolv).to receive(:getaddresses).and_return([ "203.0.113.10" ])
+      target = RedashSource.guard_url!("https://redash.example.com/api/queries")
+      expect(target.uri).to be_a(URI)
+      expect(target.uri.hostname).to eq("redash.example.com")
+      expect(target.ip).to eq("203.0.113.10")
+    end
+
+    it "exposes the literal IP itself for IP-literal URLs" do
+      target = RedashSource.guard_url!("https://203.0.113.10/")
+      expect(target.uri.hostname).to eq("203.0.113.10")
+      expect(target.ip).to eq("203.0.113.10")
+    end
   end
 
   describe "encryption (api_key)" do

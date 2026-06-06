@@ -140,5 +140,56 @@ RSpec.describe RedashClient, type: :model do
       expect { client.list_queries }.to raise_error(RedashClient::ForbiddenURLError)
       expect(stub).not_to have_been_requested
     end
+
+    # M1: DNS rebinding 対策。1 回目の resolve で得た安全 IP に接続し、
+    # 2 回目以降の resolve（例: メタデータ IP）が結果に影響しないことを検証する。
+    it "connects to the IP resolved during the guard (not a later DNS response)" do
+      call_count = 0
+      allow(Resolv).to receive(:getaddresses) do
+        call_count += 1
+        call_count == 1 ? [ "203.0.113.10" ] : [ "169.254.169.254" ]
+      end
+
+      stub = stub_request(:get, "https://redash.example.com/api/queries?page=1&page_size=25")
+        .to_return(status: 200, body: '{"results":[]}', headers: { "Content-Type" => "application/json" })
+
+      client.list_queries(page: 1, page_size: 25)
+
+      expect(stub).to have_been_requested
+      # 1 度目の安全 IP にしか接続が行かないこと（メタデータ IP への接続が発生しない）。
+      expect(WebMock).not_to have_requested(:get, /169\.254\.169\.254/)
+    end
+  end
+
+  # M3: ForbiddenURLError の権威は RedashSource 側。
+  # RedashClient::ForbiddenURLError は互換 alias として残す。
+  describe "ForbiddenURLError alias (M3)" do
+    it "is the same class as RedashSource::ForbiddenURLError" do
+      expect(RedashClient::ForbiddenURLError).to equal(RedashSource::ForbiddenURLError)
+    end
+  end
+
+  # S5: build_url 冒頭で base.query を nil クリアしてから組み立てる。
+  # source.url に意図しないクエリ（?leak=token）が混入していても流出させない。
+  describe "URL query sanitization (S5)" do
+    let(:dirty_source) do
+      allow(Resolv).to receive(:getaddresses).and_return([ "203.0.113.10" ])
+      build(:redash_source,
+            name: "Dirty Redash",
+            url: "https://redash.example.com/?leak=token",
+            api_key: "secret-key-abc")
+    end
+    let(:dirty_client) { described_class.new(dirty_source) }
+
+    it "drops leak parameters from the source URL before building the request URL" do
+      stub = stub_request(:get, "https://redash.example.com/api/queries")
+        .with(query: hash_excluding("leak" => "token"))
+        .to_return(status: 200, body: '{"results":[]}', headers: { "Content-Type" => "application/json" })
+
+      dirty_client.list_queries(page: 1, page_size: 25)
+
+      expect(stub).to have_been_requested
+      expect(WebMock).not_to have_requested(:get, /leak=token/)
+    end
   end
 end

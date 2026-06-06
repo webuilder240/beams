@@ -1,4 +1,5 @@
 require "net/http"
+require "openssl"
 require "json"
 require "uri"
 
@@ -8,7 +9,9 @@ require "uri"
 # - 認証ヘッダ: `Authorization: Key <api_key>`
 # - タイムアウト: open/read 共に 5 秒
 # - リダイレクト追従なし（1 リクエスト = 1 接続）
-# - SSRF ガード: リクエスト直前に `RedashSource.guard_url!` で URL を検査
+# - SSRF ガード: リクエスト直前に `RedashSource.guard_url!` で URL を検査し、
+#   返ってきた `GuardedTarget#ip` に対してのみ TCP 接続を張る（M1: DNS rebinding 防止）。
+#   SNI と Host ヘッダは `uri.hostname` に固定し、TLS 検証は VERIFY_PEER を維持する。
 #
 # 失敗は例外クラスで明示する（`Unauthorized` / `NotFound` / `ServerError`
 # / `Timeout` / `ForbiddenURLError`）。呼び出し側はこれらをユーザー向けメッセージへ
@@ -29,8 +32,9 @@ class RedashClient
   # ソケット/接続タイムアウト
   class Timeout < Error; end
 
-  # SSRF ガード違反（http 等の不正スキーム、private/loopback IP、ホスト解決失敗）
-  class ForbiddenURLError < Error; end
+  # M3: 例外の権威は `RedashSource::ForbiddenURLError` 側に移した。
+  # 既存呼び出し側との後方互換を保つため、ここで定数 alias を貼る。
+  ForbiddenURLError = RedashSource::ForbiddenURLError
 
   OPEN_TIMEOUT_SEC = 5
   READ_TIMEOUT_SEC = 5
@@ -59,24 +63,38 @@ class RedashClient
     raise ArgumentError, "未対応のメソッド: #{method}" unless method == :get
 
     target_url = build_url(path, query_params)
-    uri = RedashSource.guard_url!(target_url)
+    target = RedashSource.guard_url!(target_url)
 
-    response = perform(uri)
+    response = perform(target)
     handle_response(response)
   rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ETIMEDOUT
     raise Timeout, "Redash サーバへの接続がタイムアウトしました（#{READ_TIMEOUT_SEC} 秒）"
   end
 
+  # S5: source.url にクエリ文字列（?leak=token 等）が混入していても、
+  # ここで明示的に nil クリアしてから組み立てる。
   def build_url(path, query_params)
     base = URI.parse(redash_source.url)
     base.path = path
+    base.query = nil
     base.query = URI.encode_www_form(query_params) if query_params.any?
     base.to_s
   end
 
-  def perform(uri)
-    http = Net::HTTP.new(uri.host, uri.port)
+  # M1: guard_url! で確定した安全 IP に対して TCP 接続を張る。
+  # `Net::HTTP.new` 自体にはホスト名を渡し、`http.ipaddr=` で実接続先を IP に固定する。
+  # これにより:
+  #   - Host ヘッダ / SNI / 証明書検証用ホスト名はホスト名のままとなり、TLS 検証
+  #     （VERIFY_PEER）を壊さない
+  #   - 名前解決のタイミングで安全と確認した IP にしか接続が行かない（DNS rebinding 防止）
+  def perform(target)
+    uri = target.uri
+    http = Net::HTTP.new(uri.hostname, uri.port)
+    http.ipaddr = target.ip if http.respond_to?(:ipaddr=)
     http.use_ssl = (uri.scheme == "https")
+    if http.use_ssl?
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    end
     http.open_timeout = OPEN_TIMEOUT_SEC
     http.read_timeout = READ_TIMEOUT_SEC
 
