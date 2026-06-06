@@ -40,6 +40,15 @@ production:
     <<: *default
     database: storage/production_queue.sqlite3
     migrations_paths: db/queue_migrate
+    # SolidQueue は config/queue.yml の workers.threads 合計（"*" の 3 +
+    # "query_execution" の ENV("QUERY_EXECUTION_CONCURRENCY", 10) = 計 13）に
+    # dispatcher 等の内部スレッドが加算された connection を要求するため、
+    # default の max_connections（RAILS_MAX_THREADS=5）では不足して
+    # `bin/jobs` が起動直後に exit する。queue DB だけ pool を別枠で
+    # 引き上げる。query_execution の同時実行を環境変数で増やす場合は
+    # QUEUE_DB_MAX_CONNECTIONS も合わせて引き上げること
+    # （spec/config/queue_database_pool_spec.rb で整合性を検査）。
+    max_connections: <%= ENV.fetch("QUEUE_DB_MAX_CONNECTIONS", 15) %>
   cable:
     <<: *default
     database: storage/production_cable.sqlite3

@@ -69,7 +69,7 @@ RSpec.describe "Queries::Executions", type: :request do
 
     context "when at the concurrency limit" do
       it "creates the execution as pending" do
-        create_list(:query_execution, 20, :running, query: query)
+        create_list(:query_execution, Queries::ExecutionsController::CONCURRENCY_LIMIT, :running, query: query)
 
         post query_executions_path(query)
 
