@@ -3,7 +3,7 @@
 
 # This Dockerfile is designed for production, not development. Build and run by hand or via the ONCE platform (basecamp/once):
 # docker build -t beams .
-# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name beams beams
+# docker run -d -p 80:80 --name beams beams
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
@@ -51,7 +51,8 @@ COPY . .
 # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
-# Precompiling assets for production without requiring secret RAILS_MASTER_KEY
+# Precompile assets for production. SECRET_KEY_BASE_DUMMY=1 satisfies Rails'
+# precompile-time requirement for a secret_key_base without baking one into the image.
 RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
 
 

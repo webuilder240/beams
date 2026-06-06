@@ -40,10 +40,12 @@
 | 22 | Redash クエリ取り込み（API版） | ✅完了 | Coder/Tester/Reviewer | [manager/22-redash-import.md](manager/22-redash-import.md) |
 | 23 | Bugsnag による例外通知 | ✅完了 | Coder | [progress/23-bugsnag-error-tracking.md](progress/23-bugsnag-error-tracking.md) |
 | 26 | ONCE プラットフォームへの移行（basecamp/once 採用） | ✅完了 | Coder/Tester/Reviewer | [manager/26-once-platform.md](manager/26-once-platform.md) |
+| 27 | Active Record Encryption 撤廃（`RAILS_MASTER_KEY` 不要化） | 進行中 | Coder | [progress/27-drop-ar-encryption.md](progress/27-drop-ar-encryption.md) |
 
 > **20–22 は 2026-06-05 にユーザー指示で次フェーズとして分解、2026-06-06 に全決定事項確定。優先順は 20 → 21 → 22。**
 > **23 は 2026-06-06 に運用品質向上トピックとして分解（B1-B4 確定済み・`/agent-team` 着手可）。**
 > **26 は 2026-06-06 に分解。トピック18 の自前 `deploy/once/*` を全廃し basecamp/once を採用。`/agent-team` 着手前に「ONCE custom env サポート確認」が必要。**
+> **27 は 2026-06-06 に分解。AR Encryption を撤廃し `RAILS_MASTER_KEY` / `config/credentials.yml.enc` を完全に廃止する（[ADR 0002](adr/0002-drop-active-record-encryption.md)）。**
 
 ---
 

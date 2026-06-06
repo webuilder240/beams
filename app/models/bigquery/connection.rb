@@ -2,8 +2,9 @@ require "json"
 require "google/cloud/bigquery"
 
 class Bigquery::Connection < ApplicationRecord
-  # SA JSON 鍵は Active Record Encryption で暗号化して保存する（平文は DB に書かない）。
-  encrypts :service_account_json
+  # SA JSON 鍵は SQLite に平文で保存する。保護はホスト側のディスク暗号化・
+  # `/storage` ボリュームのアクセス制御・ファイルパーミッションに委ねる
+  # （トピック27 / docs/adr/0002-drop-active-record-encryption.md）。
 
   validates :name, presence: true
   validates :project_id,
