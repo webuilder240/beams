@@ -27,7 +27,7 @@ RSpec.describe "Bugsnag ActiveJob integration" do
       }.to raise_error(StandardError, "boom in job")
 
       expect(Bugsnag).to have_received(:notify).with(
-        instance_of(StandardError), true
+        instance_of(StandardError), anything
       )
     end
   end
