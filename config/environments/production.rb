@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require "beams/once/ssl_mode"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
@@ -28,9 +29,16 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # ONCE プラットフォームでの配布では HTTP(80) 専用とし、SSL 終端は ONCE 側に委ねる
-  # ため `assume_ssl` / `force_ssl` は設定しない。SSL 強制のスイッチはグループ B で
-  # `DISABLE_SSL` env の判定に置き換える。
+  # ONCE プラットフォームは既定で SSL 終端を肩代わりするため、本コンテナは HTTP(80)
+  # で待受しつつ Rails 側で `assume_ssl` / `force_ssl` を有効化する。SSL を無効化する
+  # 場合のみ `DISABLE_SSL=true` を ONCE custom env で渡す（ONCE 規約に従う）。
+  # `/up` は ONCE のヘルスチェック向けに https リダイレクト対象から除外する。
+  ssl_mode = Beams::Once::SslMode.new
+  if ssl_mode.enabled?
+    config.assume_ssl = true
+    config.force_ssl  = true
+    config.ssl_options = ssl_mode.ssl_options
+  end
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]
