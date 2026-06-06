@@ -88,11 +88,11 @@ basecamp/once README より:
 
 ## グループ E. ghcr.io への公開 CI
 
-- [ ] `.github/workflows/release.yml`（新規）を追加。`main` への push 時に `docker/build-push-action` で multi-arch（amd64 + arm64）イメージをビルドし `ghcr.io/webuilder240/beams` に push。タグは **`:latest` と `:<git-sha>` の 2 つ**（git tag 連動は当面なし、必要になったら追加） (`.github/workflows/release.yml`)
+- [x] `.github/workflows/release.yml`（新規）を追加。`main` への push 時に `docker/build-push-action` で multi-arch（amd64 + arm64）イメージをビルドし `ghcr.io/webuilder240/beams` に push。タグは **`:latest` と `:<git-sha>` の 2 つ**（git tag 連動は当面なし、必要になったら追加） (`.github/workflows/release.yml`)
   - 受け入れ条件: feature ブランチで workflow_dispatch を実行 → ghcr.io に `:latest` と `:<sha>` の 2 タグが上がる
-- [ ] `GITHUB_TOKEN` に `packages: write` 権限を `permissions:` ブロックで付与。secrets は不要 (`.github/workflows/release.yml`)
-- [ ] イメージへの OCI labels（`org.opencontainers.image.source` 等）を付与し、GHCR の repo 紐付けを有効化 (`.github/workflows/release.yml`)
-- [ ] `README.md` および `docs/INSTALL.md` にプル元 URL（`ghcr.io/webuilder240/beams:latest`）を記載 (`README.md`, `docs/INSTALL.md`)
+- [x] `GITHUB_TOKEN` に `packages: write` 権限を `permissions:` ブロックで付与。secrets は不要 (`.github/workflows/release.yml`)
+- [x] イメージへの OCI labels（`org.opencontainers.image.source` 等）を付与し、GHCR の repo 紐付けを有効化 (`.github/workflows/release.yml`)
+- [x] `README.md` および `docs/INSTALL.md` にプル元 URL（`ghcr.io/webuilder240/beams:latest`）を記載 (`README.md`, `docs/INSTALL.md`)
   - 受け入れ条件: 実 URL が記載されており、`docker pull` で取得できる
 
 ## グループ F. `docs/INSTALL.md` を ONCE 手順に刷新

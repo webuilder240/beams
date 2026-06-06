@@ -195,3 +195,44 @@ worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-ab41525bdabf07875`（fea
 - F グループ対象（`docs/INSTALL.md` の本格刷新、`CLAUDE.md` デプロイ節）は最小編集のみ（D の grep 0 件要件のため `docs/INSTALL.md` からの旧言及削除は本グループで実施。F での全面刷新と衝突しない）
 - `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` などの手動バックアップ系は維持
 
+---
+
+## 2026-06-06 グループ E: ghcr.io への公開 CI
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a2a465ac98e5e93ce`（feat/26-once-platform から派生、HEAD fd56087 で同期）
+
+### 進捗
+
+- [x] `.github/workflows/release.yml` を新規追加。トリガは `push` to `main` および `workflow_dispatch`。`docker/setup-qemu-action@v3` + `docker/setup-buildx-action@v3` + `docker/login-action@v3` + `docker/build-push-action@v6` で `linux/amd64,linux/arm64` の multi-arch ビルド・push を実装
+- [x] イメージ名は `ghcr.io/webuilder240/beams`、タグは `:latest` および `:${{ github.sha }}` の 2 つ
+- [x] `permissions:` ブロックで `contents: read` / `packages: write` を付与。レジストリログインは `${{ github.actor }}` + `${{ secrets.GITHUB_TOKEN }}`（追加 secrets 不要）
+- [x] OCI labels（`org.opencontainers.image.source` / `description` / `revision`）を付与。`licenses` は LICENSE ファイルが存在しないため含めず（指示通り）
+- [x] GitHub Actions cache（`cache-from: type=gha` / `cache-to: type=gha,mode=max`）を有効化
+- [x] `concurrency:` で `release-${{ github.ref }}` グループ・`cancel-in-progress: true` を設定し、main への連続 push が重なった場合は古い方をキャンセル
+- [x] `README.md` 冒頭に「配布イメージ」節を追加し `ghcr.io/webuilder240/beams:latest` を明記
+- [x] `docs/INSTALL.md` の `IMAGE` プレースホルダ（`ghcr.io/REPLACE_ME/beams:latest`）を実 URL に置換（注意ブロックと環境変数表の 2 箇所）。F グループでの全面刷新と衝突しない最小編集
+
+### 検証
+
+- `ruby -ryaml -e 'p YAML.load_file(".github/workflows/release.yml").keys'` → `["name", true, "concurrency", "permissions", "jobs"]`（YAML パース成功。`true` キーは Ruby の YAML 1.1 で `on:` が真偽値として解釈されるため正常）
+- `actionlint` は未インストール（`which actionlint` → 出力なし）のためスキップ
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → 実行済み
+- `bundle exec rspec` → 後述「最終検証」参照
+- `bin/rubocop` → 後述「最終検証」参照
+
+### 編集/作成ファイル
+
+- 新規: `.github/workflows/release.yml`
+- 編集: `README.md`（冒頭に「配布イメージ」節を追加）
+- 編集: `docs/INSTALL.md`（`IMAGE` プレースホルダ 2 箇所を `ghcr.io/webuilder240/beams:latest` に置換）
+- 編集: `docs/tasks/26-once-platform.md`（グループ E 全 4 項目を `[x]`）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- F グループ対象（`docs/INSTALL.md` の全面刷新・`CLAUDE.md` デプロイ節・`docs/PRODUCT_PLAN.md`）は触らず。`IMAGE` プレースホルダの実 URL 置換のみ「E の要件」として実施
+- 既存 `.github/workflows/ci.yml` は触らず（並列で動作する）
+- 既存テスト・既存実装はいずれも未編集
+
