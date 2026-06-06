@@ -49,7 +49,7 @@
 | 18 | [KamalからONCE配信への移行](18-once-distribution.md) | §2 | 02 | 約12 | ✅完了 |
 | 19 | [ダッシュボードD&D並び替え（Hotwire/SortableJS）](19-dashboard-drag-drop.md) | §4.8（拡張） | 12 | 約20 | ✅完了 |
 | 20 | [SSO（Google OAuth ログイン）](20-sso.md) | §7 | 03, 05 | 約20 | ✅完了 |
-| 21 | [クエリ本文の SQL 検索（LIKE）](21-sql-search.md) | §7 | 14, 07 | 約7 | 未着手 |
+| 21 | [クエリ本文の SQL 検索（LIKE）](21-sql-search.md) | §7 | 14, 07 | 約7 | ✅完了 |
 | 22 | [Redash クエリ取り込み（API版）](22-redash-import.md) | §7 | 07, 04, 03 | 約14 | 未着手（API版に変更） |
 
 > 16・17 は `localhost:3000` での動作確認で見つかった不具合・改善の追加タスク（MVP 後）。

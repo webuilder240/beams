@@ -36,7 +36,7 @@
 | 18 | KamalからONCE配信への移行 | ✅完了 | Coder/Tester | [manager/18-once-distribution.md](manager/18-once-distribution.md) |
 | 19 | ダッシュボードD&D並び替え（Hotwire/SortableJS） | ✅完了 | Coder/Tester/Reviewer | [manager/19-dashboard-drag-drop.md](manager/19-dashboard-drag-drop.md) |
 | 20 | SSO（Google OAuth ログイン） | ✅完了 | Coder/Tester/Reviewer | [manager/20-sso.md](manager/20-sso.md) |
-| 21 | クエリ本文の SQL 検索（LIKE） | 未着手（**B1-B3確定済 2026-06-06**・`/agent-team` 着手可） | - | （未作成） |
+| 21 | クエリ本文の SQL 検索（LIKE） | ✅完了 | Coder/Tester+Reviewer | [manager/21-sql-search.md](manager/21-sql-search.md) |
 | 22 | Redash クエリ取り込み（API版） | 未着手（**B1-B8確定済・API版に変更 2026-06-06**・マイグレーション承認待ち） | - | （未作成） |
 
 > **20–22 は 2026-06-05 にユーザー指示で次フェーズとして分解、2026-06-06 に全決定事項確定。優先順は 20 → 21 → 22。**
