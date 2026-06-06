@@ -49,3 +49,13 @@
   - タイムアウト 5s（open/read）、リダイレクト追従なし
   - 200 → JSON パース、401/403 → Unauthorized、404 → NotFound、5xx → ServerError、タイムアウト → Timeout、JSON パース失敗 → ServerError
 - スペック: 13/13 green。SSRF テストでは WebMock スタブが「リクエストされていない」ことを `expect(stub).not_to have_been_requested` で確認（実 HTTP が送られないこと）
+
+#### 5. RedashQueryPayload PORO
+- `spec/models/redash_query_payload_spec.rb` を Red で作成（20 examples）
+- `app/models/redash_query_payload.rb` 実装:
+  - `#valid?` / `#errors` / `#title` / `#sql_body` / `#parameters` / `#warnings`
+  - TYPE_MAPPING（text/number/date/date-range はそのまま）
+  - WARN_AND_MAP（datetime-local/datetime-with-seconds/enum/query → string; datetime-range/-with-seconds → date_range；警告付き）
+  - 未知の型は `string` フォールバック + 警告
+  - 拡張記法検出: `{{ ... | ... }}` フィルタ、`{% ... %}` テンプレートタグ
+- スペック: 20/20 green

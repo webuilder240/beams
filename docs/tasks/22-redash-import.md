@@ -144,7 +144,7 @@
 
 ### RedashQueryPayload PORO（解析・既存設計を流用）
 
-- [ ] `app/models/redash_query_payload.rb` 新規作成 — **JSONペースト案と同じインターフェース**。`new(hash)` で Redash API レスポンスを直接受ける（パース済みのHashを渡す）。
+- [x] `app/models/redash_query_payload.rb` 新規作成 — **JSONペースト案と同じインターフェース**。`new(hash)` で Redash API レスポンスを直接受ける（パース済みのHashを渡す）。
   - `#valid?` / `#errors` / `#title` / `#sql_body` / `#parameters` / `#warnings`
   - B4 の型マッピング・B7 の拡張記法検出をここで行う
   - 受け入れ条件: `spec/models/redash_query_payload_spec.rb` で全マッピング・警告ケースを検証 green。
