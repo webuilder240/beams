@@ -155,6 +155,36 @@ RAILS_MASTER_KEY=<key> sudo -E bash deploy/once/install.sh
 
 ---
 
+## ONCE 環境変数
+
+> 本節は ONCE プラットフォーム（basecamp/once）採用への移行（トピック 26）に伴う暫定追記。INSTALL.md 全体は同トピック・グループ F で ONCE 手順へ全面刷新する。
+
+### `RAILS_MASTER_KEY` の受け渡し
+
+`RAILS_MASTER_KEY`（`config/master.key` の値）は ONCE の **custom env** として渡す。経路は次の 2 つ:
+
+1. **CLI でインストール時に渡す**
+
+   ```bash
+   once install \
+     --image ghcr.io/webuilder240/beams:latest \
+     --env RAILS_MASTER_KEY=<config/master.key の値>
+   ```
+
+   `--env KEY=VALUE` は繰り返し指定できる。
+
+2. **TUI で後から追加する**
+
+   `once` を起動 → **Settings → Environment** フォームで `RAILS_MASTER_KEY` を行追加。保存後、ONCE が反映のためコンテナを再生成する。
+
+`SECRET_KEY_BASE` は ONCE が初回インストール時に自動生成して以後保持するため、ユーザーが渡す必要はない（Rails 標準の env として自動的に拾われる）。`RAILS_MASTER_KEY` が未設定でも boot 自体は通るが、credentials（Active Record Encryption のキー 3 点を含む）を復号できないため、AR Encryption を使う機能は失敗する。
+
+### Beams が使わない ONCE 経由 env
+
+ONCE は他のアプリ向けに `VAPID_*` / `SMTP_*` / `NUM_CPUS` などの env を渡すことがある。**Beams はこれらを使っていない**（push 通知なし／メール送信は未実装／プロセス数は Puma の `WEB_CONCURRENCY` 等で制御）。**現状無視で問題ない**。将来これらを利用する機能を追加した時点で対応を検討する。
+
+---
+
 ## 9. 関連ドキュメント
 
 - バックアップ・復旧の詳細: [docs/RESTORE.md](RESTORE.md)

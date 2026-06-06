@@ -34,3 +34,46 @@
 ### 触らなかった範囲（指示の遵守）
 
 - `bin/hooks/`、`lib/beams/once/pre_backup.rb`、`.github/workflows/release.yml`、`config/recurring.yml`、`bin/once-update`、`lib/beams/once/updater.rb`、`spec/lib/beams/once/updater_spec.rb`、`deploy/once/`、`docs/PRODUCT_PLAN.md` などはすべて未編集。
+
+---
+
+## 2026-06-06 グループ B: ONCE 環境変数規約への対応
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a2b29dea2b932cdd8`（feat/26-once-platform から派生）
+
+### 進捗
+
+- [x] `Beams::Once::SslMode` PORO を `lib/beams/once/ssl_mode.rb` に新設。`DISABLE_SSL=true` のときのみ `enabled? == false`、未設定/空文字/その他は `true`。`ssl_options` で `/up` を https リダイレクト対象から除外
+- [x] `config/environments/production.rb` の跡地コメントを `SslMode` 利用の本実装に置換。`enabled?` が真のとき `assume_ssl` / `force_ssl` / `ssl_options` を設定
+- [x] `RAILS_MASTER_KEY` 未設定でも boot 失敗しないことを `env -u RAILS_MASTER_KEY bundle exec rails runner 'p :ok'` および `RAILS_MASTER_KEY= bundle exec rails runner 'p :ok'` の 2 通りで確認（コード変更なし）
+- [x] `docs/INSTALL.md` 末尾に「## ONCE 環境変数」節を追記。`RAILS_MASTER_KEY` の (a) CLI 経路 / (b) TUI 経路の 2 経路を記載し、`VAPID_*` / `SMTP_*` / `NUM_CPUS` を「現状無視で問題ない」と明記（F グループでの全面刷新を前提とした最小追記）
+
+### TDD ログ
+
+1. **Red**: `spec/lib/beams/once/ssl_mode_spec.rb` を先に作成し `bundle exec rspec spec/lib/beams/once/ssl_mode_spec.rb` を実行 → `LoadError: cannot load such file -- .../lib/beams/once/ssl_mode`（require_relative 失敗）で red 確認
+2. **Green**: `lib/beams/once/ssl_mode.rb` を実装（`env:` キーワード引数、`enabled?`、`ssl_options`）→ 8 examples / 0 failures で green
+3. **Refactor**: `production.rb` の require を追加し、跡地コメントを `SslMode` 利用の if ブロックに置換。`/up` 除外プロックは PORO 側に集約しているので production.rb 側は薄い
+
+### 検証
+
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → Done in 63ms（system spec 前提）
+- `bundle exec rspec`: **548 examples, 0 failures**, Line Coverage **98.66% (1030 / 1044)**
+- `bin/rubocop`: **157 files inspected, no offenses detected**
+- `env -u RAILS_MASTER_KEY bundle exec rails runner 'p :ok'` → `:ok`
+- `RAILS_MASTER_KEY= bundle exec rails runner 'p :ok'` → `:ok`
+
+### 編集/作成ファイル
+
+- 新規: `lib/beams/once/ssl_mode.rb`
+- 新規: `spec/lib/beams/once/ssl_mode_spec.rb`
+- 編集: `config/environments/production.rb`（require + SslMode 利用ブロック）
+- 編集: `docs/INSTALL.md`（末尾に「## ONCE 環境変数」節を追加）
+- 編集: `docs/tasks/26-once-platform.md`（グループ B チェックボックスを `[x]` に）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- C グループ以降のファイル（`bin/hooks/`、`lib/beams/once/pre_backup.rb`、`.github/workflows/release.yml`、`config/recurring.yml`、`bin/once-update`、`lib/beams/once/updater.rb`、`spec/lib/beams/once/updater_spec.rb`、`deploy/once/*`）はいずれも未編集
+- A グループで撤去済みの `lib/beams/once/tls_config.rb` は復活させていない

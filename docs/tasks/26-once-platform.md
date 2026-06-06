@@ -48,16 +48,16 @@ basecamp/once README より:
 
 ## グループ B. ONCE 環境変数規約への対応
 
-- [ ] `DISABLE_SSL` が `true` 以外のときに `assume_ssl` / `force_ssl` を有効化する判定を `production.rb` または新 PORO（`lib/beams/once/ssl_mode.rb` 等）で実装する。`/up` は SSL リダイレクトから除外 (`config/environments/production.rb`, `lib/beams/once/`)
+- [x] `DISABLE_SSL` が `true` 以外のときに `assume_ssl` / `force_ssl` を有効化する判定を `production.rb` または新 PORO（`lib/beams/once/ssl_mode.rb` 等）で実装する。`/up` は SSL リダイレクトから除外 (`config/environments/production.rb`, `lib/beams/once/`)
   - 受け入れ条件: TDD。spec で `DISABLE_SSL=true` / 未設定 / 空文字 の 3 ケースを検証。サービスクラス禁止のため PORO で実装
-- [ ] `SECRET_KEY_BASE` は Rails 標準で `Rails.application.secret_key_base` が拾うので追加コードなし。ただし `RAILS_MASTER_KEY` を必須から「Active Record Encryption / credentials を使うときのみ必要」に格下げする方針を `config/application.rb` 周辺で検証（boot 失敗しないことを確認） (`config/application.rb`, `config/environments/production.rb`)
+- [x] `SECRET_KEY_BASE` は Rails 標準で `Rails.application.secret_key_base` が拾うので追加コードなし。ただし `RAILS_MASTER_KEY` を必須から「Active Record Encryption / credentials を使うときのみ必要」に格下げする方針を `config/application.rb` 周辺で検証（boot 失敗しないことを確認） (`config/application.rb`, `config/environments/production.rb`)
   - 受け入れ条件: `RAILS_MASTER_KEY` 未設定の状態で `bundle exec rails runner 'p :ok'` が通る（credentials を参照しない範囲で）
-- [ ] `RAILS_MASTER_KEY` を ONCE の custom env で渡す手順を `docs/INSTALL.md` に明記する。経路は2つ:
+- [x] `RAILS_MASTER_KEY` を ONCE の custom env で渡す手順を `docs/INSTALL.md` に明記する。経路は2つ:
   - インストール時に CLI: `once install --image ghcr.io/webuilder240/beams:latest --env RAILS_MASTER_KEY=<value> ...`
   - インストール後に TUI: Settings → Environment フォームで `RAILS_MASTER_KEY` を行追加
   (`docs/INSTALL.md`)
   - 受け入れ条件: 上記2経路が `docs/INSTALL.md` に手順として記載され、ローカル `once` で手順通り起動できる
-- [ ] ONCE が渡しうるが Beams が使わない env（`VAPID_*` / `SMTP_*` / `NUM_CPUS`）の取扱いを文書化（無視で問題ないことを確認） (`docs/INSTALL.md`)
+- [x] ONCE が渡しうるが Beams が使わない env（`VAPID_*` / `SMTP_*` / `NUM_CPUS`）の取扱いを文書化（無視で問題ないことを確認） (`docs/INSTALL.md`)
   - 受け入れ条件: 文書に「現状無視」が明記されている
 
 ## グループ C. `/hooks/pre-backup` 実装
