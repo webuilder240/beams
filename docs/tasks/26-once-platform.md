@@ -78,12 +78,12 @@ basecamp/once README より:
 
 ## グループ D. 旧 `deploy/once/*` 撤去
 
-- [ ] `deploy/once/install.sh` を削除 (`deploy/once/install.sh`)
-- [ ] `deploy/once/once-update.service` / `once-update.timer` を削除 (`deploy/once/`)
-- [ ] `bin/once-update` を削除 (`bin/once-update`)
-- [ ] `lib/beams/once/updater.rb` および `spec/lib/beams/once/updater_spec.rb` を削除 (`lib/beams/once/updater.rb`, `spec/lib/beams/once/updater_spec.rb`)
-- [ ] `docs/tasks/18-once-distribution.md` のステータスは ✅完了 のまま据え置き、本ファイル背景節へのリンクで「26 が代替・全撤去」と相互参照 (`docs/tasks/18-once-distribution.md`)
-- [ ] `grep -rE 'deploy/once|once-update|TlsConfig|Beams::Once::Updater'` がコード/設定で 0 件になることを確認（docs/tasks は除外） (root)
+- [x] `deploy/once/install.sh` を削除 (`deploy/once/install.sh`)
+- [x] `deploy/once/once-update.service` / `once-update.timer` を削除 (`deploy/once/`)
+- [x] `bin/once-update` を削除 (`bin/once-update`)
+- [x] `lib/beams/once/updater.rb` および `spec/lib/beams/once/updater_spec.rb` を削除 (`lib/beams/once/updater.rb`, `spec/lib/beams/once/updater_spec.rb`)
+- [x] `docs/tasks/18-once-distribution.md` のステータスは ✅完了 のまま据え置き、本ファイル背景節へのリンクで「26 が代替・全撤去」と相互参照 (`docs/tasks/18-once-distribution.md`)
+- [x] `grep -rE 'deploy/once|once-update|TlsConfig|Beams::Once::Updater'` がコード/設定で 0 件になることを確認（docs/tasks は除外） (root)
   - 受け入れ条件: grep 結果が 0 件、`rspec` green、`rubocop` clean
 
 ## グループ E. ghcr.io への公開 CI

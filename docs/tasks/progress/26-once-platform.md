@@ -145,3 +145,53 @@ worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a73730d2807138585`（fea
 - F グループ対象（`docs/INSTALL.md` の本格刷新、`docs/PRODUCT_PLAN.md`、`CLAUDE.md` デプロイ節）は未編集（本グループでは方針追記のみ）
 - `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` / `app/jobs/backup_job.rb` / `spec/jobs/backup_job_spec.rb` / `spec/integration/backup_job_integration_spec.rb` は手動緊急時用として温存
 
+---
+
+## 2026-06-06 グループ D: 旧自前配布層（`deploy/once/*`）撤去
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-ab41525bdabf07875`（feat/26-once-platform から派生）
+
+### 進捗
+
+- [x] `deploy/once/install.sh` を削除（`git rm`）
+- [x] `deploy/once/once-update.service` / `deploy/once/once-update.timer` を削除（`git rm`）。`deploy/once/` が空になり、`deploy/` 直下も空になったため、Git 上ではディレクトリ自体も自動的に消滅
+- [x] `bin/once-update` を削除（`git rm`）
+- [x] `lib/beams/once/updater.rb` および `spec/lib/beams/once/updater_spec.rb` を削除（`git rm`）。`updater_spec.rb` は単体で完結しており、他 spec への波及なし
+- [x] `docs/tasks/18-once-distribution.md` 冒頭に「トピック 26 で全撤去」の相互参照 blockquote を追加（履歴のため個別チェックボックスは据え置き）
+- [x] `docs/INSTALL.md` から `deploy/once/install.sh` / `bin/once-update` / `once-update.service` / `once-update.timer` / `lib/beams/once/updater.rb` への言及をすべて削除し、「グループ F で全面刷新する」旨の暫定注記に置換
+- [x] `docs/PRODUCT_PLAN.md` §2 配布形態の段落から旧ファイル参照を撤去し、`basecamp/once` 統合済みである旨に書き換え
+- [x] `grep -rE 'deploy/once|once-update|TlsConfig|Beams::Once::Updater'`（`.git` / `.claude` / `node_modules` / `coverage` / `docs/tasks/` 除外）の結果が **0 件**
+
+### 検証
+
+- `git rm` 出力（6 ファイル）:
+  - `bin/once-update`
+  - `deploy/once/install.sh`
+  - `deploy/once/once-update.service`
+  - `deploy/once/once-update.timer`
+  - `lib/beams/once/updater.rb`
+  - `spec/lib/beams/once/updater_spec.rb`
+- `grep -rE 'deploy/once|once-update|TlsConfig|Beams::Once::Updater' --exclude-dir='.git' --exclude-dir='.claude' --exclude-dir='node_modules' --exclude-dir='coverage' . | grep -v 'docs/tasks/'` → **0 行**（exit 1）
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → Done in 48ms
+- `bundle exec rspec`: **554 examples, 0 failures**, Line Coverage **98.93% (1017 / 1028)**（85% 閾値クリア）
+  - 内訳: non-system 474 examples / system 80 examples いずれも 0 failures（初回は `tailwindcss:build` 未実行で system 側が落ちたが、ビルド後に再実行して green）
+- `bin/rubocop`: **159 files inspected, no offenses detected**
+
+### 編集/削除ファイル
+
+- 削除（`git rm`）: `deploy/once/install.sh`, `deploy/once/once-update.service`, `deploy/once/once-update.timer`, `bin/once-update`, `lib/beams/once/updater.rb`, `spec/lib/beams/once/updater_spec.rb`
+- 編集: `docs/INSTALL.md`（冒頭注記ボックス・§2 インストール手順・§4 ポート・§7 自動アップデート・§8 手動アップデート/ロールバックから旧ファイル言及を撤去）
+- 編集: `docs/PRODUCT_PLAN.md`（§2 配布形態の段落を旧ファイル参照なしの記述に置換）
+- 編集: `docs/tasks/18-once-distribution.md`（冒頭に 26 への相互参照 blockquote を追加）
+- 編集: `docs/tasks/26-once-platform.md`（グループ D 全 6 項目を `[x]`）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- A/B/C グループ完了済みファイルはそのまま
+- E グループ対象（`.github/workflows/release.yml`、`README.md` のプル元 URL 記載）は未編集
+- F グループ対象（`docs/INSTALL.md` の本格刷新、`CLAUDE.md` デプロイ節）は最小編集のみ（D の grep 0 件要件のため `docs/INSTALL.md` からの旧言及削除は本グループで実施。F での全面刷新と衝突しない）
+- `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` などの手動バックアップ系は維持
+
