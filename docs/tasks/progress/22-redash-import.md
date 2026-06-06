@@ -83,3 +83,9 @@
 #### 8. 全テスト確認
 - `SKIP_COVERAGE_CHECK=1 bundle exec rspec`: 583 examples, 0 failures
 - Line Coverage: 98.01%（1182 / 1206）
+
+#### 9. System Spec（rack_test）
+- `spec/system/redash_imports_spec.rb` 作成（2 examples）
+  - admin が Redash 接続を作成 → member が Redash 取り込み画面 → クエリ一覧 → 2 件選択 → 取り込み実行 → 結果画面（成功/警告/Query 2 件作成）
+  - Redash API が 401 を返す場合のエラーメッセージ表示
+- スペック: 2/2 green

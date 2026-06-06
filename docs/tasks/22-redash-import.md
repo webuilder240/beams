@@ -5,7 +5,7 @@
 > 計画書 §7「Redash SQLインポート（クエリ本文＋タイトルの最小移行、パラメータ記法変換）」に対応。
 > パラメータ記法 `{{ name }}` は Redash と Beams で同一なので**変換不要**。型のマッピングだけ行う。
 
-- **ステータス**: 未着手（**全決定事項B1-B8 確定済み・API版に変更 2026-06-06**・`/agent-team` 着手可。マイグレーション承認は着手時にボスから取得）
+- **ステータス**: **実装完了（2026-06-06、`feat/22-redash-import`）**。マイグレーション承認済み・全タスク green・カバレッジ 98.01%。
 - **依存**: [[07-query-editor]]（`Query`・`QueryParameter`・`sync_parameters!`）/ [[04-bigquery-connection]]（接続選択UI・Active Record Encryption の前例）/ [[03-auth-users]]（所有者・admin認可）
 - **関連計画書**: §7（将来項目を一部実装）
 
@@ -191,13 +191,13 @@
 
 ### テスト
 
-- [ ] `spec/models/redash_source_spec.rb` — バリデーション・暗号化
-- [ ] `spec/models/redash_client_spec.rb` — WebMock で API モック、SSRF ガード、エラー分岐
-- [ ] `spec/models/redash_query_payload_spec.rb` — JSON パース・型マッピング・警告
-- [ ] `spec/requests/admin/redash_sources_spec.rb` — admin CRUD・認可
-- [ ] `spec/requests/redash_imports_spec.rb` — 一覧・取り込み成功/部分失敗/接続エラー
-- [ ] `spec/system/redash_imports_spec.rb`（`rack_test`） — admin が RedashSource を登録 → ログインユーザーが一覧から複数選択して取り込み → 結果画面確認
-- [ ] 既存テストが壊れていない
+- [x] `spec/models/redash_source_spec.rb` — バリデーション・暗号化
+- [x] `spec/models/redash_client_spec.rb` — WebMock で API モック、SSRF ガード、エラー分岐
+- [x] `spec/models/redash_query_payload_spec.rb` — JSON パース・型マッピング・警告
+- [x] `spec/requests/admin/redash_sources_spec.rb` — admin CRUD・認可
+- [x] `spec/requests/redash_imports_spec.rb` — 一覧・取り込み成功/部分失敗/接続エラー
+- [x] `spec/system/redash_imports_spec.rb`（`rack_test`） — admin が RedashSource を登録 → ログインユーザーが一覧から複数選択して取り込み → 結果画面確認
+- [x] 既存テストが壊れていない
 
 ### Gem追加
 
@@ -206,23 +206,23 @@
 
 ### ドキュメント
 
-- [ ] `docs/PRODUCT_PLAN.md` §7 の該当行に「実装済み（トピック22）」を注記
-- [ ] `docs/tasks/progress/22-redash-import.md` を作成し時系列ログを残す
+- [x] `docs/PRODUCT_PLAN.md` §7 の該当行に「実装済み（トピック22）」を注記
+- [x] `docs/tasks/progress/22-redash-import.md` を作成し時系列ログを残す
 
 ---
 
 ## 動作確認
 
-- [ ] admin が `/admin/redash_sources` で RedashSource を作成（URL https://demo.redash.io 等）
-- [ ] member が `/redash_imports/new` → RedashSource 選択 → クエリ一覧が表示される
-- [ ] 複数選択して BigQuery 接続を指定 → 取り込み → 各クエリが Beams 上に作成される
-- [ ] パラメータ記法 `{{ start_date }}` が QueryParameter（type=date）として正しく生成される
-- [ ] `datetime-local` を含む Redash クエリ → `string` で取り込まれ、警告が表示される
-- [ ] private IP (`http://127.0.0.1:5000` 等) で RedashSource を作ろうとする → バリデーションエラー
-- [ ] 不正なAPIキーで一覧を取得 → 「APIキーが無効です」エラー
-- [ ] Redash サーバへの到達不可（タイムアウト） → 「Redashサーバに接続できません」エラー
-- [ ] `bundle exec rspec` 全 green、SimpleCov 85% 以上
-- [ ] `bin/rubocop` / `bin/brakeman` / `bin/bundler-audit` クリーン
+- [x] admin が `/admin/redash_sources` で RedashSource を作成（URL https://demo.redash.io 等） — System Spec で WebMock を用いて検証
+- [x] member が `/redash_imports/new` → RedashSource 選択 → クエリ一覧が表示される — System/Request Spec で検証
+- [x] 複数選択して BigQuery 接続を指定 → 取り込み → 各クエリが Beams 上に作成される — System Spec で 2 件取り込み確認
+- [x] パラメータ記法 `{{ start_date }}` が QueryParameter（type=date）として正しく生成される — System Spec / Request Spec の `query_parameters.pluck(:name, :param_type)` で確認
+- [x] `datetime-local` を含む Redash クエリ → `string` で取り込まれ、警告が表示される — Request Spec / System Spec で検証
+- [x] private IP (`http://127.0.0.1:5000` 等) で RedashSource を作ろうとする → バリデーションエラー — Model Spec で検証
+- [x] 不正なAPIキーで一覧を取得 → 「APIキーが無効です」エラー — Request Spec / System Spec で検証
+- [x] Redash サーバへの到達不可（タイムアウト） → 「Redashサーバに接続できません」エラー — Request Spec で検証
+- [x] `bundle exec rspec` 全 green、SimpleCov 85% 以上 — 583 examples, 0 failures, Line Coverage 98.01%
+- [x] `bin/rubocop` / `bin/brakeman` / `bin/bundler-audit` クリーン
 
 ---
 
