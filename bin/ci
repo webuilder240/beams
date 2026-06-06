@@ -57,6 +57,31 @@ run_system_test() {
   SKIP_COVERAGE_CHECK=1 bundle exec rspec spec/system
 }
 
+# ---- signoff ----------------------------------------------------------------
+
+# 全ジョブ完走時のみ呼び出される。
+# BEAMS_CI_SIGNOFF=1 のときだけ `gh signoff` を実行し、commit status `signoff`
+# を success で付与する。Branch Protection で `signoff` を必須化することで
+# 「ローカル CI を回さずに main へマージ」する抜け道を塞ぐ。
+# gh CLI / gh-signoff extension が未インストールの場合は明確なエラーで exit 1。
+run_signoff() {
+  if [ "${BEAMS_CI_SIGNOFF:-}" != "1" ]; then
+    return 0
+  fi
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "ERROR: BEAMS_CI_SIGNOFF=1 が設定されているが gh CLI が見つかりません。" >&2
+    echo "       https://cli.github.com/ から gh をインストールしてください。" >&2
+    exit 1
+  fi
+  if ! gh extension list 2>/dev/null | grep -q "basecamp/gh-signoff"; then
+    echo "ERROR: gh signoff extension が未インストールです。" >&2
+    echo "       gh extension install basecamp/gh-signoff" >&2
+    exit 1
+  fi
+  echo "==> signoff (gh signoff)"
+  gh signoff
+}
+
 # ---- ディスパッチ ------------------------------------------------------------
 
 usage() {
@@ -71,6 +96,9 @@ JOB:
   test           rspec (system 除外)
   system         spec/system のみ（system-test の別名）
   system-test    spec/system のみ
+
+ENV:
+  BEAMS_CI_SIGNOFF=1   全ジョブ完走時に `gh signoff` を呼ぶ（個別ジョブでは無視）
 USAGE
 }
 
@@ -81,6 +109,7 @@ if [ "$#" -eq 0 ]; then
   run_test 4
   run_system_test 5
   echo "==> all green"
+  run_signoff
   exit 0
 fi
 

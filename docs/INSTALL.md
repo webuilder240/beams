@@ -164,3 +164,38 @@ curl -fsS https://<hostname>/up
 - バックアップ・復旧の詳細: [docs/RESTORE.md](RESTORE.md)
 - 製品方針・配布形態: [docs/PRODUCT_PLAN.md](PRODUCT_PLAN.md)（§2 配布形態）
 - 実装トピック: [docs/tasks/26-once-platform.md](tasks/26-once-platform.md)（basecamp/once 採用への移行）／[docs/tasks/18-once-distribution.md](tasks/18-once-distribution.md)（旧自前配布層・履歴）
+
+---
+
+## 11. 開発者向けセットアップ（オプション）
+
+ローカルでの開発・PR 運用に関する任意設定。本番設置（§1〜§10）には不要。
+
+### 11.1 `gh signoff` でローカル CI を強制する
+
+Beams は `pull_request` トリガを撤去しており、PR 前のチェックはローカル `bin/ci` に依存している（[CLAUDE.md](../CLAUDE.md) `## Commands` 参照）。素のままだと「ローカル CI を回さずに PR をマージ」する抜け道があるため、[basecamp/gh-signoff](https://github.com/basecamp/gh-signoff) を導入して `bin/ci` 完走時に commit status `signoff` を success で付与し、GitHub の Branch Protection と組み合わせて強制力を持たせる。
+
+#### セットアップ手順（個人開発者ごと）
+
+1. **`gh` CLI（GitHub 公式）のインストール** — 詳細は [cli.github.com](https://cli.github.com/) を参照。
+2. **`gh` の認証** — `gh auth login` で GitHub アカウントに認証する。
+3. **`gh signoff` extension のインストール**:
+   ```bash
+   gh extension install basecamp/gh-signoff
+   ```
+4. **shell rc に環境変数を export** — `~/.zshrc` / `~/.bashrc` などに追記:
+   ```bash
+   export BEAMS_CI_SIGNOFF=1
+   ```
+   `BEAMS_CI_SIGNOFF=1` のときだけ `bin/ci` 完走時に `gh signoff` が走る（未設定なら従来通り `==> all green` で終わる）。
+
+これで `bin/ci` 完走時に自動で `signoff` commit status が付くため、Branch Protection で必須化すればローカル CI 飛ばしによる main 流入を防げる。
+
+#### リポジトリ管理者向け: Branch Protection の設定
+
+1. GitHub リポジトリの **Settings → Branches → Add rule**
+2. **Branch name pattern**: `main`
+3. **Require status checks to pass before merging** にチェック
+4. **Search for status checks** に `signoff` を入力し選択
+5. （任意）**Require branches to be up to date before merging** にチェック
+6. **Save**

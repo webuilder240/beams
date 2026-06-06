@@ -42,6 +42,7 @@
 | 26 | ONCE プラットフォームへの移行（basecamp/once 採用） | ✅完了 | Coder/Tester/Reviewer | [manager/26-once-platform.md](manager/26-once-platform.md) |
 | 27 | Active Record Encryption 撤廃（`RAILS_MASTER_KEY` 不要化） | ✅完了 | Coder | [progress/27-drop-ar-encryption.md](progress/27-drop-ar-encryption.md) |
 | 28 | ローカル CI 化（`bin/ci`）と PR トリガ撤去 | 進行中 | Coder | [progress/28-local-ci.md](progress/28-local-ci.md) |
+| 29 | `gh signoff` でローカル CI を強制する | 進行中 | Coder | [progress/29-gh-signoff.md](progress/29-gh-signoff.md) |
 
 > **20–22 は 2026-06-05 にユーザー指示で次フェーズとして分解、2026-06-06 に全決定事項確定。優先順は 20 → 21 → 22。**
 > **23 は 2026-06-06 に運用品質向上トピックとして分解（B1-B4 確定済み・`/agent-team` 着手可）。**
