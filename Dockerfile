@@ -69,6 +69,16 @@ USER 1000:1000
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 
+# basecamp/once invokes /hooks/pre-backup before each backup. The script
+# itself lives in the application tree (bin/hooks/pre-backup); we expose it
+# at the path ONCE expects with the required executable bit.
+USER root
+RUN mkdir -p /hooks && \
+    cp /rails/bin/hooks/pre-backup /hooks/pre-backup && \
+    chmod 755 /hooks/pre-backup && \
+    chown rails:rails /hooks/pre-backup
+USER 1000:1000
+
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
