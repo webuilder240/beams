@@ -36,13 +36,41 @@
 | E | GHCR 公開 CI（release.yml） | ✅完了（ファイル追加まで・実 publish はマージ後ユーザー手動 workflow_dispatch） | コミット `d3c5f55` / `68f5415` / `a59f6b6` 実在確認。`.github/workflows/release.yml` 新規（main push + workflow_dispatch、multi-arch amd64/arm64、`ghcr.io/webuilder240/beams:latest` + `:${{ github.sha }}`、`docker/build-push-action@v6`、`permissions: contents:read / packages:write`、OCI labels (source/description/revision)、GHA cache、concurrency `release-${{ github.ref }}`/cancel-in-progress）。`actions/checkout@v6` は ci.yml と整合。LICENSE 不在のため `licenses` ラベルは省略。マネージャー実測: `ruby -ryaml YAML.load_file` パース成功（キー `["name", true, "concurrency", "permissions", "jobs"]` — `true` は YAML 1.1 で `on:` をブール化したもので Actions では正常）、`actionlint` は未インストールのためスキップ。`rspec` **554 examples / 0 failures**、Line Coverage **98.93% (1017/1028)**、`rubocop` **159 files, no offenses**。README / INSTALL.md にプル元 URL 記載済み。GHCR repository settings の `Read and write` 確認はユーザー側（コードからは確認不能） |
 | F | `docs/INSTALL.md` を ONCE 手順に刷新 | ✅完了 | コミット `a062447` / `18f3da8` / `5cc91b2` / `35d314d` / `fe8b02a` 実在確認。`docs/INSTALL.md` を全面刷新（暫定 blockquote 全撤去、章 1〜10 連番: 前提 / インストール (TUI+CLI 経路) / 初期 env / バックアップ (自動 ONCE 統合・手動緊急時用) / アップデート / ロールバック / ポート / 環境変数 (Beams 利用 / ONCE 由来未使用) / ヘルスチェック / 関連ドキュメント）。`CLAUDE.md` デプロイ節を「ONCE プラットフォーム（basecamp/once）で配布。設置手順は `docs/INSTALL.md` 参照」へ更新。`docs/PRODUCT_PLAN.md` §2 配布形態 / §2.2 Thruster 役割（SSL 終端を ONCE 側に委ねる旨）/ §3 技術スタック表 Webサーバ行を整合。`README.md` を ONCE 配布前提で簡素化（Rails 標準 plant text 削除、Bugsnag 行は `.kamal/secrets` → ONCE custom env に修正）。`docs/tasks/18-once-distribution.md:7` のステータス文字列を「✅完了（履歴・トピック26 で全撤去）」に修正。マネージャー実測: `rspec` **554 examples / 0 failures**、Line Coverage **98.93% (1017/1028)**、`rubocop` **159 files, no offenses** |
 
-## Tester QA（予定）
+## Tester QA（ブランチ全体・2026-06-06）
 
-- 全グループ Coder 完了・マネージャー実測検証後に 1 回実施。
+- 担当: tester-26（要件 QA、ファイル非編集）
+- 結果: **全項目 PASS**。グループ A〜F の全チェック項目を `ls`・`grep`・`Read` で 1 つずつ照合し合致。
+  - `env -u RAILS_MASTER_KEY bundle exec rails runner 'p :ok'` を Tester 自身で実行し `:ok` 確認（B: RAILS_MASTER_KEY 未設定でも boot 通る）
+  - `grep -rE 'deploy/once|once-update|TlsConfig|Beams::Once::Updater'`（docs/tasks / .git / .claude / coverage / node_modules 除外）→ **0 件**（D: 全撤去達成）
+  - `ruby -ryaml -e 'YAML.load_file(".github/workflows/release.yml")'` パース成功（E: YAML 構文 OK）
+  - `bin/hooks/pre-backup` が `-rwxr-xr-x` (755) / shebang `#!/usr/bin/env ruby` を実機確認（C: 実行権限・ラッパー）
+- 横断: `rspec` 554/0/カバレッジ 98.93%（リファクタ前）。気になる点として PRODUCT_PLAN §2.2 の「HTTP/2」表記が TLS 終端 ONCE 化に伴い h2c 想定が妥当（Reviewer N6 で扱う）と申し送り。
 
-## Reviewer（予定）
+## Reviewer（ブランチ全体・2026-06-06）
 
-- Tester PASS 後に `reviewer` スキルで品質レビュー。
+- 担当: reviewer-26（コード品質・設計制約・重複/単純化/効率、ファイル非編集）
+- 結果: **must 2 件 / should 8 件 / nice-to-have 7 件**。サービスクラス禁止厳守・PORO/lib 配置・spec 配置は健全。must 対応でマージ可能水準。
+- マネージャー選定の対応方針:
+  - **対応**: M1 (RESTORE.md 自己矛盾)、M2 (PreBackup cwd 依存)、S1 (Dockerfile COPY 一行)、S3 (OCI labels title/created 追加)、S4 (cancel-in-progress: false)、S6 (`Beams::Backup.snapshot` 共通化)、S7 (`bundler/setup` 追加)、N1 (`SslMode SSL_OPTIONS` 定数化)、N6 (PRODUCT_PLAN HTTP/2 → h2c)
+  - **見送り**: S2（タスク仕様が 2 タグ運用を明示）、S5（private stub・動作上問題なし）、S8（hook spec grep・動作上問題なし）、N2/N3/N4/N5/N7（重要度低・運用議論）。判断は本表内に記載済み。
+
+## リファクタ（Reviewer 対応・2026-06-06 マネージャー再現）
+
+- コミット `a0686bf`（M1）／`808657f`（M2＋S7）／`10e6732`（S6）／`42aaacb`（S1）／`b4d165b`（S3＋S4）／`671409d`（N1＋N6）／`66f2434`（進捗ログ追記）実在確認。
+- マネージャー実測再現:
+  - `bin/hooks/pre-backup` 冒頭に `Dir.chdir(File.expand_path("../..", __dir__))` ＋ `require "bundler/setup"` を確認（M2/S7）
+  - `Dockerfile` の `/hooks/pre-backup` 配置は `COPY --chmod=0755 --chown=rails:rails bin/hooks/pre-backup /hooks/pre-backup` 一行へ整理。USER root↔1000 切替が撤去（S1）
+  - `.github/workflows/release.yml`: `concurrency: cancel-in-progress: false`、OCI labels に `title=Beams` ＋ `created=${{ github.event.head_commit.timestamp }}` 追加（S3/S4）
+  - `lib/beams/backup.rb` に `Beams::Backup.snapshot(source_path:, dest_path:)` クラスメソッドを追加、`Beams::Once::PreBackup` から呼び出し（S6 重複解消、PORO 範囲内）
+  - `Beams::Once::SslMode::SSL_OPTIONS` 定数化（N1）、`docs/PRODUCT_PLAN.md` §2.2 HTTP/2 → 「HTTP（h2c も可）」へ修正（N6）
+- 最終再現値: `rspec` **559 examples / 0 failures**、Line Coverage **98.92% (1005/1016)**、`rubocop` **159 files, no offenses**。
+
+## 完了判定（2026-06-06）
+
+- グループ A〜F の全チェックボックス完了。Tester 全項目 PASS、Reviewer must 0 件・選定 should/nice-to-have 対応済み（見送り判断は管理ログに記録）。
+- 最終 `rspec` **559 examples / 0 failures**・Line Coverage **98.92% (1005/1016)** ≥ 85%・`rubocop` **no offenses**・`grep` 旧層 0 件（docs/tasks 除外）を**マネージャー自身で再現確認**。
+- ブランチ `feat/26-once-platform`（グループコミット列＋リファクタコミット列）。**push/PR/マージはユーザー指示待ち**（未実施）。
+- 残: 実機動作確認（ONCE TUI での実 install / GHCR への workflow_dispatch publish / `/hooks/pre-backup` 実コール）はユーザー環境で実施。GHCR repository 設定（Actions Workflow permissions が `Read and write`）の確認はユーザー側のみ可能。
 
 ## マイグレーション
 
