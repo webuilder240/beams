@@ -32,6 +32,16 @@ Rails.application.routes.draw do
     resources :connections, except: [ :show ]
   end
 
+  # Redash クエリ取り込み（トピック22）。ログインユーザーが Redash から
+  # クエリ一覧を取得して複数選択し、BigQuery 接続を選んで一括 import する。
+  # /redash_import/new で RedashSource を選び、/redash_import/:id/index_queries で
+  # 一覧を表示し、/redash_import に POST で取り込みを実行する。
+  resource :redash_import, only: [ :new, :create ] do
+    member do
+      get :index_queries
+    end
+  end
+
   # クエリエディタ（CodeMirror 6・保存クエリの CRUD）
   # dry-run（コスト保護★）: POST /queries/:query_id/dry_run。SQL 本文は
   # リクエストボディの現在のエディタ内容を受け取り、接続コンテキストのみ Query から得る。

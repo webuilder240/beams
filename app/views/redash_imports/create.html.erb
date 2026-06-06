@@ -1,0 +1,48 @@
+<% content_for :title, "Redash 取り込み結果" %>
+
+<div class="max-w-3xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">Redash 取り込み結果</h1>
+
+  <div class="rounded bg-blue-50 border border-blue-200 px-4 py-3 text-sm">
+    成功: <strong><%= @success_count %></strong> 件 ／
+    失敗: <strong><%= @failure_count %></strong> 件 ／
+    警告あり: <strong><%= @warning_count %></strong> 件
+    （Redash 接続: <%= @redash_source.name %>、BigQuery: <%= @bigquery_connection.name %>）
+  </div>
+
+  <ul class="space-y-3">
+    <% @results.each do |result| %>
+      <li class="rounded border p-3 <%= result.status == :success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50' %>">
+        <div class="flex items-baseline justify-between gap-3">
+          <div>
+            <% if result.status == :success %>
+              <span class="text-green-700 font-medium">[成功]</span>
+              <%= link_to result.title, query_path(result.query), class: "text-blue-700 hover:underline ml-1" %>
+            <% else %>
+              <span class="text-red-700 font-medium">[失敗]</span>
+              <span class="ml-1"><%= result.title %></span>
+            <% end %>
+          </div>
+          <div class="text-xs text-gray-500">Redash ID: <%= result.redash_id %></div>
+        </div>
+
+        <% if result.error_message.present? %>
+          <p class="mt-1 text-sm text-red-700">エラー: <%= result.error_message %></p>
+        <% end %>
+
+        <% if result.warnings.present? %>
+          <ul class="mt-2 text-sm text-yellow-800 list-disc list-inside">
+            <% result.warnings.each do |w| %>
+              <li>警告: <%= w %></li>
+            <% end %>
+          </ul>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+
+  <div class="flex items-center gap-3">
+    <%= link_to "クエリ一覧へ", queries_path, class: "btn-primary" %>
+    <%= link_to "Redash 取り込み画面に戻る", new_redash_import_path, class: "text-gray-600 hover:underline" %>
+  </div>
+</div>

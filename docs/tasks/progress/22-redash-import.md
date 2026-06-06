@@ -67,3 +67,19 @@
 - ビュー: `admin/redash_sources/{index,new,edit,_form,_errors}.html.erb`（Tailwind 統一、`Bigquery::Connection` フォームと同形式）
   - 編集フォームでは API キーを再表示しない（`value: ""`）。空欄なら既存値保持。
 - スペック: 11/11 green
+
+#### 7. RedashImportsController + ビュー + クエリ一覧リンク
+- `spec/requests/redash_imports_spec.rb` を Red で作成（10 examples）
+- `config/routes.rb` に `resource :redash_import, only: [:new, :create] do member { get :index_queries } end`（singleton）追加
+- `app/controllers/redash_imports_controller.rb`:
+  - `new` / `index_queries` / `create`
+  - `index_queries` で `RedashClient` 例外（Unauthorized/Timeout/ServerError/ForbiddenURLError）を rescue してユーザー向け alert に変換
+  - `create` で `query_ids` をループ、各クエリで `fetch_query` → `RedashQueryPayload` → `current_user.queries.create!` を実行。`ImportResult` Struct に集約して結果画面に渡す
+  - `Query#sync_parameters!` は SQL から型なしパラメータを `string` で生成するため、Redash 由来の型で上書き（B7 に従い SQL 本文は変更しない）
+- ビュー: `app/views/redash_imports/{new,index_queries,create}.html.erb`
+- クエリ一覧（`app/views/queries/index.html.erb`）に「Redashから取り込み」リンク追加
+- スペック: 10/10 green
+
+#### 8. 全テスト確認
+- `SKIP_COVERAGE_CHECK=1 bundle exec rspec`: 583 examples, 0 failures
+- Line Coverage: 98.01%（1182 / 1206）

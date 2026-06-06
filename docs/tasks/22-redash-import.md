@@ -158,7 +158,7 @@
 
 ### コントローラ（インポート本体）
 
-- [ ] `app/controllers/redash_imports_controller.rb` を新規作成
+- [x] `app/controllers/redash_imports_controller.rb` を新規作成
   - `new` — `RedashSource` 選択フォーム
   - `index_queries` — `params[:redash_source_id]` を受け、`RedashClient#list_queries` を叩いて取得した一覧を表示（チェックボックス + BigQuery 接続選択）
   - `create` — チェックされた `query_ids` 配列と `bigquery_connection_id` を受け、各IDに対して `RedashClient#fetch_query` → `RedashQueryPayload` → `current_user.queries.create!(...)` をループ実行。途中失敗しても残りを続行、結果（成功/失敗/警告）を `flash` または専用結果画面で表示。
@@ -167,26 +167,26 @@
 
 ### ルート
 
-- [ ] `config/routes.rb` を更新
+- [x] `config/routes.rb` を更新
   - admin 名前空間に `resources :redash_sources` 追加
   - `resource :redash_import, only: [:new, :create] do member { get :index_queries } end`（または同等の構造）
   - 受け入れ条件: `rails routes | grep redash` に admin CRUD と import 系が出る。
 
 ### ビュー
 
-- [ ] `app/views/admin/redash_sources/` の CRUD ビュー（既存 `bigquery/connections` を参考に [[16-form-styling-consistency]] のTailwindクラスで統一）
-- [ ] `app/views/redash_imports/new.html.erb` — `RedashSource` 選択フォーム
-- [ ] `app/views/redash_imports/index_queries.html.erb` — クエリ一覧（タイトル・更新日時・チェックボックス）+ BigQuery接続選択 + 「取り込み実行」ボタン
-- [ ] インポート結果画面（成功/失敗/警告の一覧）
-- [ ] クエリ一覧（`app/views/queries/index.html.erb`）に「Redashから取り込み」リンクを追加
+- [x] `app/views/admin/redash_sources/` の CRUD ビュー（既存 `bigquery/connections` を参考に [[16-form-styling-consistency]] のTailwindクラスで統一）
+- [x] `app/views/redash_imports/new.html.erb` — `RedashSource` 選択フォーム
+- [x] `app/views/redash_imports/index_queries.html.erb` — クエリ一覧（タイトル・更新日時・チェックボックス）+ BigQuery接続選択 + 「取り込み実行」ボタン
+- [x] インポート結果画面（成功/失敗/警告の一覧）
+- [x] クエリ一覧（`app/views/queries/index.html.erb`）に「Redashから取り込み」リンクを追加
   - 受け入れ条件: System Spec `rack_test` で一連の画面遷移と取り込み完了が検証できる。
 
 ### 警告・エラー表示
 
-- [ ] 取り込み結果画面で:
-  - 成功したクエリは「✓ <タイトル> → <Beamsのクエリへのリンク>」表示
-  - 警告ありは「⚠️ <タイトル> （警告: <内容>）」表示
-  - 失敗は「✗ <タイトル> （エラー: <内容>）」表示
+- [x] 取り込み結果画面で:
+  - 成功したクエリは「[成功] <タイトル> → <Beamsのクエリへのリンク>」表示
+  - 警告ありは「警告: <内容>」を箇条書き表示
+  - 失敗は「[失敗] <タイトル> （エラー: <内容>）」表示
   - 受け入れ条件: 全パターンを含む System Spec で表示確認。
 
 ### テスト

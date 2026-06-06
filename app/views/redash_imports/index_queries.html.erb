@@ -1,0 +1,56 @@
+<% content_for :title, "Redash クエリ一覧 — #{@redash_source.name}" %>
+
+<div class="max-w-4xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">Redash から取り込み: <%= @redash_source.name %></h1>
+
+  <% if alert %>
+    <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3"><%= alert %></div>
+  <% end %>
+
+  <% if @queries.empty? %>
+    <p class="text-gray-500">Redash 上にクエリが見つかりませんでした。</p>
+  <% else %>
+    <%= form_with url: redash_import_path, method: :post, local: true, class: "space-y-4" do |f| %>
+      <%= hidden_field_tag :redash_source_id, @redash_source.id %>
+
+      <div>
+        <%= label_tag :bigquery_connection_id, "取り込み先 BigQuery 接続", class: "form-label" %>
+        <%= select_tag :bigquery_connection_id,
+              options_for_select(@bigquery_connections.map { |c| [ c.name, c.id ] }),
+              prompt: "BigQuery 接続を選択",
+              class: "form-input" %>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600 mb-2">取り込むクエリを選択してください（複数可）。</p>
+        <table class="min-w-full divide-y divide-gray-200 bg-white rounded border border-gray-200">
+          <thead>
+            <tr class="text-left text-sm text-gray-600">
+              <th class="px-3 py-2"></th>
+              <th class="px-3 py-2">ID</th>
+              <th class="px-3 py-2">クエリ名</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <% @queries.each do |q| %>
+              <tr>
+                <td class="px-3 py-2">
+                  <%= check_box_tag "query_ids[]", q["id"], false, id: "query_id_#{q['id']}" %>
+                </td>
+                <td class="px-3 py-2 text-sm text-gray-500"><%= q["id"] %></td>
+                <td class="px-3 py-2">
+                  <%= label_tag "query_id_#{q['id']}", q["name"], class: "cursor-pointer" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <%= f.submit "取り込み実行", class: "btn-primary" %>
+        <%= link_to "戻る", new_redash_import_path, class: "text-gray-600 hover:underline" %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
