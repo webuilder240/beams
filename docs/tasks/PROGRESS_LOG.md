@@ -35,7 +35,7 @@
 | 17 | クエリ実行結果のレンダリング修正・実行履歴表示 | ✅完了 | Coder/Tester | [progress/17-query-result-history.md](progress/17-query-result-history.md) |
 | 18 | KamalからONCE配信への移行 | ✅完了 | Coder/Tester | [manager/18-once-distribution.md](manager/18-once-distribution.md) |
 | 19 | ダッシュボードD&D並び替え（Hotwire/SortableJS） | ✅完了 | Coder/Tester/Reviewer | [manager/19-dashboard-drag-drop.md](manager/19-dashboard-drag-drop.md) |
-| 20 | SSO（Google OAuth ログイン） | 未着手（**B1-B9確定済 2026-06-06**・`/agent-team` 着手可。マイグレーション承認は着手時） | - | （未作成） |
+| 20 | SSO（Google OAuth ログイン） | ✅完了 | Coder/Tester/Reviewer | [manager/20-sso.md](manager/20-sso.md) |
 | 21 | クエリ本文の SQL 検索（LIKE） | 未着手（**B1-B3確定済 2026-06-06**・`/agent-team` 着手可） | - | （未作成） |
 | 22 | Redash クエリ取り込み（API版） | 未着手（**B1-B8確定済・API版に変更 2026-06-06**・マイグレーション承認待ち） | - | （未作成） |
 
@@ -55,7 +55,7 @@
 | 10 | `20260531130000_create_query_executions` | [migrations/10-query-executions-migration.md](migrations/10-query-executions-migration.md) | ✅承認・実行済み |
 | 11 | `20260531140000_create_visualizations`（counter対応で修正後に再承認） | [migrations/11-visualizations-migration.md](migrations/11-visualizations-migration.md) | ✅承認・実行済み |
 | 12 | `20260531150000_create_dashboards` / `20260531150001_create_widgets` | [migrations/12-dashboards-widgets-migration.md](migrations/12-dashboards-widgets-migration.md) | ✅承認・実行済み |
-| 20 | （予定）`create_password_credentials_and_migrate` / `create_oauth_identities` / `add_allowed_email_domain_to_application_settings` | [migrations/20-users-oauth-migration.md](migrations/20-users-oauth-migration.md) | ⏳承認は `/agent-team` 着手時／**破壊的（password_digest を別テーブルへ移行・カラム削除）** |
+| 20 | `20260606000001_create_password_credentials_and_migrate` / `20260606000002_create_oauth_identities` / `20260606000003_add_allowed_email_domain_to_application_settings` | [migrations/20-users-oauth-migration.md](migrations/20-users-oauth-migration.md) | ✅承認・実行済み（破壊的：password_digest を別テーブルへ移行・カラム削除） |
 | 22 | （予定）`create_redash_sources` | [migrations/22-redash-sources-migration.md](migrations/22-redash-sources-migration.md) | ⏳承認は `/agent-team` 着手時 |
 
 > ※ 05（セットアップウィザード）・06（スキーマブラウザ）は新規マイグレーション無し（06 は SolidCache 方式採用のため当初案のテーブルを廃止、[ADR 0001](../adr/0001-bigquery-schema-cache.md) 参照）。
