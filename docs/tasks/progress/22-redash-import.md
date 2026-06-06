@@ -89,3 +89,58 @@
   - admin が Redash 接続を作成 → member が Redash 取り込み画面 → クエリ一覧 → 2 件選択 → 取り込み実行 → 結果画面（成功/警告/Query 2 件作成）
   - Redash API が 401 を返す場合のエラーメッセージ表示
 - スペック: 2/2 green
+
+## Reviewer 指摘リファクタ対応（2026-06-06）
+
+Reviewer から must 4 件 / should 主要 4 件の指摘があり、ボス承認のもと
+コード品質・設計境界・SSRF 強化のリファクタを実施。**外部から見た振る舞いは維持**
+し、既存 System Spec / Request Spec は固定文言 assert 化以外は変更なし。
+
+### finding → コミット 対応表
+
+| finding | 概要 | コミット |
+|--------|-----|---------|
+| **M1** | SSRF DNS rebinding 対策（resolve 済み IP に固定接続） | `4de3c2a` |
+| **M3** | `ForbiddenURLError` を `RedashSource` 側に移動・互換 alias 残置 | `4de3c2a` |
+| **S1** | `uri.hostname` 使用 + IP リテラル直接判定 + IPv4 unspecified 追加 | `4de3c2a` |
+| **S5** | `build_url` で `base.query = nil` クリア → leak パラメータ流出防止 | `4de3c2a` |
+| **M2** | `import_one` の `Integer()` + 最終 `rescue StandardError` 追加 | `deb9797` |
+| **S2** | `apply_parameter_types` で型情報欠落 warning を ImportResult に積む | `deb9797` |
+| **S4** | フラッシュは固定文言、詳細は `Rails.logger.warn` に分離 | `deb9797` |
+
+### M1 実装方針（採用したアプローチ）
+
+- `RedashSource.guard_url!` の戻り値を `GuardedTarget(uri:, ip:)` Struct に変更
+- `RedashClient#perform` では `Net::HTTP.new(uri.hostname, uri.port)` でホスト名を
+  渡しつつ `http.ipaddr = target.ip` で実際の接続先 IP を guard 通過時の IP に固定
+- TLS は `use_ssl = true` + `verify_mode = OpenSSL::SSL::VERIFY_PEER` を維持
+- これにより SNI / Host ヘッダ / 証明書検証用ホスト名はホスト名のまま、
+  TCP 接続だけが「検証済み IP」に向く。DNS rebinding（resolve 後に別 IP を返す）
+  攻撃を遮断
+- テスト: `Resolv.getaddresses` を 1 度目 `203.0.113.10` / 2 度目 `169.254.169.254`
+  を返すよう順序付けスタブし、WebMock が `169.254.169.254` への request を
+  受け取らないことを assert
+
+### 新規追加テスト
+
+- `spec/models/redash_source_spec.rb`
+  - IPv6 loopback `[::1]` / link-local `[fe80::1]` / documentation `[2001:db8::1]`
+    / IPv4 private リテラル `10.0.0.1` の正/誤
+  - `.guard_url!` が `GuardedTarget(uri:, ip:)` を返すこと、IP リテラルでは
+    `Resolv` を呼ばないこと
+- `spec/models/redash_client_spec.rb`
+  - DNS rebinding（M1）：1 度目の安全 IP にしか接続しないこと
+  - `RedashClient::ForbiddenURLError == RedashSource::ForbiddenURLError`（M3 alias）
+  - URL クエリ衛生化（S5）：source.url の `?leak=token` が request URL に
+    乗らないこと
+- `spec/requests/redash_imports_spec.rb`
+  - `query_ids: %w[10 abc 11]` で abc が `:failure`、10/11 が `:success`（M2）
+  - 型情報があるのに SQL 本文に出現しないパラメータが warning に出ること（S2）
+  - 401 / timeout / 500 でフラッシュが固定文言になり、例外 body が漏れないこと（S4）
+
+### 計測
+
+- `bundle exec rspec`: 599 examples, 0 failures / Line Coverage **97.53%**
+- `bin/rubocop`: 160 files, no offenses
+- `bin/brakeman --no-pager`: Errors 0 / Security Warnings 0
+- `bin/bundler-audit`: No vulnerabilities found
