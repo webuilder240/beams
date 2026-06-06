@@ -87,14 +87,45 @@ module Beams
       paths.transform_values { |p| File.expand_path(p, Dir.pwd) }
     end
 
+    # Take one consistent single-file snapshot of `source_path` at `dest_path`
+    # using `VACUUM INTO`, then run `PRAGMA integrity_check` on the result.
+    # `VACUUM INTO` works on a live, WAL-mode database (uncheckpointed WAL
+    # pages are included) and does not depend on the optional
+    # SQLite3::Database#backup API, which is not available in every build of
+    # the sqlite3 gem.
+    #
+    # Shared between the rake-based generation backup (`#run`) and the ONCE
+    # `/hooks/pre-backup` PORO (`Beams::Once::PreBackup`) so both code paths
+    # go through identical SQLite mechanics.
+    #
+    # @param source_path [String] path to the live SQLite database
+    # @param dest_path [String] path the snapshot will be written to (overwritten)
+    # @return [String] the `PRAGMA integrity_check` result (`"ok"` on success)
+    def self.snapshot(source_path:, dest_path:)
+      File.delete(dest_path) if File.exist?(dest_path)
+
+      source = SQLite3::Database.new(source_path)
+      begin
+        source.execute("VACUUM INTO ?", [ dest_path ])
+      ensure
+        source.close
+      end
+
+      dest = SQLite3::Database.new(dest_path)
+      begin
+        dest.get_first_value("PRAGMA integrity_check")
+      ensure
+        dest.close
+      end
+    end
+
     private
 
     def snapshot(name, source_path, generation_dir)
       raw_path = File.join(generation_dir, "#{name}.sqlite3")
       gz_path = "#{raw_path}.gz"
 
-      online_backup(source_path, raw_path)
-      integrity = integrity_check(raw_path)
+      integrity = self.class.snapshot(source_path: source_path, dest_path: raw_path)
       compress(raw_path, gz_path)
       File.delete(raw_path)
 
@@ -102,25 +133,6 @@ module Beams
       raise "integrity check failed for #{name}: #{integrity}" unless integrity == "ok"
 
       { name: name, file: File.basename(gz_path), bytes: bytes, integrity: integrity }
-    end
-
-    # Take a consistent single-file snapshot using `VACUUM INTO`. This works on
-    # a live, WAL-mode database (uncheckpointed WAL pages are included) and does
-    # not depend on the optional SQLite3::Database#backup API, which is not
-    # available in every build of the sqlite3 gem.
-    def online_backup(source_path, dest_path)
-      File.delete(dest_path) if File.exist?(dest_path)
-      source = SQLite3::Database.new(source_path)
-      source.execute("VACUUM INTO ?", [ dest_path ])
-    ensure
-      source&.close
-    end
-
-    def integrity_check(sqlite_path)
-      db = SQLite3::Database.new(sqlite_path)
-      db.get_first_value("PRAGMA integrity_check")
-    ensure
-      db&.close
     end
 
     def compress(raw_path, gz_path)

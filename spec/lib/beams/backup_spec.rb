@@ -199,4 +199,47 @@ RSpec.describe Beams::Backup do
       expect(backup.generations).to eq(4)
     end
   end
+
+  describe ".snapshot" do
+    it "writes a single-file VACUUM INTO copy at dest_path and returns the integrity result" do
+      source = @tmp.join("production.sqlite3")
+      seed_db(source, rows: 4)
+
+      dest = @tmp.join("snapshot.sqlite3")
+      integrity = described_class.snapshot(source_path: source.to_s, dest_path: dest.to_s)
+
+      expect(dest).to be_file
+      expect(count_items(dest)).to eq(4)
+      expect(integrity).to eq("ok")
+    end
+
+    it "overwrites a pre-existing file at dest_path" do
+      source = @tmp.join("production.sqlite3")
+      seed_db(source, rows: 1)
+      dest = @tmp.join("snapshot.sqlite3")
+      File.write(dest, "garbage")
+
+      described_class.snapshot(source_path: source.to_s, dest_path: dest.to_s)
+
+      expect(count_items(dest)).to eq(1)
+    end
+
+    it "captures rows still living in the uncheckpointed WAL of a live writer" do
+      source = @tmp.join("production.sqlite3")
+      seed_db(source, rows: 2)
+
+      writer = SQLite3::Database.new(source.to_s)
+      writer.execute("PRAGMA journal_mode=WAL")
+      writer.execute("INSERT INTO items (name) VALUES (?)", [ "wal-row" ])
+
+      dest = @tmp.join("snapshot.sqlite3")
+      begin
+        described_class.snapshot(source_path: source.to_s, dest_path: dest.to_s)
+      ensure
+        writer.close
+      end
+
+      expect(count_items(dest)).to eq(3)
+    end
+  end
 end

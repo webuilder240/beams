@@ -3,6 +3,14 @@
 Beams の SQLite データベース（`production` / `cache` / `queue` / `cable`）の
 バックアップと復旧手順をまとめる。実装はトピック15。
 
+> **トピック 26（ONCE プラットフォーム移行）以降の方針**: 自動バックアップは ONCE
+> プラットフォーム（basecamp/once）TUI で設定する。ONCE はバックアップ前に
+> `/hooks/pre-backup`（`bin/hooks/pre-backup` → `Beams::Once::PreBackup`）を呼び
+> `/storage/backups/once-pending/` に整合性スナップショットを配置し、その後
+> 世代管理・転送・暗号化を担当する。本書で扱う `rake beams:backup` /
+> `rake beams:restore[generation]` は **手動緊急時の世代管理用**として維持する
+> （`config/recurring.yml` での日次自動 enqueue は撤去済み）。
+
 ## 仕組み
 
 - バックアップは SQLite のオンラインバックアップ（`VACUUM INTO`）で一貫スナップ
@@ -11,8 +19,8 @@ Beams の SQLite データベース（`production` / `cache` / `queue` / `cable`
   `*.sqlite3.gz`（gzip 圧縮）として保存し、`manifest.json`（取得時刻・対象 DB・
   サイズ・`PRAGMA integrity_check` 結果）を残す。
 - 保持世代数を超えた古い世代ディレクトリは自動削除される（ローテーション）。
-- 自動実行は SolidQueue の定期実行（`config/recurring.yml` の `daily_backup`）で
-  行う。外部 cron 不要。worker プロセス稼働が前提。
+- 自動バックアップは ONCE プラットフォーム側（`/hooks/pre-backup` 経由）で取得・
+  世代管理される。`config/recurring.yml` の `daily_backup` は撤去済み。
 
 ## 設定（環境変数）
 

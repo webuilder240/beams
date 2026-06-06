@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# This Dockerfile is designed for production, not development. Build and run by hand or via the ONCE installer (deploy/once/install.sh):
+# This Dockerfile is designed for production, not development. Build and run by hand or via the ONCE platform (basecamp/once):
 # docker build -t beams .
 # docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name beams beams
 
@@ -69,11 +69,15 @@ USER 1000:1000
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 
+# basecamp/once invokes /hooks/pre-backup before each backup. The script
+# itself lives in the application tree (bin/hooks/pre-backup); we expose it
+# at the path ONCE expects with the required executable bit.
+COPY --chmod=0755 --chown=rails:rails bin/hooks/pre-backup /hooks/pre-backup
+
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start via supervisor (bin/boot handles db:prepare + web + worker)
-# Thruster listens on 80 (HTTP) and, when TLS_DOMAIN is set, terminates TLS on 443 (HTTPS).
+# Thruster listens on 80 (HTTP) only. TLS termination is delegated to the ONCE platform.
 EXPOSE 80
-EXPOSE 443
 CMD ["bin/boot"]

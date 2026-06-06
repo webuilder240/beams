@@ -80,7 +80,7 @@ SQLite DB のバックアップ・リストアは `lib/beams/`（`backup.rb` / `
 開発・テスト環境は `storage/development.sqlite3` / `storage/test.sqlite3` のみ使用。
 
 ### デプロイ
-ONCE（単一Dockerコンテナ・買い切り自社サーバー設置）で配布する。インストール手順は `docs/INSTALL.md` を参照。
+ONCE プラットフォーム（[basecamp/once](https://github.com/basecamp/once)）で配布する。設置手順は `docs/INSTALL.md` を参照。
 
 ### テスト構成
 - **RSpec** + **FactoryBot** + **Faker**（`spec/` 以下）
