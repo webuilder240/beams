@@ -24,6 +24,20 @@ class CreatePasswordCredentialsAndMigrate < ActiveRecord::Migration[8.1]
   end
 
   def down
+    # 既存仕様（NOT NULL の password_digest）に戻せるかをカラム追加前に検証する。
+    # OAuth 限定ユーザー（password_credentials を持たない User）がいる場合は
+    # ロールバック時にデータ損失となるため明示的に失敗させる（finding I）。
+    # この時点ではスキーマ変更が始まっていないので失敗しても schema は無傷で済む。
+    oauth_only = select_value(<<~SQL).to_i
+      SELECT COUNT(*) FROM users u
+      LEFT JOIN password_credentials pc ON pc.user_id = u.id
+      WHERE pc.id IS NULL
+    SQL
+    if oauth_only.positive?
+      raise ActiveRecord::IrreversibleMigration,
+            "OAuth-only users exist (#{oauth_only}). Remove them or assign temporary passwords before rollback."
+    end
+
     add_column :users, :password_digest, :string
 
     execute <<~SQL
@@ -33,10 +47,8 @@ class CreatePasswordCredentialsAndMigrate < ActiveRecord::Migration[8.1]
       )
     SQL
 
-    # 既存仕様（NOT NULL）に戻すが、null 行があれば失敗する。
-    # rollback 前に OAuth 限定ユーザー（password_credentials を持たない User）を
-    # 削除する／一時パスワードを設定する必要があるが、現状はその運用が発生したら
-    # ドキュメント化する（YAGNI）。
+    # 既存仕様（NOT NULL）に戻す。事前ガードで OAuth-only ユーザーは弾いている
+    # ので、ここまで来れば全 users 行に digest が入っているはず。
     change_column_null :users, :password_digest, false
 
     drop_table :password_credentials

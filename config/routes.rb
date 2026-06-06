@@ -16,8 +16,8 @@ Rails.application.routes.draw do
   # `omniauth-rails_csrf_protection` が POST `/auth/:provider` を要求する。
   # コールバックは GET `/auth/:provider/callback`、失敗は GET `/auth/failure`。
   # POST `/auth/:provider` 自体は OmniAuth ミドルウェアが拾うので
-  # ルートはダミー（match）で受けて 404 を避ける。
-  match "/auth/:provider", to: "auth/omniauth_callbacks#passthru", via: [ :get, :post ], constraints: { provider: /google_oauth2/ }, as: :auth_at_provider
+  # ルートはダミー（passthru）で受けて 404 を避ける。GET は受け付けない。
+  post "/auth/:provider", to: "auth/omniauth_callbacks#passthru", constraints: { provider: /google_oauth2/ }, as: :auth_at_provider
   get "/auth/google_oauth2/callback", to: "auth/omniauth_callbacks#google_oauth2"
   get "/auth/failure", to: "auth/omniauth_callbacks#failure"
 
