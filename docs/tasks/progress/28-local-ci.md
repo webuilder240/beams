@@ -46,3 +46,9 @@
 ### 6. 動作確認（`time bin/ci` フル実行）
 
 - 結果は本コミット作成時にマネージャーへ返却。
+
+### 7. `config/ci.rb` を未使用ファイルとして撤去
+
+- 新しい `bin/ci`（bash スクリプト）は `ActiveSupport::ContinuousIntegration` も `config/ci.rb` も参照しない。
+- Rails 8 標準テンプレ由来の `config/ci.rb` が未参照のまま残っていたため、`git rm config/ci.rb` で削除。
+- `grep -rn "config/ci"` でリポジトリ内に残参照がないこと、`bin/ci` フル実行が all green であることを確認。
