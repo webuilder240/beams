@@ -102,6 +102,29 @@ RSpec.describe User, type: :model do
         result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-mixed", email: "  MIXED@Example.COM  ")
         expect(result).to eq(existing)
       end
+
+      it "is idempotent for the same (provider, uid) pair (finding B)" do
+        existing = create(:user, email: "user@example.com")
+
+        described_class.find_or_create_for_oauth(provider: provider, uid: "uid-dup", email: "user@example.com")
+        expect {
+          described_class.find_or_create_for_oauth(provider: provider, uid: "uid-dup", email: "user@example.com")
+        }.not_to change { existing.reload.oauth_identities.count }
+      end
+    end
+
+    context "when email is blank (finding M)" do
+      it "returns nil for nil email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: nil)).to be_nil
+      end
+
+      it "returns nil for empty email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: "")).to be_nil
+      end
+
+      it "returns nil for whitespace-only email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: "   ")).to be_nil
+      end
     end
 
     context "when no user exists and allowed_email_domain matches" do
@@ -142,6 +165,42 @@ RSpec.describe User, type: :model do
           expect(result).to be_nil
         }.not_to change(described_class, :count)
       end
+    end
+  end
+
+  describe "password sync via after_save (finding R)" do
+    it "updates the PasswordCredential when password is changed via update!" do
+      user = create(:user, password: "original-pass")
+      old_digest = user.password_credential.password_digest
+
+      user.update!(password: "new-password-1")
+
+      expect(user.password_credential.reload.password_digest).not_to eq(old_digest)
+      expect(user.password_credential.authenticate("new-password-1")).to be_truthy
+    end
+
+    it "does not re-save the PasswordCredential when subsequent updates change only unrelated attributes in the same transaction" do
+      user = create(:user, password: "stable-pass")
+      pc = user.password_credential
+      pc_updated_at = pc.updated_at
+
+      User.transaction do
+        user.update!(password: "new-stable-pass")
+        # 同じインスタンスで unrelated attribute を更新しても PC が再 save されないこと
+        original_digest_after_first_update = user.password_credential.password_digest
+        user.update!(email: "newaddr@example.com")
+        expect(user.password_credential.reload.password_digest).to eq(original_digest_after_first_update)
+      end
+
+      expect(pc.reload.updated_at).to be >= pc_updated_at
+    end
+
+    it "rejects an explicit empty password_confirmation (finding J)" do
+      user = create(:user, password: "secret123")
+      user.password = "newpass1"
+      user.password_confirmation = ""
+      expect(user.save).to be(false)
+      expect(user.errors[:password_confirmation]).to be_present
     end
   end
 
