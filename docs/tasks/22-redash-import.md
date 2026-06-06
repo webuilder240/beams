@@ -109,7 +109,7 @@
 
 ### RedashSource モデル
 
-- [ ] `app/models/redash_source.rb` 新規作成
+- [x] `app/models/redash_source.rb` 新規作成
   - `validates :name, :url, :api_key, presence: true`
   - `validates :name, uniqueness: true`
   - URL バリデーション: HTTPSスキーム必須、ホスト名解決可能（クラスメソッドでなくバリデータ実装は B8 の `RedashClient` 側に共通化）

@@ -29,3 +29,13 @@
 - 再度 `bin/rails db:migrate`: 成功
 - `bin/rails db:test:prepare`: 成功
 - `db/schema.rb` に `redash_sources` テーブル定義が反映済み
+
+#### 3. RedashSource モデル + 暗号化 + SSRF 共通ガード
+- 先に `spec/models/redash_source_spec.rb` を Red で作成（16 examples）
+- `app/models/redash_source.rb` 実装:
+  - `encrypts :api_key`（AR Encryption）
+  - presence/uniqueness バリデーション
+  - クラスメソッド `RedashSource.guard_url!(url)` で SSRF ガード（https のみ、ホスト解決後の IP を FORBIDDEN_RANGES と突き合わせ）
+  - `RedashClient` 側からも同じ `guard_url!` を呼び出す（リクエスト直前に二重チェック）
+- `app/models/redash_client.rb` の例外クラス（`Error`/`Unauthorized`/`NotFound`/`ServerError`/`Timeout`/`ForbiddenURLError`）も同コミットで定義（バリデーションから参照されるため）
+- スペック: 16/16 green（暗号文確認・正常 IP・privateIP/loopback/metadata 拒否・スキーム拒否を網羅）
