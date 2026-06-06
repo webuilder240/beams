@@ -38,8 +38,10 @@
 | 20 | SSO（Google OAuth ログイン） | ✅完了 | Coder/Tester/Reviewer | [manager/20-sso.md](manager/20-sso.md) |
 | 21 | クエリ本文の SQL 検索（LIKE） | ✅完了 | Coder/Tester+Reviewer | [manager/21-sql-search.md](manager/21-sql-search.md) |
 | 22 | Redash クエリ取り込み（API版） | ✅完了 | Coder/Tester/Reviewer | [manager/22-redash-import.md](manager/22-redash-import.md) |
+| 23 | Bugsnag による例外通知 | 未着手 | - | （未作成） |
 
 > **20–22 は 2026-06-05 にユーザー指示で次フェーズとして分解、2026-06-06 に全決定事項確定。優先順は 20 → 21 → 22。**
+> **23 は 2026-06-06 に運用品質向上トピックとして分解（B1-B4 確定済み・`/agent-team` 着手可）。**
 
 ---
 
