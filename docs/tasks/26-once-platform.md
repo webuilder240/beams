@@ -97,8 +97,8 @@ basecamp/once README より:
 
 ## グループ F. `docs/INSTALL.md` を ONCE 手順に刷新
 
-- [ ] 旧手順（`deploy/once/install.sh` / `bin/once-update` / systemd timer）の節をすべて削除 (`docs/INSTALL.md`)
-- [ ] 新手順を追記:
+- [x] 旧手順（`deploy/once/install.sh` / `bin/once-update` / systemd timer）の節をすべて削除 (`docs/INSTALL.md`)
+- [x] 新手順を追記:
   - インストール: `curl https://get.once.com | sh` → `once` → "Enter a Docker image path" で `ghcr.io/webuilder240/beams:latest` → hostname 入力 → DNS A レコード設定の前提を明記
   - 初期 env: ONCE TUI から `RAILS_MASTER_KEY` を custom env として追加する手順
   - バックアップ: ONCE の自動バックアップ設定（保存先・頻度）を TUI で設定。手動は `once` の action menu
@@ -106,8 +106,8 @@ basecamp/once README より:
   - ロールバック: ONCE の機能 or イメージタグ固定の手順
   (`docs/INSTALL.md`)
   - 受け入れ条件: 手順通りに新規 Linux 環境で起動できる（ユーザー環境で実機確認）
-- [ ] `CLAUDE.md` のデプロイ節を「ONCE プラットフォーム（basecamp/once）で配布。設置手順は `docs/INSTALL.md` 参照」に更新 (`CLAUDE.md`)
-- [ ] `docs/PRODUCT_PLAN.md` §2 配布形態を ONCE プラットフォーム採用に更新 (`docs/PRODUCT_PLAN.md`)
+- [x] `CLAUDE.md` のデプロイ節を「ONCE プラットフォーム（basecamp/once）で配布。設置手順は `docs/INSTALL.md` 参照」に更新 (`CLAUDE.md`)
+- [x] `docs/PRODUCT_PLAN.md` §2 配布形態を ONCE プラットフォーム採用に更新 (`docs/PRODUCT_PLAN.md`)
   - 受け入れ条件: 文中に「basecamp/once」「自前 install.sh は撤去」が明記されている
 
 ---

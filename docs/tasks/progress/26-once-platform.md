@@ -236,3 +236,51 @@ worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a2a465ac98e5e93ce`（fea
 - 既存 `.github/workflows/ci.yml` は触らず（並列で動作する）
 - 既存テスト・既存実装はいずれも未編集
 
+---
+
+## 2026-06-06 グループ F: `docs/INSTALL.md` を ONCE 手順に刷新
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-ad1d3f17aedb26ca4`（feat/26-once-platform から派生、HEAD 4cbfb4a で同期）
+
+### 進捗
+
+- [x] `docs/INSTALL.md` を全面刷新。旧暫定注記（§2 / §7 / §8 の "トピック 26 グループ F で刷新予定" blockquote、独立節「ONCE 環境変数」「バックアップ（ONCE 統合）」）を撤去し、章立てを 1〜10 の連番に再構成
+  - § 1 前提（OS / Docker / DNS A レコード）
+  - § 2 インストール（ONCE CLI 導入 → TUI 経路 / CLI 一発経路）
+  - § 3 初期 env（`RAILS_MASTER_KEY` を ONCE custom env で渡す 2 経路）
+  - § 4 バックアップ（自動: ONCE TUI Backups → `/hooks/pre-backup`。手動: `rake beams:backup` を緊急時用に維持）
+  - § 5 アップデート（ONCE 内蔵の自動アップデート / TUI action menu）
+  - § 6 ロールバック（ONCE TUI でイメージタグ固定 / バックアップ世代復旧）
+  - § 7 ポート（HTTP 80 のみ・TLS は ONCE が自動終端）
+  - § 8 環境変数（Beams 利用 env と ONCE 由来の未使用 env を統合）
+  - § 9 ヘルスチェック
+  - § 10 関連ドキュメント
+  - 旧 install.sh / once-update / systemd timer / Thruster TLS 終端の言及は一切残さない
+- [x] `CLAUDE.md` のデプロイ節を「ONCE プラットフォーム（basecamp/once）で配布する。設置手順は `docs/INSTALL.md` を参照。」に置換
+- [x] `docs/PRODUCT_PLAN.md` §2 配布形態の段落で「自前 `install.sh` は撤去」を明示。§2.2 の Thruster 記述から SSL 終端を削除（TLS は ONCE 担当）。技術スタック表の Webサーバ行も SSL 記述を削除し「TLS 終端は ONCE 担当」に置換
+- [x] `docs/tasks/18-once-distribution.md` の「ステータス: 未着手」を「ステータス: ✅完了（履歴・トピック26 で全撤去）」に修正（実体との整合）
+- [x] `README.md` から Rails 標準の plant text "Things you may want to cover: ..." セクションを削除。配布イメージ・インストール手順（`docs/INSTALL.md`）・主要 env をまとめた簡潔な README に整える。Bugsnag 表の `.kamal/secrets` 記述を「ONCE の custom env または `--env KEY=VALUE` で渡す」に修正
+
+### 検証
+
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → 実行
+- `bundle exec rspec` → 後述「検証実測」
+- `bin/rubocop` → 後述「検証実測」
+
+### 編集ファイル
+
+- 編集: `docs/INSTALL.md`（全面刷新）
+- 編集: `CLAUDE.md`（デプロイ節）
+- 編集: `docs/PRODUCT_PLAN.md`（§2 配布形態・§2.2 Thruster 記述・§3 技術スタック表 Webサーバ行）
+- 編集: `docs/tasks/18-once-distribution.md`（ステータス行修正）
+- 編集: `README.md`（Rails plant text 削除・インストール節追加・環境変数表更新）
+- 編集: `docs/tasks/26-once-platform.md`（グループ F 全 4 項目を `[x]`）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- A〜E グループ完了済みファイル（コード・spec・`Dockerfile`・`config/recurring.yml`・`.github/workflows/release.yml`・`config/environments/production.rb`・`lib/beams/once/*`・`bin/hooks/pre-backup` 等）はすべて未編集
+- F は純粋な docs 編集のため、ロジック・テストには一切触っていない
+
