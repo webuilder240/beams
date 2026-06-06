@@ -201,7 +201,7 @@
 
 ### Gem追加
 
-- [ ] `Gemfile` の `group :test do ... end` に `webmock` を追加（HTTPスタブ用）
+- [x] `Gemfile` の `group :test do ... end` に `webmock` を追加（HTTPスタブ用）
   - 受け入れ条件: `bundle install` 成功、`spec/rails_helper.rb` に WebMock 初期化追加。
 
 ### ドキュメント

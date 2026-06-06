@@ -78,4 +78,7 @@ group :test do
   gem "capybara"
   gem "capybara-playwright-driver"
   gem "simplecov", require: false
+
+  # HTTP スタブ（トピック22: Redash API クライアントのテスト用）
+  gem "webmock", require: false
 end
