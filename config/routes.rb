@@ -5,6 +5,11 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Solid Queue の管理 UI（admin のみ）。
+  # 認可は Admin::MissionControlBaseController#require_admin で実施
+  # （config/initializers/mission_control_jobs.rb で base_controller_class に差し込み）。
+  mount MissionControl::Jobs::Engine, at: "/jobs"
+
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker

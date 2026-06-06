@@ -31,6 +31,9 @@ gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
 
+# Solid Queue の管理 UI（/jobs）。admin のみアクセス可能（routes / イニシャライザ参照）
+gem "mission_control-jobs"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
