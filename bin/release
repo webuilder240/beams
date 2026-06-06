@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# bin/release — ghcr.io へ multi-arch イメージを push する薄いシェルラッパー
+#
+# `.github/workflows/release.yml` の build-and-push ジョブと等価なコマンド列を
+# ローカルから実行する。リリースは原則 GitHub Actions（main push 起動）で行うが、
+# Actions が詰まっているときや手元から緊急に上書きしたいときに使う。
+#
+# Usage:
+#   bin/release              # multi-arch build + push（既定動作。main + clean tree 必須）
+#   bin/release login        # gh CLI のトークンで ghcr.io にログイン（初回のみ）
+#   bin/release setup        # QEMU + buildx builder の初期化（初回のみ）
+#   bin/release build        # ローカル Docker にロード（linux/amd64 のみ、push しない）
+#   bin/release push         # 既定動作の明示形
+#
+# ENV:
+#   BEAMS_RELEASE_IMAGE             push 先イメージ（既定 ghcr.io/webuilder240/beams）
+#   BEAMS_RELEASE_PLATFORMS         ビルド対象（既定 linux/amd64,linux/arm64）
+#   BEAMS_RELEASE_BUILDER           buildx builder 名（既定 beams-builder）
+#   BEAMS_RELEASE_CACHE_DIR         ローカルキャッシュ（既定 tmp/buildx-cache）
+#   BEAMS_RELEASE_ALLOW_DIRTY=1     uncommitted changes を許可
+#   BEAMS_RELEASE_ALLOW_NON_MAIN=1  main 以外のブランチを許可
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+IMAGE="${BEAMS_RELEASE_IMAGE:-ghcr.io/webuilder240/beams}"
+PLATFORMS="${BEAMS_RELEASE_PLATFORMS:-linux/amd64,linux/arm64}"
+BUILDER="${BEAMS_RELEASE_BUILDER:-beams-builder}"
+CACHE_DIR="${BEAMS_RELEASE_CACHE_DIR:-tmp/buildx-cache}"
+REGISTRY="${IMAGE%%/*}"
+# `ghcr.io/<user>/<repo>` を想定して 2 セグメント目を取り出す
+GH_USER="$(echo "$IMAGE" | awk -F/ '{print $2}')"
+
+# ---- helpers ----------------------------------------------------------------
+
+require_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker が見つかりません。Docker をインストールしてください。" >&2
+    exit 1
+  fi
+  if ! docker buildx version >/dev/null 2>&1; then
+    echo "ERROR: docker buildx が利用できません。Docker Desktop か buildx プラグインを導入してください。" >&2
+    exit 1
+  fi
+}
+
+ensure_builder() {
+  if ! docker buildx inspect "${BUILDER}" >/dev/null 2>&1; then
+    echo "ERROR: buildx builder '${BUILDER}' が見つかりません。先に bin/release setup を実行してください。" >&2
+    exit 1
+  fi
+  docker buildx use "${BUILDER}" >/dev/null
+}
+
+check_clean_repo() {
+  if [ "${BEAMS_RELEASE_ALLOW_NON_MAIN:-}" != "1" ]; then
+    local branch
+    branch="$(git rev-parse --abbrev-ref HEAD)"
+    if [ "$branch" != "main" ]; then
+      echo "ERROR: current branch is '${branch}', expected 'main'." >&2
+      echo "       main 以外から push したいときは BEAMS_RELEASE_ALLOW_NON_MAIN=1 を export してください。" >&2
+      exit 1
+    fi
+  fi
+  if [ "${BEAMS_RELEASE_ALLOW_DIRTY:-}" != "1" ]; then
+    if ! git diff --quiet HEAD -- || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+      echo "ERROR: working tree が dirty です（uncommitted changes / untracked files あり）。" >&2
+      echo "       コミットするか、BEAMS_RELEASE_ALLOW_DIRTY=1 を export してください。" >&2
+      exit 1
+    fi
+  fi
+}
+
+build_labels() {
+  local sha="$1" created="$2"
+  cat <<EOF
+org.opencontainers.image.title=Beams
+org.opencontainers.image.source=https://github.com/webuilder240/beams
+org.opencontainers.image.description=Beams - BigQuery BI tool (ONCE distribution)
+org.opencontainers.image.revision=${sha}
+org.opencontainers.image.created=${created}
+EOF
+}
+
+# ---- subcommands ------------------------------------------------------------
+
+run_login() {
+  require_docker
+  echo "==> login to ${REGISTRY}"
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "ERROR: gh CLI が必要です（https://cli.github.com/）。" >&2
+    exit 1
+  fi
+  # write:packages スコープが含まれている前提。未取得なら
+  #   gh auth refresh -h github.com -s write:packages,read:packages
+  gh auth token | docker login "${REGISTRY}" -u "${GH_USER}" --password-stdin
+}
+
+run_setup() {
+  require_docker
+  echo "==> setup QEMU (binfmt) + buildx builder '${BUILDER}'"
+  docker run --privileged --rm tonistiigi/binfmt --install all
+  if docker buildx inspect "${BUILDER}" >/dev/null 2>&1; then
+    echo "    builder '${BUILDER}' already exists; reusing."
+  else
+    docker buildx create --name "${BUILDER}" --bootstrap
+  fi
+  docker buildx use "${BUILDER}"
+}
+
+run_push() {
+  require_docker
+  check_clean_repo
+  ensure_builder
+
+  local sha created
+  sha="$(git rev-parse HEAD)"
+  created="$(git show -s --format=%cI HEAD)"
+
+  echo "==> build & push ${IMAGE}"
+  echo "    tags:      latest, ${sha}"
+  echo "    platforms: ${PLATFORMS}"
+
+  mkdir -p "${CACHE_DIR}"
+
+  local label_args=()
+  while IFS= read -r line; do
+    label_args+=(--label "$line")
+  done < <(build_labels "$sha" "$created")
+
+  docker buildx build \
+    --builder "${BUILDER}" \
+    --platform "${PLATFORMS}" \
+    --tag "${IMAGE}:latest" \
+    --tag "${IMAGE}:${sha}" \
+    "${label_args[@]}" \
+    --cache-from "type=local,src=${CACHE_DIR}" \
+    --cache-to "type=local,dest=${CACHE_DIR},mode=max" \
+    --push \
+    .
+}
+
+run_build_local() {
+  require_docker
+  ensure_builder
+
+  local sha created
+  sha="$(git rev-parse HEAD)"
+  created="$(git show -s --format=%cI HEAD)"
+
+  echo "==> local build ${IMAGE}:dev (linux/amd64 only, --load, no push)"
+
+  local label_args=()
+  while IFS= read -r line; do
+    label_args+=(--label "$line")
+  done < <(build_labels "$sha" "$created")
+
+  docker buildx build \
+    --builder "${BUILDER}" \
+    --platform linux/amd64 \
+    --tag "${IMAGE}:dev" \
+    "${label_args[@]}" \
+    --load \
+    .
+}
+
+usage() {
+  sed -n '2,/^set -euo pipefail$/p' "$0" | sed 's/^# \{0,1\}//;$d'
+}
+
+# ---- dispatch ---------------------------------------------------------------
+
+if [ "$#" -eq 0 ]; then
+  run_push
+  echo "==> released ${IMAGE}"
+  exit 0
+fi
+
+case "$1" in
+  login)              run_login ;;
+  setup)              run_setup ;;
+  build)              run_build_local ;;
+  push)               run_push; echo "==> released ${IMAGE}" ;;
+  -h|--help|help)     usage; exit 0 ;;
+  *)
+    echo "ERROR: unknown subcommand: $1" >&2
+    usage
+    exit 64
+    ;;
+esac
