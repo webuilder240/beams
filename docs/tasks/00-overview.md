@@ -46,7 +46,7 @@
 | 15 | [SQLite 自動バックアップ・復旧](15-backup-restore.md) | §2.1, §6.3 | 01, 02 | 16 | ✅完了 |
 | 16 | [フォームUIのTailwindスタイル統一（不具合修正）](16-form-styling-consistency.md) | §3 | 07, 11, 12 | 約10 | ✅完了 |
 | 17 | [クエリ実行結果のレンダリング修正・実行履歴表示](17-query-result-history.md) | §4.6 | 07, 10 | 約12 | ✅完了 |
-| 18 | [KamalからONCE配信への移行](18-once-distribution.md) | §2 | 02 | 約12 | ✅完了 |
+| 18 | [KamalからONCE配信への移行](18-once-distribution.md) | §2 | 02, 15 | 約23 | ✅完了 |
 | 19 | [ダッシュボードD&D並び替え（Hotwire/SortableJS）](19-dashboard-drag-drop.md) | §4.8（拡張） | 12 | 約20 | ✅完了 |
 | 20 | [SSO（Google OAuth ログイン）](20-sso.md) | §7 | 03, 05 | 約20 | ✅完了 |
 | 21 | [クエリ本文の SQL 検索（LIKE）](21-sql-search.md) | §7 | 14, 07 | 約7 | ✅完了 |

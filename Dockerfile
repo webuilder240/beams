@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
+# This Dockerfile is designed for production, not development. Build and run by hand or via the ONCE installer (deploy/once/install.sh):
 # docker build -t beams .
 # docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name beams beams
 
@@ -73,5 +73,7 @@ COPY --chown=rails:rails --from=build /rails /rails
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start via supervisor (bin/boot handles db:prepare + web + worker)
+# Thruster listens on 80 (HTTP) and, when TLS_DOMAIN is set, terminates TLS on 443 (HTTPS).
 EXPOSE 80
+EXPOSE 443
 CMD ["bin/boot"]

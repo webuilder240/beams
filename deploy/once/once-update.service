@@ -1,0 +1,30 @@
+[Unit]
+Description=Beams ONCE auto-update (backup, then pull + recreate if newer)
+Documentation=file:///opt/beams/docs/INSTALL.md
+# Only run when Docker is available.
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+
+# Adjust this path to wherever the Beams repo/checkout is installed on the host.
+# WorkingDirectory=/opt/beams
+
+# Load the same env file install.sh wrote so IMAGE (and any pinned rollback tag)
+# is passed to bin/once-update / Beams::Once::Updater. Without this the updater
+# would fall back to the :latest constant and undo a rollback.
+EnvironmentFile=/etc/beams/beams.env
+
+# Back up the live SQLite databases (inside the running container) BEFORE updating.
+# If this backup fails, systemd marks the unit failed and skips ExecStart below,
+# so an update is NEVER applied without a fresh backup (safe side / fail-closed).
+ExecStartPre=/usr/bin/docker exec beams bundle exec rake beams:backup
+
+# Pull the configured image and recreate the container only if the local image
+# ID changed. bin/boot re-applies db:prepare to all 4 SQLite DBs on container
+# (re)start, so migrations are applied automatically after an update.
+ExecStart=/opt/beams/bin/once-update
+
+[Install]
+WantedBy=multi-user.target
