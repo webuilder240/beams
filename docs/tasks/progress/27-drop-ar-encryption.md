@@ -43,6 +43,12 @@
 
 ### コミット
 
-- 1 コミットでまとめる: `feat(27): Active Record Encryption 撤廃 / RAILS_MASTER_KEY 不要化`
+- `bdd622d` — `feat(27): Active Record Encryption 撤廃 / RAILS_MASTER_KEY 不要化`
 
-（実測値・コミットハッシュは作業完了時にマネージャー報告に記載）
+### 実測値
+
+- `bundle exec rspec`: **559 examples / 0 failures**
+- SimpleCov Line Coverage: **98.92% (1004 / 1015)**
+- `bin/rubocop`: **159 files inspected, no offenses detected**
+- `bin/rails db:test:prepare` 実行後の rspec 結果
+- 残存 grep（コード実体 = `app/`, `config/`, `lib/`, `bin/`, `Dockerfile`, `CLAUDE.md`, `docs/PRODUCT_PLAN.md`）: **0 件**
