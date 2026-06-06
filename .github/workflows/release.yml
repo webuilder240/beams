@@ -7,7 +7,10 @@ on:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel an in-flight publish: doing so can leave a tag pointing at a
+  # half-pushed manifest while the next run overwrites it. Letting concurrent
+  # runs queue is safer than racing on the registry.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -46,8 +49,10 @@ jobs:
             ghcr.io/webuilder240/beams:latest
             ghcr.io/webuilder240/beams:${{ github.sha }}
           labels: |
+            org.opencontainers.image.title=Beams
             org.opencontainers.image.source=https://github.com/webuilder240/beams
             org.opencontainers.image.description=Beams - BigQuery BI tool (ONCE distribution)
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
