@@ -151,7 +151,7 @@
 
 ### コントローラ（admin: RedashSource CRUD）
 
-- [ ] `app/controllers/admin/redash_sources_controller.rb` を新規作成 — index / new / create / edit / update / destroy
+- [x] `app/controllers/admin/redash_sources_controller.rb` を新規作成 — index / new / create / edit / update / destroy
   - `before_action :require_admin`
   - `config/routes.rb` の `namespace :admin do ... end` に `resources :redash_sources` を追加
   - 受け入れ条件: リクエストスペックで admin が CRUD でき、member は弾かれる。

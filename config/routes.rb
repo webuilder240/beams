@@ -22,6 +22,9 @@ Rails.application.routes.draw do
 
     # コスト単価などのアプリ全体設定（シングルトン）。admin 専用。
     resource :settings, only: [ :edit, :update ]
+
+    # Redash 接続情報（API URL + 暗号化APIキー）の CRUD。トピック22。
+    resources :redash_sources, except: [ :show ]
   end
 
   # BigQuery 接続管理（admin 専用）

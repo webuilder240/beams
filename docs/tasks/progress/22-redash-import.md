@@ -59,3 +59,11 @@
   - 未知の型は `string` フォールバック + 警告
   - 拡張記法検出: `{{ ... | ... }}` フィルタ、`{% ... %}` テンプレートタグ
 - スペック: 20/20 green
+
+#### 6. Admin::RedashSourcesController CRUD + ビュー
+- `spec/requests/admin/redash_sources_spec.rb` を Red で作成（11 examples、admin/member/未ログイン認可・CRUD・空欄APIキーの保持）
+- `config/routes.rb` の `namespace :admin` に `resources :redash_sources, except: [:show]` 追加
+- `app/controllers/admin/redash_sources_controller.rb` 実装（`Bigquery::ConnectionsController` の前例に沿った構成）
+- ビュー: `admin/redash_sources/{index,new,edit,_form,_errors}.html.erb`（Tailwind 統一、`Bigquery::Connection` フォームと同形式）
+  - 編集フォームでは API キーを再表示しない（`value: ""`）。空欄なら既存値保持。
+- スペック: 11/11 green
