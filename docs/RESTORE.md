@@ -3,6 +3,14 @@
 Beams の SQLite データベース（`production` / `cache` / `queue` / `cable`）の
 バックアップと復旧手順をまとめる。実装はトピック15。
 
+> **トピック 26（ONCE プラットフォーム移行）以降の方針**: 自動バックアップは ONCE
+> プラットフォーム（basecamp/once）TUI で設定する。ONCE はバックアップ前に
+> `/hooks/pre-backup`（`bin/hooks/pre-backup` → `Beams::Once::PreBackup`）を呼び
+> `/storage/backups/once-pending/` に整合性スナップショットを配置し、その後
+> 世代管理・転送・暗号化を担当する。本書で扱う `rake beams:backup` /
+> `rake beams:restore[generation]` は **手動緊急時の世代管理用**として維持する
+> （`config/recurring.yml` での日次自動 enqueue は撤去済み）。
+
 ## 仕組み
 
 - バックアップは SQLite のオンラインバックアップ（`VACUUM INTO`）で一貫スナップ

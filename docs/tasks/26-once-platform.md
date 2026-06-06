@@ -62,17 +62,18 @@ basecamp/once README より:
 
 ## グループ C. `/hooks/pre-backup` 実装
 
-- [ ] `bin/hooks/pre-backup` を新規作成。SQLite Online Backup API（`sqlite3` gem の `Database#backup`）を使い、4 つの SQLite（main / cache / queue / cable）の整合性スナップショットを `/storage/backups/once-pending/` に書き出す Ruby スクリプト。実行権限 755 (`bin/hooks/pre-backup`)
+- [x] `bin/hooks/pre-backup` を新規作成。SQLite Online Backup API（`sqlite3` gem の `Database#backup`）を使い、4 つの SQLite（main / cache / queue / cable）の整合性スナップショットを `/storage/backups/once-pending/` に書き出す Ruby スクリプト。実行権限 755 (`bin/hooks/pre-backup`)
   - 受け入れ条件: TDD。`spec/bin/hooks/pre_backup_spec.rb` で 4DB すべてが書き出され、`PRAGMA integrity_check` が `ok` を返すことを検証
-- [ ] ロジック本体は `lib/beams/once/pre_backup.rb` の PORO に分離（`bin/hooks/pre-backup` は薄いラッパー）。サービスクラス禁止のため `lib/` 配下 (`lib/beams/once/pre_backup.rb`, `spec/lib/beams/once/pre_backup_spec.rb`)
+  - 実装メモ: `Database#backup` C-API は sqlite3 gem のビルドによって有無が分かれるため、`Beams::Backup` と同様に `VACUUM INTO` で安全コピーを取得する方式に統一した（オンライン整合性は同等）
+- [x] ロジック本体は `lib/beams/once/pre_backup.rb` の PORO に分離（`bin/hooks/pre-backup` は薄いラッパー）。サービスクラス禁止のため `lib/` 配下 (`lib/beams/once/pre_backup.rb`, `spec/lib/beams/once/pre_backup_spec.rb`)
   - 受け入れ条件: TDD spec が green、カバレッジ 85%+ 維持
-- [ ] `Dockerfile` で `bin/hooks/pre-backup` を `/hooks/pre-backup` にコピーし、実行権限を付与 (`Dockerfile`)
+- [x] `Dockerfile` で `bin/hooks/pre-backup` を `/hooks/pre-backup` にコピーし、実行権限を付与 (`Dockerfile`)
   - 受け入れ条件: `docker build` 成功、`docker run --rm <image> ls -l /hooks/pre-backup` で実行権限確認
-- [ ] `/hooks/post-restore` の要否を検討。`once-pending` ディレクトリの掃除が必要なら同様に追加（不要なら本タスクを「不要と判断」コメント付きでクローズ） (`bin/hooks/post-restore` or 判断ログ)
-  - 受け入れ条件: 判断結果がトピックファイルまたは進捗ログに記載
-- [ ] `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` は**維持**（手動緊急時用）。ただし `config/recurring.yml` の `BackupJob` 定期 enqueue を撤去し、自動バックアップは ONCE に一本化する (`config/recurring.yml`, `app/jobs/backup_job.rb` 周辺)
+- [x] `/hooks/post-restore` の要否を検討。`once-pending` ディレクトリの掃除が必要なら同様に追加（不要なら本タスクを「不要と判断」コメント付きでクローズ） (`bin/hooks/post-restore` or 判断ログ)
+  - **判断: 不要**。`once-pending/` ディレクトリは ONCE 側で取得・破棄するため掃除不要、4 つの Solid* DB はリストア後 Rails 起動時の `db:prepare` で自動的に migration/復帰するため追加処理を要しない。`bin/hooks/post-restore` は作成しない。詳細は `docs/tasks/progress/26-once-platform.md` 参照
+- [x] `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` は**維持**（手動緊急時用）。ただし `config/recurring.yml` の `BackupJob` 定期 enqueue を撤去し、自動バックアップは ONCE に一本化する (`config/recurring.yml`, `app/jobs/backup_job.rb` 周辺)
   - 受け入れ条件: `config/recurring.yml` から BackupJob のエントリが消え、関連 spec が green。`rake beams:backup` 単体は引き続き動作する spec が残っている
-- [ ] `docs/INSTALL.md` / `docs/RESTORE.md` に「自動バックアップは ONCE TUI で設定する。`rake beams:backup` / `beams:restore` は緊急時の手動世代管理用に維持」と方針を明記 (`docs/INSTALL.md`, `docs/RESTORE.md`)
+- [x] `docs/INSTALL.md` / `docs/RESTORE.md` に「自動バックアップは ONCE TUI で設定する。`rake beams:backup` / `beams:restore` は緊急時の手動世代管理用に維持」と方針を明記 (`docs/INSTALL.md`, `docs/RESTORE.md`)
   - 受け入れ条件: 両ドキュメントに方針記述あり
 
 ## グループ D. 旧 `deploy/once/*` 撤去

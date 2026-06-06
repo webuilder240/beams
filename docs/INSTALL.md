@@ -185,6 +185,18 @@ ONCE は他のアプリ向けに `VAPID_*` / `SMTP_*` / `NUM_CPUS` などの env
 
 ---
 
+## バックアップ（ONCE 統合）
+
+> 本節はトピック 26 グループ C で追記。INSTALL.md 全体はグループ F で ONCE 手順に全面刷新する。
+
+自動バックアップは **ONCE プラットフォーム側に一本化**した。ONCE は設定されたスケジュール（保存先・頻度は TUI で設定）でバックアップを起動し、その直前に `/hooks/pre-backup` を呼び出す。Beams 側のフック実装（`bin/hooks/pre-backup` → `Beams::Once::PreBackup`）は、4 つの SQLite（`production` / `cache` / `queue` / `cable`）の整合性スナップショットを `/storage/backups/once-pending/` に書き出すだけで、世代管理・転送・暗号化は ONCE が担当する。
+
+- **自動バックアップの設定**: ONCE TUI の Backups 画面（保存先・頻度・リテンション）
+- **手動バックアップ（緊急時）**: 旧来の `rake beams:backup` / `bin/beams-backup` は**維持**する。`config/recurring.yml` での日次自動 enqueue は撤去済み（ONCE と二重に走らないため）。
+- **復旧**: ONCE TUI からの復旧が標準。手動世代運用は [docs/RESTORE.md](RESTORE.md) を参照。
+
+---
+
 ## 9. 関連ドキュメント
 
 - バックアップ・復旧の詳細: [docs/RESTORE.md](RESTORE.md)

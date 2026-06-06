@@ -77,3 +77,71 @@ worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a2b29dea2b932cdd8`（fea
 
 - C グループ以降のファイル（`bin/hooks/`、`lib/beams/once/pre_backup.rb`、`.github/workflows/release.yml`、`config/recurring.yml`、`bin/once-update`、`lib/beams/once/updater.rb`、`spec/lib/beams/once/updater_spec.rb`、`deploy/once/*`）はいずれも未編集
 - A グループで撤去済みの `lib/beams/once/tls_config.rb` は復活させていない
+
+---
+
+## 2026-06-06 グループ C: `/hooks/pre-backup` 実装
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a73730d2807138585`（feat/26-once-platform から派生、HEAD c9b25f6 で同期）
+
+### 進捗
+
+- [x] `lib/beams/once/pre_backup.rb` を新規追加（PORO `Beams::Once::PreBackup`）。`Beams::Backup.default_sources` を流用して 4 DB（production / cache / queue / cable）を `VACUUM INTO` で `destination` に安全コピー。`PRAGMA integrity_check` を必ず実行し `ok` 以外なら raise。出力先は `ONCE_PRE_BACKUP_DIR` env で上書き可（既定 `/storage/backups/once-pending`）
+- [x] `bin/hooks/pre-backup` を新規追加（Ruby 薄ラッパー・mode 0755）。Rails を boot させず `$LOAD_PATH` に `lib/` を追加してから PORO を直接 require → 実行。成功時は各 DB の整合性結果を STDOUT に出して `exit 0`、失敗時は STDERR にバックトレースを出して `exit 1`
+- [x] `Dockerfile` 最終ステージで `cp /rails/bin/hooks/pre-backup /hooks/pre-backup` + `chmod 755` を追加（USER root に一時切替して所有者を rails に設定し、すぐ非 root に戻す）
+- [x] `/hooks/post-restore` は**不要と判断**。理由: `once-pending/` ディレクトリは ONCE 側で取得・破棄するため掃除不要、4 つの Solid* DB はリストア後の Rails 起動時に自動的に migration/復帰し追加処理を要しない。`bin/hooks/post-restore` は作成しない
+- [x] `config/recurring.yml` から `daily_backup:`（class: BackupJob）ブロックを撤去。残置コメントで「自動バックアップは ONCE の hook に一本化、緊急時用に `rake beams:backup` を維持」を明記。`clear_solid_queue_finished_jobs:` は維持
+- [x] `spec/config/recurring_spec.rb` を「BackupJob エントリが**ない**ことを検証」する内容に書き換え（同 file に YAML パース正常性チェックも追加）
+- [x] `BackupJob` クラス本体（`app/jobs/backup_job.rb`）と `spec/jobs/backup_job_spec.rb` / `spec/integration/backup_job_integration_spec.rb` は手動緊急時用として温存（指示通り）
+- [x] `docs/INSTALL.md` に「## バックアップ（ONCE 統合）」節を追加（最小限の方針追記。グループ F で本格刷新）
+- [x] `docs/RESTORE.md` 冒頭に「トピック 26 以降の方針」blockquote を追加（自動バックアップは ONCE TUI、`rake beams:backup` は手動緊急時用）
+
+### TDD ログ
+
+1. **Red (PORO)**: 先に `spec/lib/beams/once/pre_backup_spec.rb` を 7 例書く → `bundle exec rspec` で `LoadError: cannot load such file -- beams/once/pre_backup`（red 確認）
+2. **Green (PORO)**: `lib/beams/once/pre_backup.rb` を実装 → 7 examples, 0 failures
+3. **Red (bin)**: `spec/bin/hooks/pre_backup_spec.rb` を 5 例書く（exists / mode 0755 / shebang / `Beams::Once::PreBackup.new.run` 文字列 / Rails 非依存）→ 5 例とも No such file or directory で red 確認
+4. **Green (bin)**: `bin/hooks/pre-backup` を実装し `chmod 755` → 5 examples, 0 failures
+5. **Refactor**: 出力フォーマット（成功時 STDOUT 1 行/DB）を整理。整合性チェック失敗時の例外パスを spec で network から独立した stub で検証（`allow(pre_backup).to receive(:integrity_check).and_return("malformed")`）
+
+### 検証
+
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → Done in 73ms（system spec 前提、CI 規約通り）
+- `bundle exec rspec spec/lib/beams/once/pre_backup_spec.rb spec/bin/hooks/pre_backup_spec.rb` → **12 examples, 0 failures**
+- `bundle exec rspec`（全件・以下「最終検証」に実測値）
+- 手動スモーク: `ONCE_PRE_BACKUP_DIR=/tmp/dest bin/hooks/pre-backup` を一時 `storage/production.sqlite3` シードに対して実行 → `/tmp/dest/production.sqlite3` 8192 bytes, integrity=ok を確認
+
+
+### 最終検証（全件実行）
+
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → Done in 57ms
+- `bundle exec rspec`: **560 examples, 0 failures**, Line Coverage **98.7% (1062 / 1076)**（カバレッジ 85% 閾値クリア）
+- `bin/rubocop`: **161 files inspected, no offenses detected**
+- `ls -l bin/hooks/pre-backup` → `-rwxr-xr-x 1 nick nick 856 Jun  6 18:01 bin/hooks/pre-backup`（mode 0755）
+
+### 編集/作成ファイル
+
+- 新規: `lib/beams/once/pre_backup.rb`（PORO 本体）
+- 新規: `spec/lib/beams/once/pre_backup_spec.rb`（PORO の TDD spec、7 例）
+- 新規: `bin/hooks/pre-backup`（mode 0755、薄ラッパー）
+- 新規: `spec/bin/hooks/pre_backup_spec.rb`（bin スクリプト内容検査、5 例）
+- 編集: `Dockerfile`（最終ステージで `/hooks/pre-backup` をコピー＋実行権限付与）
+- 編集: `config/recurring.yml`（`daily_backup` ブロック撤去、コメントで方針明記）
+- 編集: `spec/config/recurring_spec.rb`（BackupJob 不在を検証する内容に書き換え）
+- 編集: `docs/INSTALL.md`（「## バックアップ（ONCE 統合）」節を追加）
+- 編集: `docs/RESTORE.md`（冒頭にトピック 26 以降の方針 blockquote 追加）
+- 編集: `docs/tasks/26-once-platform.md`（グループ C 全 6 項目を `[x]`、post-restore 判断結果を本文に追記）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- A グループ完了済みファイル（`lib/beams/once/tls_config.rb` 等）はそのまま
+- B グループ完了済みファイル（`lib/beams/once/ssl_mode.rb`、`config/environments/production.rb` 等）はそのまま
+- D グループ対象（`deploy/once/*`、`bin/once-update`、`lib/beams/once/updater.rb`、`spec/lib/beams/once/updater_spec.rb`、`docs/tasks/18-once-distribution.md`）は未編集
+- E グループ対象（`.github/workflows/release.yml`、`README.md`）は未編集
+- F グループ対象（`docs/INSTALL.md` の本格刷新、`docs/PRODUCT_PLAN.md`、`CLAUDE.md` デプロイ節）は未編集（本グループでは方針追記のみ）
+- `lib/beams/backup.rb` / `rake beams:backup` / `bin/beams-backup` / `bin/beams-restore` / `app/jobs/backup_job.rb` / `spec/jobs/backup_job_spec.rb` / `spec/integration/backup_job_integration_spec.rb` は手動緊急時用として温存
+
