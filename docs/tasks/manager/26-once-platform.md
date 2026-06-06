@@ -29,7 +29,7 @@
 
 | グループ | 内容 | 状態 | マネージャー実測 |
 |---|---|:---:|---|
-| A | Thruster TLS 撤去・port 80 専用化 | 未着手 | — |
+| A | Thruster TLS 撤去・port 80 専用化 | ✅完了 | コミット `30a1616` / `7afb089` / `acd4732` / `1960c43` 実在確認。`lib/beams/once/tls_config.rb` と `spec/lib/beams/once/tls_config_spec.rb` 削除（B で `DISABLE_SSL` 反転判定 spec を新設予定）、`production.rb` の TlsConfig 参照／`assume_ssl`／`force_ssl` ブロック撤去、`Dockerfile` は `EXPOSE 80` のみで `EXPOSE 443`／`HTTPS_PORT` 言及なし。`docs/INSTALL.md` の `TLS_DOMAIN`／`HTTPS_PORT` 言及撤去（CLAUDE.md は元々言及なし）。マネージャー実測: `rspec` **540 examples / 0 failures**、Line Coverage **98.65% (1021/1035)**、`rubocop` **155 files inspected, no offenses**。`updater.rb` の `HTTPS_PORT = "443:443"` は D で `updater.rb` ごと撤去予定のため残置 |
 | B | ONCE 環境変数規約への対応（DISABLE_SSL） | 未着手 | — |
 | C | `/hooks/pre-backup` 実装 | 未着手 | — |
 | D | 旧 `deploy/once/*` 撤去 | 未着手 | — |
