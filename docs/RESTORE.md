@@ -19,8 +19,8 @@ Beams の SQLite データベース（`production` / `cache` / `queue` / `cable`
   `*.sqlite3.gz`（gzip 圧縮）として保存し、`manifest.json`（取得時刻・対象 DB・
   サイズ・`PRAGMA integrity_check` 結果）を残す。
 - 保持世代数を超えた古い世代ディレクトリは自動削除される（ローテーション）。
-- 自動実行は SolidQueue の定期実行（`config/recurring.yml` の `daily_backup`）で
-  行う。外部 cron 不要。worker プロセス稼働が前提。
+- 自動バックアップは ONCE プラットフォーム側（`/hooks/pre-backup` 経由）で取得・
+  世代管理される。`config/recurring.yml` の `daily_backup` は撤去済み。
 
 ## 設定（環境変数）
 
