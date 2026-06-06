@@ -53,7 +53,8 @@
 | 22 | [Redash クエリ取り込み（API版）](22-redash-import.md) | §7 | 07, 04, 03 | 約14 | ✅完了 |
 | 23 | [Bugsnag による例外通知](23-bugsnag-error-tracking.md) | 運用品質 | 03, 02 | 約20 | ✅完了 |
 | 26 | [ONCE プラットフォームへの移行（basecamp/once 採用）](26-once-platform.md) | §2 | 02, 18 | 約28 | ✅完了 |
-| 27 | [Active Record Encryption 撤廃（`RAILS_MASTER_KEY` 不要化）](27-drop-ar-encryption.md) | §4.2 | 26 | 約9 | 進行中 |
+| 27 | [Active Record Encryption 撤廃（`RAILS_MASTER_KEY` 不要化）](27-drop-ar-encryption.md) | §4.2 | 26 | 約9 | ✅完了 |
+| 28 | [ローカル CI 化（`bin/ci`）と PR トリガ撤去](28-local-ci.md) | 運用品質 | なし | 約5 | 進行中 |
 
 > 16・17 は `localhost:3000` での動作確認で見つかった不具合・改善の追加タスク（MVP 後）。
 > 18・19 は MVP 後の機能追加（ONCE移行・D&D拡張）。

@@ -1,6 +1,101 @@
-#!/usr/bin/env ruby
-require_relative "../config/boot"
-require "active_support/continuous_integration"
+#!/usr/bin/env bash
+#
+# bin/ci — ローカルで CI 全ジョブを実行する薄いシェルラッパー
+#
+# `.github/workflows/ci.yml` の 5 ジョブと等価なコマンド列を順次実行する。
+# 引数なしで全ジョブ、引数指定で個別ジョブのみ実行する。
+#
+# Usage:
+#   bin/ci                 # 全ジョブを順次実行
+#   bin/ci scan_ruby       # 個別ジョブのみ実行
+#   bin/ci scan_js
+#   bin/ci lint
+#   bin/ci test
+#   bin/ci system          # system-test の別名
+#   bin/ci system-test
 
-CI = ActiveSupport::ContinuousIntegration
-require_relative "../config/ci.rb"
+set -euo pipefail
+
+# プロジェクトルートで動作させる
+cd "$(dirname "$0")/.."
+
+TOTAL=5
+
+# ---- ジョブ定義 ---------------------------------------------------------------
+
+run_scan_ruby() {
+  local idx="${1:-?}"
+  echo "==> [${idx}/${TOTAL}] scan_ruby (brakeman + bundler-audit)"
+  bin/brakeman --no-pager
+  bin/bundler-audit
+}
+
+run_scan_js() {
+  local idx="${1:-?}"
+  echo "==> [${idx}/${TOTAL}] scan_js (importmap audit)"
+  bin/importmap audit
+}
+
+run_lint() {
+  local idx="${1:-?}"
+  echo "==> [${idx}/${TOTAL}] lint (rubocop)"
+  bin/rubocop
+}
+
+run_test() {
+  local idx="${1:-?}"
+  echo "==> [${idx}/${TOTAL}] test (rspec, system 除外)"
+  bin/rails db:test:prepare
+  bin/rails tailwindcss:build
+  bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
+}
+
+run_system_test() {
+  local idx="${1:-?}"
+  echo "==> [${idx}/${TOTAL}] system-test (rspec spec/system)"
+  # test ジョブで db:test:prepare と tailwindcss:build は実行済みのため省略する。
+  SKIP_COVERAGE_CHECK=1 bundle exec rspec spec/system
+}
+
+# ---- ディスパッチ ------------------------------------------------------------
+
+usage() {
+  cat <<'USAGE'
+Usage: bin/ci [JOB]
+
+JOB:
+  (none)         全ジョブを順次実行
+  scan_ruby      brakeman + bundler-audit
+  scan_js        importmap audit
+  lint           rubocop
+  test           rspec (system 除外)
+  system         spec/system のみ（system-test の別名）
+  system-test    spec/system のみ
+USAGE
+}
+
+if [ "$#" -eq 0 ]; then
+  run_scan_ruby 1
+  run_scan_js 2
+  run_lint 3
+  run_test 4
+  run_system_test 5
+  echo "==> all green"
+  exit 0
+fi
+
+case "$1" in
+  scan_ruby)              run_scan_ruby 1 ;;
+  scan_js)                run_scan_js 2 ;;
+  lint)                   run_lint 3 ;;
+  test)                   run_test 4 ;;
+  system|system-test)     run_system_test 5 ;;
+  -h|--help|help)         usage; exit 0 ;;
+  *)
+    echo "ERROR: unknown job: $1" >&2
+    usage
+    exit 64
+    ;;
+esac
+
+echo "==> all green"
