@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# basecamp/once invokes this hook before taking a backup. We snapshot every
+# Beams SQLite database (main / cache / queue / cable) into the
+# `once-pending` directory; ONCE then picks the directory up and folds it
+# into its own generation management.
+#
+# The hook must not depend on Rails being booted, so we add `lib/` to the
+# load path manually and require the PORO directly.
+
+$LOAD_PATH.unshift(File.expand_path("../../lib", __dir__))
+
+require "beams/backup"
+require "beams/once/pre_backup"
+
+begin
+  results = Beams::Once::PreBackup.new.run
+  results.each do |entry|
+    puts "#{entry[:name]}: #{entry[:dest]} (#{entry[:bytes]} bytes, integrity=#{entry[:integrity]})"
+  end
+  exit 0
+rescue => e
+  warn "[pre-backup] #{e.class}: #{e.message}"
+  warn e.backtrace.join("\n") if e.backtrace
+  exit 1
+end
