@@ -22,11 +22,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### ローカル CI（PR 前に必須）
 ```bash
-bin/ci          # ローカルで CI 全ジョブを実行（scan_ruby / scan_js / lint / test / system-test）
-bin/ci lint     # 個別ジョブのみ実行（scan_ruby / scan_js / lint / test / system のいずれか）
+bin/ci                          # ローカルで CI 全ジョブを実行（scan_ruby / scan_js / lint / test / system-test）
+bin/ci lint                     # 個別ジョブのみ実行（scan_ruby / scan_js / lint / test / system のいずれか）
+BEAMS_CI_SIGNOFF=1 bin/ci       # 完走時に gh signoff を呼ぶ（commit status `signoff` を success で付与）
 ```
 
-GitHub Actions の CI は `pull_request` トリガを撤去済み（コスト・待ち時間削減のため）。PR を出す前にローカルで `bin/ci` を通すことが前提。
+GitHub Actions の CI は `pull_request` トリガを撤去済み（コスト・待ち時間削減のため）。PR を出す前にローカルで `bin/ci` を通すことが前提。`BEAMS_CI_SIGNOFF=1` を export しておくと完走時に [`gh signoff`](https://github.com/basecamp/gh-signoff) が走り、Branch Protection で `signoff` status を必須化していればローカル CI を回さない PR がマージできない仕組みになる（個別ジョブ実行時には signoff は付かない）。
 
 ### テスト
 ```bash
@@ -100,7 +101,7 @@ ONCE プラットフォーム（[basecamp/once](https://github.com/basecamp/once
 
 
 ### CI（GitHub Actions）
-`pull_request` トリガは撤去済み。`push: main` と `workflow_dispatch` のみで動作する（`.github/workflows/ci.yml`）。PR 前は `bin/ci` でローカル実行して green を確認すること。万一ローカルで通し忘れても main push 時に同じ 5 ジョブが並列実行される保険として残してある：
+`pull_request` トリガは撤去済み。`push: main` と `workflow_dispatch` のみで動作する（`.github/workflows/ci.yml`）。PR 前は `bin/ci` でローカル実行して green を確認すること。`BEAMS_CI_SIGNOFF=1` を設定して `bin/ci` を回すと完走時に `gh signoff` で commit status `signoff` が success として付与される。Branch Protection（main）で `signoff` を必須化しておけば、ローカル CI を回していない PR はマージできなくなる（運用手順は `docs/INSTALL.md` 「開発者向けセットアップ」参照）。万一ローカルで通し忘れても main push 時に同じ 5 ジョブが並列実行される保険として残してある：
 1. `scan_ruby` — Brakeman + bundler-audit
 2. `scan_js` — importmap audit
 3. `lint` — RuboCop（`bin/rubocop -f github`）
