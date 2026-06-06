@@ -112,7 +112,7 @@ worker: bundle exec bin/jobs          # SolidQueue（別プロセス）
 
 - 管理者がサービスアカウント（SA）のJSON鍵 ＋ プロジェクトIDを登録。
 - 全クエリは共有SA権限で実行される（＝アプリ側で誰が何を見るかは制御しない。初期は組織フルオープン）。
-- SA鍵は **Active Record Encryption** で暗号化し、`/storage` のSQLiteに保存。
+- SA鍵は `/storage` の SQLite に **平文**で保存する（トピック27 で Active Record Encryption を撤廃）。保護はホスト側のディスク暗号化・ファイルパーミッション・`/storage` ボリュームのアクセス制御に委ねる（詳細: [docs/adr/0002-drop-active-record-encryption.md](adr/0002-drop-active-record-encryption.md) / [docs/INSTALL.md §3](INSTALL.md)）。
 - **データモデルは `Connection` を複数持てる形**にしておき、UI・初期運用は1接続のみ。将来、複数接続の使い分けに拡張（→ §7）。
 
 ### 4.3 クエリエディタ（→ 決定: CodeMirror + スキーマブラウザ）

@@ -37,40 +37,35 @@ TUI で次のように進める:
 
 1. "Enter a Docker image path" に `ghcr.io/webuilder240/beams:latest` を入力
 2. hostname（例: `beams.example.com`）を入力
-3. Settings → Environment フォームで `RAILS_MASTER_KEY` を行追加（後述 §3）
-4. インストールを開始 → ONCE がイメージを pull し、コンテナを起動する
+3. インストールを開始 → ONCE がイメージを pull し、コンテナを起動する
 
 #### 経路 B: CLI 一発
 
 ```bash
-once install \
-  --image ghcr.io/webuilder240/beams:latest \
-  --env RAILS_MASTER_KEY=<config/master.key の値>
+once install --image ghcr.io/webuilder240/beams:latest
 ```
-
-`--env KEY=VALUE` は繰り返し指定できる。
 
 設置が完了すると Beams は HTTP 80 で待受を開始し、ONCE が TLS（HTTPS 443）を自動終端する。ブラウザで `https://<hostname>/` を開くと初回セットアップウィザード（admin 作成 → BigQuery 接続登録 → 接続テスト）に到達する。
 
+`SECRET_KEY_BASE` は ONCE が初回インストール時に自動生成・永続化するため、ユーザーが渡す・管理する必要はない（Rails 標準の env として自動的に拾われる）。Beams は `config/credentials.yml.enc` を**持たない**ため、`RAILS_MASTER_KEY` / `config/master.key` も**不要**である（トピック27 で Active Record Encryption を撤廃済み。詳細は §3）。
+
 ---
 
-## 3. 初期 env（`RAILS_MASTER_KEY`）
+## 3. セキュリティ上の注意
 
-Beams は `config/credentials.yml.enc`（Active Record Encryption のキー 3 点を含む）を復号するために `RAILS_MASTER_KEY`（`config/master.key` の値）を **必須**で要求する。受け渡しは ONCE の **custom env** を使う。
+Beams は機微情報の暗号化を**アプリ層では行わない**。具体的には:
 
-1. **CLI でインストール時に渡す**
+- **BigQuery サービスアカウント JSON 鍵**は `/storage/production.sqlite3` に**平文**で保存される（`bigquery_connections.service_account_json` text カラム）。
+- **バックアップファイル**（`/storage/backups/*.sqlite3.gz`）も SQLite ダンプを gzip 圧縮しただけで**平文**。ONCE 経由の自動バックアップ（`/hooks/pre-backup` 経由で `/storage/backups/once-pending/` に書き出すスナップショット）も同様。
 
-   ```bash
-   once install \
-     --image ghcr.io/webuilder240/beams:latest \
-     --env RAILS_MASTER_KEY=<config/master.key の値>
-   ```
+したがって SA 鍵漏洩を防ぐには以下のホスト側保護を運用者が用意すること:
 
-2. **TUI で後から追加する**
+1. **ホストディスクの暗号化**（LUKS など）— ストレージ媒体盗難対策。
+2. **ファイルシステムパーミッション**— `/var/lib/docker/volumes/...`（ONCE が管理する `/storage` ボリュームのホスト実体）への root 以外のアクセスを禁止する。Beams コンテナは非 root（`uid 1000` rails ユーザー）で動作する。
+3. **バックアップ転送経路の暗号化**— S3 等のリモート転送は ONCE 側で TLS / SSE を必ず有効化する。手動 `rake beams:backup` で生成した `*.sqlite3.gz` を外部に転送する場合も同様。
+4. **BigQuery 側の最小権限**— Beams に渡す SA は閲覧対象データセットのみへの権限に絞り、漏洩時の被害を限定する。Connection 単位の `maximum_bytes_billed` を併用して暴走クエリの課金被害も抑制する（§4.4 計画書）。
 
-   `once` を起動 → **Settings → Environment** フォームで `RAILS_MASTER_KEY` を行追加。保存後、ONCE が反映のためコンテナを再生成する。
-
-`SECRET_KEY_BASE` は ONCE が初回インストール時に自動生成して以後保持するため、ユーザーが渡す必要はない（Rails 標準の env として自動的に拾われる）。`RAILS_MASTER_KEY` が未設定でも boot 自体は通るが、credentials を復号できないため Active Record Encryption を使う機能（BigQuery SA 鍵の保存・参照など）が失敗する。
+なお、運用中の Beams インスタンスで `bin/rails credentials:edit` 等を実行して新たに `config/credentials.yml.enc` を生成する運用は**行わない**（生成しても Beams 本体は credentials を参照しない）。
 
 ---
 
@@ -136,12 +131,13 @@ Beams コンテナは **HTTP 80 のみ**を公開する（`Dockerfile` も `EXPO
 
 | 変数 | 必須/任意 | 説明 |
 |------|:---:|------|
-| `RAILS_MASTER_KEY` | **必須** | `config/master.key` の値。credentials（Active Record Encryption のキー 3 点を含む）の復号に使う。ONCE の custom env で渡す（§3） |
 | `DISABLE_SSL` | 任意 | ONCE が SSL 無効時に `true` を渡す。Beams は `DISABLE_SSL=true` 以外のときに `assume_ssl` / `force_ssl` を有効化し、`/up` を https リダイレクト対象から除外する（`Beams::Once::SslMode`） |
-| `SECRET_KEY_BASE` | 任意 | ONCE が初回インストール時に自動生成・保持。ユーザー設定不要 |
+| `SECRET_KEY_BASE` | 自動 | ONCE が初回インストール時に自動生成・永続化する（運用者の操作は不要）。Rails 標準の env として `Rails.application.secret_key_base` が自動的に拾う |
 | `BUGSNAG_API_KEY` | production のみ | Bugsnag への例外通知 API キー。ONCE custom env で渡す。development / test では未設定で問題ない |
 | `APP_VERSION` | 任意 | Bugsnag イベントに付与するアプリバージョン。未設定でも動作に影響なし |
 | `ONCE_PRE_BACKUP_DIR` | 任意 | `/hooks/pre-backup` の出力先（既定 `/storage/backups/once-pending`）。通常は変更不要 |
+
+`RAILS_MASTER_KEY` は **不要**（トピック27 で Active Record Encryption を撤廃し `config/credentials.yml.enc` を同時に廃止したため）。ONCE TUI / CLI で渡す必要はない。
 
 ### 8.2 ONCE が渡しうるが Beams が使わない env
 

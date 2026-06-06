@@ -76,14 +76,17 @@ RSpec.describe Bigquery::Connection, type: :model do
     end
   end
 
-  describe "encryption of service_account_json" do
+  describe "service_account_json storage (plaintext)" do
+    # トピック27（AR Encryption 撤廃）以降、`service_account_json` は SQLite に平文で保存する。
+    # ホスト側のディスク暗号化・ファイルパーミッション・`/storage` ボリュームの
+    # アクセス制御に保護を委ねる方針（docs/adr/0002-drop-active-record-encryption.md）。
     it "returns the original plaintext via the attribute reader" do
       json = '{"type":"service_account","project_id":"p"}'
       connection = create(:bigquery_connection, service_account_json: json)
       expect(connection.reload.service_account_json).to eq(json)
     end
 
-    it "does not store the plaintext in the raw SQLite row" do
+    it "stores the plaintext as-is in the raw SQLite row" do
       secret = "SUPER_SECRET_PRIVATE_KEY_MARKER"
       json = %({"type":"service_account","private_key":"#{secret}"})
       connection = create(:bigquery_connection, service_account_json: json)
@@ -91,8 +94,8 @@ RSpec.describe Bigquery::Connection, type: :model do
       raw = ActiveRecord::Base.connection.select_value(
         "SELECT service_account_json FROM bigquery_connections WHERE id = #{connection.id}"
       )
-      expect(raw).not_to include(secret)
-      expect(raw).not_to eq(json)
+      expect(raw).to eq(json)
+      expect(raw).to include(secret)
     end
   end
 
