@@ -38,13 +38,13 @@ basecamp/once README より:
 
 ## グループ A. Thruster TLS 撤去・port 80 専用化
 
-- [ ] `Beams::Once::TlsConfig` PORO とその参照（`config/environments/production.rb` の `assume_ssl` / `force_ssl` 周辺）を撤去する (`lib/beams/once/tls_config.rb`, `config/environments/production.rb`)
+- [x] `Beams::Once::TlsConfig` PORO とその参照（`config/environments/production.rb` の `assume_ssl` / `force_ssl` 周辺）を撤去する (`lib/beams/once/tls_config.rb`, `config/environments/production.rb`)
   - 受け入れ条件: TDD。先に spec から `TlsConfig` 参照を外した状態で red を確認 → コード削除で green に
-- [ ] `Dockerfile` の `EXPOSE 443` を削除し `EXPOSE 80` のみに変更。Thruster の HTTPS 関連 env 既定値（`HTTPS_PORT` 等）も撤去 (`Dockerfile`)
+- [x] `Dockerfile` の `EXPOSE 443` を削除し `EXPOSE 80` のみに変更。Thruster の HTTPS 関連 env 既定値（`HTTPS_PORT` 等）も撤去 (`Dockerfile`)
   - 受け入れ条件: `docker build` 成功、`docker inspect` で expose ポートが 80 のみ
-- [ ] `spec/lib/beams/once/tls_config_spec.rb` を削除（または `DISABLE_SSL` 反転判定の spec に置換、配置先は B グループで決定） (`spec/lib/beams/once/tls_config_spec.rb`)
+- [x] `spec/lib/beams/once/tls_config_spec.rb` を削除（または `DISABLE_SSL` 反転判定の spec に置換、配置先は B グループで決定） (`spec/lib/beams/once/tls_config_spec.rb`)
   - 受け入れ条件: `rspec` green、カバレッジ 85%+ 維持
-- [ ] `docs/INSTALL.md` / `CLAUDE.md` の TLS 関連記述から `TLS_DOMAIN` を撤去（F グループで本格的に書き直すが、A 完了時点で矛盾しないよう最低限の整合を取る） (`docs/INSTALL.md`, `CLAUDE.md`)
+- [x] `docs/INSTALL.md` / `CLAUDE.md` の TLS 関連記述から `TLS_DOMAIN` を撤去（F グループで本格的に書き直すが、A 完了時点で矛盾しないよう最低限の整合を取る） (`docs/INSTALL.md`, `CLAUDE.md`)
 
 ## グループ B. ONCE 環境変数規約への対応
 
