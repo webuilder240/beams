@@ -175,5 +175,81 @@ RSpec.describe "RedashImports", type: :request do
       expect(response.body).to include("Datetime sample")
       expect(response.body).to match(/警告|datetime-local/)
     end
+
+    # M2: 非数値 ID が混在しても、他のクエリ ID は成功し、不正 ID は :failure になる。
+    it "handles non-integer query_ids gracefully (M2)" do
+      stub_request(:get, "https://redash.example.com/api/queries/10")
+        .to_return(status: 200, body: detail_body_10)
+      stub_request(:get, "https://redash.example.com/api/queries/11")
+        .to_return(status: 200, body: detail_body_11)
+
+      expect {
+        post redash_import_path, params: {
+          redash_source_id: redash_source.id,
+          bigquery_connection_id: bq_connection.id,
+          query_ids: %w[10 abc 11]
+        }
+      }.to change(Query, :count).by(2)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Active users")
+      expect(response.body).to include("Revenue")
+      expect(response.body).to match(/失敗|エラー|abc/)
+    end
+
+    # S2: SQL 本文に出現していないパラメータが options.parameters に居る場合は warning に積む。
+    it "emits a warning when a Redash parameter is not present in the SQL body (S2)" do
+      detail_with_unused_param = {
+        "id" => 13, "name" => "Filtered query",
+        "query" => "SELECT {{ y | json_encode }}",
+        "options" => { "parameters" => [
+          { "name" => "x", "type" => "date" },
+          { "name" => "y", "type" => "text" }
+        ] }
+      }.to_json
+      stub_request(:get, "https://redash.example.com/api/queries/13")
+        .to_return(status: 200, body: detail_with_unused_param)
+
+      post redash_import_path, params: {
+        redash_source_id: redash_source.id,
+        bigquery_connection_id: bq_connection.id,
+        query_ids: %w[13]
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Filtered query")
+      expect(response.body).to match(/パラメータ.*x.*date.*SQL 本文に出現/)
+    end
+  end
+
+  # S4: フラッシュメッセージから内部情報を漏らさない（固定文言で assert）。
+  describe "flash messages do not leak internal details (S4)" do
+    it "uses a fixed message for 401 (no error body shown)" do
+      stub_request(:get, /redash\.example\.com\/api\/queries/)
+        .to_return(status: 401, body: "internal-detail-secret")
+
+      get index_queries_redash_import_path, params: { redash_source_id: redash_source.id }
+
+      expect(flash[:alert]).to eq("Redash の API キーが無効です。")
+      expect(flash[:alert]).not_to include("internal-detail-secret")
+    end
+
+    it "uses a fixed message for timeout" do
+      stub_request(:get, /redash\.example\.com\/api\/queries/).to_timeout
+
+      get index_queries_redash_import_path, params: { redash_source_id: redash_source.id }
+
+      expect(flash[:alert]).to eq("Redash サーバへの接続がタイムアウトしました。")
+    end
+
+    it "uses a fixed message for 500" do
+      stub_request(:get, /redash\.example\.com\/api\/queries/)
+        .to_return(status: 500, body: "internal-stack-trace")
+
+      get index_queries_redash_import_path, params: { redash_source_id: redash_source.id }
+
+      expect(flash[:alert]).to eq("Redash サーバ側でエラーが発生しました。")
+      expect(flash[:alert]).not_to include("internal-stack-trace")
+    end
   end
 end

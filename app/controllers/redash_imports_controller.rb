@@ -9,6 +9,16 @@ class RedashImportsController < ApplicationController
   # 取り込み結果 1 件分の値オブジェクト（成功/失敗/警告/作成された Query を一括で保持）。
   ImportResult = Struct.new(:redash_id, :title, :status, :query, :warnings, :error_message, keyword_init: true)
 
+  # S4: ユーザー向けフラッシュは固定文言。詳細（例外メッセージ・内部 IP 等）は
+  # コントローラから view に渡さずに Rails.logger に記録する。
+  FLASH_UNAUTHORIZED = "Redash の API キーが無効です。".freeze
+  FLASH_TIMEOUT      = "Redash サーバへの接続がタイムアウトしました。".freeze
+  FLASH_SERVER_ERROR = "Redash サーバ側でエラーが発生しました。".freeze
+  FLASH_FORBIDDEN    = "Redash サーバが許可されていません。".freeze
+  FLASH_NOT_FOUND_SOURCE = "Redash 接続が見つかりません。".freeze
+  FLASH_NOT_FOUND_BOTH   = "Redash 接続または BigQuery 接続が見つかりません。".freeze
+  FLASH_GENERIC      = "Redash 接続でエラーが発生しました。".freeze
+
   def new
     @redash_sources = RedashSource.order(:name)
   end
@@ -26,15 +36,22 @@ class RedashImportsController < ApplicationController
     @page_size = response["page_size"]
     @count = response["count"]
   rescue ActiveRecord::RecordNotFound
-    redirect_to new_redash_import_path, alert: "Redash 接続が見つかりません。"
-  rescue RedashClient::Unauthorized
-    redirect_to new_redash_import_path, alert: "Redash の API キーが無効です。"
-  rescue RedashClient::ForbiddenURLError => e
-    redirect_to new_redash_import_path, alert: "Redash の URL が不正です（#{e.message}）。"
-  rescue RedashClient::Timeout
-    redirect_to new_redash_import_path, alert: "Redash サーバへの接続がタイムアウトしました。"
+    redirect_to new_redash_import_path, alert: FLASH_NOT_FOUND_SOURCE
+  rescue RedashClient::Unauthorized => e
+    log_redash_error(e)
+    redirect_to new_redash_import_path, alert: FLASH_UNAUTHORIZED
+  rescue RedashSource::ForbiddenURLError => e
+    log_redash_error(e)
+    redirect_to new_redash_import_path, alert: FLASH_FORBIDDEN
+  rescue RedashClient::Timeout => e
+    log_redash_error(e)
+    redirect_to new_redash_import_path, alert: FLASH_TIMEOUT
   rescue RedashClient::ServerError => e
-    redirect_to new_redash_import_path, alert: "Redash サーバでエラーが発生しました（#{e.message}）。"
+    log_redash_error(e)
+    redirect_to new_redash_import_path, alert: FLASH_SERVER_ERROR
+  rescue StandardError => e
+    log_redash_error(e)
+    redirect_to new_redash_import_path, alert: FLASH_GENERIC
   end
 
   def create
@@ -58,14 +75,20 @@ class RedashImportsController < ApplicationController
     @failure_count = @results.count { |r| r.status == :failure }
     @warning_count = @results.count { |r| r.warnings.present? }
   rescue ActiveRecord::RecordNotFound
-    redirect_to new_redash_import_path, alert: "Redash 接続または BigQuery 接続が見つかりません。"
+    redirect_to new_redash_import_path, alert: FLASH_NOT_FOUND_BOTH
   end
 
   private
 
   # 1 クエリ分の取り込み。例外は捕捉して ImportResult に変換し、ループを継続させる。
+  # M2: Integer(redash_query_id) の ArgumentError や、想定外の StandardError も
+  # 全て :failure として握りつぶしてループを継続させる（部分失敗の局所化）。
   def import_one(client, redash_query_id)
-    detail = client.fetch_query(redash_query_id)
+    # M2: 非数値 ID は最初に捕捉して :failure にする（client.fetch_query が
+    # Integer() で ArgumentError を上げるため）。
+    int_id = Integer(redash_query_id, 10)
+
+    detail = client.fetch_query(int_id)
     payload = RedashQueryPayload.new(detail)
 
     unless payload.valid?
@@ -82,45 +105,70 @@ class RedashImportsController < ApplicationController
       bigquery_connection: @bigquery_connection
     )
 
-    apply_parameter_types(query, payload.parameters)
+    warnings = payload.warnings.dup
+    warnings.concat(apply_parameter_types(query, payload.parameters))
 
     ImportResult.new(
       redash_id: redash_query_id, title: payload.title,
-      status: :success, query: query, warnings: payload.warnings
+      status: :success, query: query, warnings: warnings
     )
+  rescue ArgumentError => e
+    log_redash_error(e)
+    failure_result(redash_query_id, "クエリ ID が不正です: #{redash_query_id.inspect}")
   rescue RedashClient::NotFound
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "Redash 上にこのクエリ ID は存在しません")
+    failure_result(redash_query_id, "Redash 上にこのクエリ ID は存在しません")
   rescue RedashClient::Unauthorized
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "Redash の API キーが無効です")
-  rescue RedashClient::ForbiddenURLError => e
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "URL ガード違反: #{e.message}")
+    failure_result(redash_query_id, "Redash の API キーが無効です")
+  rescue RedashSource::ForbiddenURLError => e
+    log_redash_error(e)
+    failure_result(redash_query_id, "Redash サーバが許可されていません")
   rescue RedashClient::Timeout
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "Redash サーバへの接続がタイムアウトしました")
+    failure_result(redash_query_id, "Redash サーバへの接続がタイムアウトしました")
   rescue RedashClient::ServerError => e
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "Redash サーバエラー: #{e.message}")
+    log_redash_error(e)
+    failure_result(redash_query_id, "Redash サーバ側でエラーが発生しました")
   rescue ActiveRecord::RecordInvalid => e
-    ImportResult.new(redash_id: redash_query_id, title: "(ID #{redash_query_id})",
-                     status: :failure, warnings: [],
-                     error_message: "Beams 側で保存に失敗しました: #{e.message}")
+    log_redash_error(e)
+    failure_result(redash_query_id, "Beams 側で保存に失敗しました")
+  rescue StandardError => e
+    # M2: 最終キャッチ。1 件の予期せぬ例外でループ全体が落ちないようにする。
+    log_redash_error(e)
+    failure_result(redash_query_id, "予期しないエラーが発生しました")
+  end
+
+  def failure_result(redash_query_id, error_message)
+    ImportResult.new(
+      redash_id: redash_query_id,
+      title: "(ID #{redash_query_id})",
+      status: :failure,
+      warnings: [],
+      error_message: error_message
+    )
   end
 
   # Query#sync_parameters! は SQL の `{{ name }}` から型注釈なしのパラメータを
   # すべて `string` で同期する。Redash 側で明示された型は型情報がより豊富なので、
   # 作成後に Redash 由来の型で上書きする（SQL 本文には触れない: B7）。
+  #
+  # S2: 型情報があるのに SQL 本文に出現していないパラメータ
+  # （例: `{{ name | json_encode }}` だけのフィルタ式しかない、または別名）は
+  # 警告として収集して返す。`query_parameters` の自動作成はしない。
   def apply_parameter_types(query, parameters)
+    warnings = []
     parameters.each do |spec|
       param = query.query_parameters.find_by(name: spec[:name])
-      param&.update!(param_type: spec[:type].to_s)
+      if param.nil?
+        warnings << "パラメータ '#{spec[:name]}' (#{spec[:type]}) は SQL 本文に出現していないため適用されませんでした"
+        next
+      end
+      param.update!(param_type: spec[:type].to_s)
     end
+    warnings
+  end
+
+  def log_redash_error(exception)
+    Rails.logger.warn(
+      "[RedashImport] #{exception.class.name}: #{exception.message}"
+    )
   end
 end
