@@ -60,6 +60,16 @@ bin/rails db:migrate
 bin/rails db:test:prepare  # テスト用DBをschema.rbから再構築
 ```
 
+### リリース（ghcr.io への multi-arch push）
+```bash
+bin/release login    # 初回のみ。gh auth refresh -h github.com -s write:packages 済みのトークンで docker login
+bin/release setup    # 初回のみ。QEMU (binfmt) + buildx builder 'beams-builder' を作成
+bin/release          # multi-arch (linux/amd64, linux/arm64) build + push（main + clean tree 必須）
+bin/release build    # ローカル Docker に linux/amd64 のみロード（push しない確認用）
+```
+
+通常リリースは `.github/workflows/release.yml`（main push 起動）が担う。`bin/release` は GitHub Actions が詰まっているときや手元から緊急に上書きしたいとき用の同等手段。push 先イメージ・プラットフォーム・キャッシュディレクトリは `BEAMS_RELEASE_*` 環境変数で上書き可能（`bin/release --help` 参照）。
+
 ## アーキテクチャ
 
 **Rails 8.1.3 / Ruby 4.0.5**。リポジトリ名は `sample_sns_service`（アプリケーションモジュール名も `SampleSnsService`）だが、**実体は BigQuery 専用 BI ツール「Beams」**（Redash 後継）。方針は `docs/PRODUCT_PLAN.md`、機能ごとの進行状況は `docs/tasks/`、設計判断は `docs/adr/` を参照。
