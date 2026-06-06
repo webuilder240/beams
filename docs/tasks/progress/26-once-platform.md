@@ -284,3 +284,79 @@ worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-ad1d3f17aedb26ca4`（fea
 - A〜E グループ完了済みファイル（コード・spec・`Dockerfile`・`config/recurring.yml`・`.github/workflows/release.yml`・`config/environments/production.rb`・`lib/beams/once/*`・`bin/hooks/pre-backup` 等）はすべて未編集
 - F は純粋な docs 編集のため、ロジック・テストには一切触っていない
 
+---
+
+## 2026-06-06 Reviewer リファクタ対応
+
+担当: Coder
+worktree: `/home/nick/tmp/beams/.claude/worktrees/agent-a567efd66d573fa89`（feat/26-once-platform HEAD 72c3913 から派生）
+
+### 対応した指摘
+
+#### must
+
+- [x] **M1**: `docs/RESTORE.md` の「自動実行は SolidQueue の定期実行（`config/recurring.yml` の `daily_backup`）で行う。外部 cron 不要。worker プロセス稼働が前提。」を、冒頭 blockquote と整合する「自動バックアップは ONCE プラットフォーム側（`/hooks/pre-backup` 経由）で取得・世代管理される。`config/recurring.yml` の `daily_backup` は撤去済み。」に書き換え
+- [x] **M2**: `bin/hooks/pre-backup` の冒頭で `Dir.chdir(File.expand_path("../..", __dir__))` を実行し、`Beams::Backup.default_sources` が `Dir.pwd` 起点で `/rails/storage/*.sqlite3` を返すよう保証。`spec/bin/hooks/pre_backup_spec.rb` に「`Dir.chdir(File.expand_path("../..", __dir__))` の痕跡を確認する」1 ケース追加
+
+#### should
+
+- [x] **S1**: `Dockerfile` の `/hooks/pre-backup` 配置を `RUN mkdir + cp + chmod + chown`（USER root↔1000 切替あり）から `COPY --chmod=0755 --chown=rails:rails bin/hooks/pre-backup /hooks/pre-backup` 一行に置換。ビルダーステージから直接配置するため USER 切替が不要に
+- [x] **S6**: `Beams::Backup.snapshot(source_path:, dest_path:)` クラスメソッドを `lib/beams/backup.rb` に追加（`VACUUM INTO` + `PRAGMA integrity_check`、返り値は integrity 結果）。`Beams::Backup#snapshot` プライベートメソッドも内部でこのクラスメソッドを利用するよう書き換え。`Beams::Once::PreBackup` から `online_backup` / `integrity_check` プライベートメソッドを撤去し、`Beams::Backup.snapshot` を呼ぶ実装に整理。`require "sqlite3"` も `Beams::Backup` 経由に集約
+- [x] **S7**: `bin/hooks/pre-backup` 冒頭に `require "bundler/setup"` を追加（`$LOAD_PATH` 操作の直前）。Rails boot は依然として行わない。`spec/bin/hooks/pre_backup_spec.rb` に `require "bundler/setup"` を含むことをアサートする 1 ケース追加
+- [x] **S3 (簡易対応)**: `.github/workflows/release.yml` の OCI labels に `org.opencontainers.image.title=Beams` と `org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}` を追加。`docker/metadata-action` は導入せず手書きで 2 行追加のみ
+- [x] **S4**: `.github/workflows/release.yml` の `concurrency.cancel-in-progress` を `true` → `false` に変更。publish 中の race を防ぐ意図のコメントも添えた
+
+#### nice-to-have
+
+- [x] **N1**: `Beams::Once::SslMode#ssl_options` の戻り値を `SSL_OPTIONS` 定数（`.freeze`）に切り出し、インスタンスメソッドは定数を返すだけ。`production.rb` 側はインスタンスメソッド呼び出しを維持しているため互換性影響なし。`DISABLE_SSL` 比較行にも「ONCE 規約に厳密準拠」のコメントを 1 行追記
+- [x] **N6**: `docs/PRODUCT_PLAN.md` §2.2 の Thruster 説明から「HTTP/2」を「HTTP（h2c も可）」に書き換え
+
+### 対応しなかった指摘（参考記録）
+
+- **S2 (git-sha 短縮タグ追加)**: タスクファイルが 2 タグ運用（`:latest` / `:<git-sha>`）を明示しているためマネージャー判断で見送り
+- **S5 (private stub の脆さ)**: 動作上問題なし、設計判断で現状維持
+- **S8 (hook spec の grep 脆性)**: 動作上問題なし、現状維持
+- **N2 (DISABLE_SSL の寛容化)**: ONCE 規約厳密準拠。コードは現状維持し、コメントだけ N1 内で追加
+- **N3 (checkout fetch-depth)**: 必要性低、見送り
+- **N4 (provenance/SBOM)**: 将来課題、見送り
+- **N5 (HTTP_PORT 説明補足)**: 既存表で機能、見送り
+- **N7 (Red/Green コミット分離)**: 運用方針議論で対応不要
+
+### TDD ログ
+
+1. **Red**: `spec/lib/beams/backup_spec.rb` に `.snapshot` の describe ブロックを追加（クラスメソッド未実装の状態） → `NoMethodError: undefined method 'snapshot' for class Beams::Backup` で red 確認
+   - 同時に `spec/bin/hooks/pre_backup_spec.rb` に `Dir.chdir(...)` 痕跡と `require "bundler/setup"` を期待する 2 ケース追加 → expected match を満たさず red 確認
+2. **Green**:
+   - `lib/beams/backup.rb` に `Beams::Backup.snapshot(source_path:, dest_path:)` を実装し、内部の `#snapshot` プライベートメソッドもこの新 API を経由するよう書き換え（既存 `online_backup` / `integrity_check` プライベートは新 API に吸収）
+   - `lib/beams/once/pre_backup.rb` を簡素化し、`Beams::Backup.snapshot` を呼ぶ実装に
+   - `bin/hooks/pre-backup` に `Dir.chdir(...)` と `require "bundler/setup"` を追加
+   - `spec/lib/beams/once/pre_backup_spec.rb` の `integrity_check` private stub を `allow(Beams::Backup).to receive(:snapshot).and_return("malformed")` に書き換え（メソッドが移動したため。期待挙動は不変）
+3. **Refactor**: SslMode の `SSL_OPTIONS` 定数切り出し（N1）、Dockerfile の COPY 一行化（S1）、release.yml の OCI labels 追加（S3）と `cancel-in-progress: false`（S4）、docs（M1 / N6）を実施
+
+### 検証（実測）
+
+- `bin/rails db:test:prepare` → ok
+- `bin/rails tailwindcss:build` → Done in 56ms
+- `bundle exec rspec` → **559 examples, 0 failures**, Line Coverage **98.92% (1005 / 1016)**
+- `bin/rubocop` → 159 files inspected, **no offenses detected**
+
+### 編集／作成ファイル
+
+- 編集: `docs/RESTORE.md`（M1）
+- 編集: `bin/hooks/pre-backup`（M2 / S7）
+- 編集: `Dockerfile`（S1: RUN ブロック → COPY 一行）
+- 編集: `lib/beams/backup.rb`（S6: `.snapshot` クラスメソッド追加 + `#snapshot` privatre 経由化）
+- 編集: `lib/beams/once/pre_backup.rb`（S6: 自前 `online_backup` / `integrity_check` 撤去）
+- 編集: `lib/beams/once/ssl_mode.rb`（N1: `SSL_OPTIONS` 定数 + コメント）
+- 編集: `.github/workflows/release.yml`（S3 / S4）
+- 編集: `docs/PRODUCT_PLAN.md`（N6: Thruster 説明）
+- 編集: `spec/bin/hooks/pre_backup_spec.rb`（M2 / S7 のアサート 2 件追加）
+- 編集: `spec/lib/beams/backup_spec.rb`（S6: `.snapshot` describe ブロック 3 ケース追加）
+- 編集: `spec/lib/beams/once/pre_backup_spec.rb`（S6: integrity stub を `Beams::Backup.snapshot` に切替）
+- 編集: `docs/tasks/progress/26-once-platform.md`（本セクション追加）
+
+### 触らなかった範囲
+
+- `docs/tasks/26-once-platform.md` のチェックボックスは指示通り変更なし（全項目すでに `[x]`）
+- A〜F 完了済み機能の振る舞いは不変（既存テスト 559 examples すべて green）
+
