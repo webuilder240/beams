@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "sqlite3"
 require "fileutils"
 require "beams/backup"
 
@@ -13,11 +12,9 @@ module Beams
     # then picks the directory up and folds it into its own generation
     # management; we deliberately do NOT manage generations or manifests here.
     #
-    # Snapshots are produced with `VACUUM INTO`, which yields a transactionally
-    # consistent copy even on a live, WAL-mode database. We use the same
-    # mechanism as Beams::Backup for the same reason: the optional
-    # SQLite3::Database#backup C-API is not present in every build of the
-    # sqlite3 gem, while `VACUUM INTO` is universally available.
+    # The actual `VACUUM INTO` + `PRAGMA integrity_check` mechanics are shared
+    # with the rake-based generation backup through `Beams::Backup.snapshot`,
+    # so both code paths go through identical SQLite handling.
     class PreBackup
       DEFAULT_DESTINATION = "/storage/backups/once-pending"
 
@@ -50,8 +47,7 @@ module Beams
       def snapshot(name, source_path)
         dest_path = File.join(@destination, "#{name}.sqlite3")
 
-        online_backup(source_path, dest_path)
-        integrity = integrity_check(dest_path)
+        integrity = Beams::Backup.snapshot(source_path: source_path, dest_path: dest_path)
         raise "integrity check failed for #{name}: #{integrity}" unless integrity == "ok"
 
         {
@@ -61,23 +57,6 @@ module Beams
           bytes: File.size(dest_path),
           integrity: integrity
         }
-      end
-
-      # Take a consistent single-file snapshot using `VACUUM INTO`. See the
-      # class doc for the rationale (matches Beams::Backup).
-      def online_backup(source_path, dest_path)
-        File.delete(dest_path) if File.exist?(dest_path)
-        source = SQLite3::Database.new(source_path)
-        source.execute("VACUUM INTO ?", [ dest_path ])
-      ensure
-        source&.close
-      end
-
-      def integrity_check(sqlite_path)
-        db = SQLite3::Database.new(sqlite_path)
-        db.get_first_value("PRAGMA integrity_check")
-      ensure
-        db&.close
       end
     end
   end

@@ -127,7 +127,9 @@ RSpec.describe Beams::Once::PreBackup do
         destination: @tmp.join("once-pending").to_s
       )
 
-      allow(pre_backup).to receive(:integrity_check).and_return("malformed")
+      # Beams::Backup.snapshot is the shared mechanism; intercepting it here
+      # exercises PreBackup's error path without forging a corrupt SQLite file.
+      allow(Beams::Backup).to receive(:snapshot).and_return("malformed")
 
       expect { pre_backup.run }.to raise_error(/integrity/i)
     end
