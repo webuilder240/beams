@@ -30,7 +30,7 @@
 | グループ | 内容 | 状態 | マネージャー実測 |
 |---|---|:---:|---|
 | A | Thruster TLS 撤去・port 80 専用化 | ✅完了 | コミット `30a1616` / `7afb089` / `acd4732` / `1960c43` 実在確認。`lib/beams/once/tls_config.rb` と `spec/lib/beams/once/tls_config_spec.rb` 削除（B で `DISABLE_SSL` 反転判定 spec を新設予定）、`production.rb` の TlsConfig 参照／`assume_ssl`／`force_ssl` ブロック撤去、`Dockerfile` は `EXPOSE 80` のみで `EXPOSE 443`／`HTTPS_PORT` 言及なし。`docs/INSTALL.md` の `TLS_DOMAIN`／`HTTPS_PORT` 言及撤去（CLAUDE.md は元々言及なし）。マネージャー実測: `rspec` **540 examples / 0 failures**、Line Coverage **98.65% (1021/1035)**、`rubocop` **155 files inspected, no offenses**。`updater.rb` の `HTTPS_PORT = "443:443"` は D で `updater.rb` ごと撤去予定のため残置 |
-| B | ONCE 環境変数規約への対応（DISABLE_SSL） | 未着手 | — |
+| B | ONCE 環境変数規約への対応（DISABLE_SSL） | ✅完了 | コミット `cd02ed1` / `d6994a6` / `9836f5b` 実在確認。`Beams::Once::SslMode` PORO 新設（`lib/beams/once/ssl_mode.rb`）、TDD（Red: LoadError → Green）。`DISABLE_SSL=="true"` のとき無効、それ以外（未設定／空文字／その他）で有効、`ssl_options` で `/up` を https リダイレクトから除外。`production.rb` で SslMode 利用して `assume_ssl` / `force_ssl` / `ssl_options` を本実装に置換。`RAILS_MASTER_KEY` 空での boot 検証: `env -u RAILS_MASTER_KEY bundle exec rails runner 'p :ok'` → `:ok`（マネージャー再現）。`docs/INSTALL.md` に「ONCE 環境変数」節を追記（VAPID_*／SMTP_*／NUM_CPUS は無視で OK と明記、RAILS_MASTER_KEY の CLI/TUI 経路2つ記載）。マネージャー実測: `rspec` **548 examples / 0 failures**、Line Coverage **98.66% (1030/1044)**、`rubocop` **157 files, no offenses** |
 | C | `/hooks/pre-backup` 実装 | 未着手 | — |
 | D | 旧 `deploy/once/*` 撤去 | 未着手 | — |
 | E | GHCR 公開 CI（release.yml） | 未着手 | — |
