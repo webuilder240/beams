@@ -102,3 +102,39 @@
 4. `BCrypt::Password.new(password_credentials.password_digest).is_password?('secret123') == true` を確認
 5. `bin/rails db:rollback STEP=3` 後 `users.password_digest` 復元と bcrypt 一致を確認 → 再度 `db:migrate` で前進
 
+## Reviewer 指摘リファクタの対応記録（2026-06-06）
+
+ユーザー承認済みの must + should 全件に対応。
+
+| finding | 内容 | コミット |
+|---------|------|----------|
+| A | `after_save` の条件を `password_needs_sync?` メソッド化して意図を明示 | `7305f66` |
+| B | `find_or_create_for_oauth` の identity 紐付けを `find_or_create_by!` で冪等化 | `7305f66` |
+| C | `find_or_create_for_oauth` 全体を `transaction` で囲み内側 transaction を削除 | `7305f66` |
+| J | `password_confirmation` の空文字も PC へ伝搬（明示空 = 不一致でエラー） | `7305f66` |
+| M | `find_or_create_for_oauth` 先頭で email blank ガード → `nil` を返す | `7305f66` |
+| R | 仮想属性 reset を廃し `@password_pending_sync` フラグで再 save 防止 | `7305f66` |
+| D | SSO 有効化を `Rails.configuration.x.sso_enabled` に集約（ENV 参照は initializer のみ） | `894bfdb` |
+| T | `spec/system/sso_spec.rb` を ENV 直書きから `Rails.configuration` トグルへ | `894bfdb` |
+| F | `/auth/:provider` を POST のみに（GET 経由 SSO 開始を禁止） | `f2c7371` |
+| I | migration `down` で OAuth 限定ユーザー検出時にカラム追加前に `IrreversibleMigration` を raise | `f2c7371` |
+
+### R の実装選択
+
+選択肢として「`password = nil` リセット削除のみ」と「`after_commit` 移行」の 2 案が示されていたが、いずれも `User` インスタンスを使い回して別 attribute を `update!` する場合に仮想属性が残って PC が再 save されてしまう（プレーンテキストは同じでも bcrypt salt が変わって digest が変動）。そのため `password=` setter で `@password_pending_sync` フラグを立て、`after_save` で消費（`ensure` で必ず落とす）方式を採用。これで「`password=` で代入された直後の保存サイクルでのみ PC を同期」というセマンティクスが明確になり、再 save も発生しない。
+
+### 追加テスト
+
+`spec/models/user_spec.rb` に以下を追加（全 green）:
+
+- finding B: 同じ `(provider, uid)` で再呼び出ししても `oauth_identities` が増えないこと
+- finding M: `nil` / `""` / `"   "` 各 email に対して `nil` を返すこと
+- finding R: `update!(password:)` で PC が更新されること、別 attribute を続けて update! しても PC が再 save されないこと
+- finding J: `password_confirmation = ""` を明示渡しすると save に失敗すること
+
+### 最終確認
+
+- `bundle exec rspec`: 556 examples / 0 failures、Line Coverage 98.87% (1053 / 1065)
+- `bin/rubocop`: 159 files inspected, no offenses detected
+- 既存テスト破壊なし（`sessions_spec` / `setup_wizard_spec` / `admin/users_spec` 含めて全 green）
+
