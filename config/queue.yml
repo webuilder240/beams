@@ -8,10 +8,13 @@ default: &default
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
     # クエリ実行ジョブ専用ワーカー（トピック10）。BigQuery 完了を
-    # wait_until_done! でブロックして待つため、同時実行 20 件を捌けるよう
-    # スレッド数を多めに確保する（同時実行 20 上限はアプリ側でも担保）。
+    # wait_until_done! でブロックして待つため、同時実行可能な thread を確保する。
+    # 同時実行上限はアプリ側（Queries::ExecutionsController::CONCURRENCY_LIMIT）でも
+    # 担保しており、デフォルトは両者を 10 に揃える。負荷次第で
+    # QUERY_EXECUTION_CONCURRENCY を引き上げる場合は config/database.yml の
+    # QUEUE_DB_MAX_CONNECTIONS と CONCURRENCY_LIMIT も合わせて見直すこと。
     - queues: "query_execution"
-      threads: <%= ENV.fetch("QUERY_EXECUTION_CONCURRENCY", 20) %>
+      threads: <%= ENV.fetch("QUERY_EXECUTION_CONCURRENCY", 10) %>
       processes: 1
       polling_interval: 0.1
 

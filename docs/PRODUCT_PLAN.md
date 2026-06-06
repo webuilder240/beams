@@ -210,10 +210,10 @@ worker: bundle exec bin/jobs          # SolidQueue（別プロセス）
                                                      │ 結果を圧縮blobで保存→succeeded
 ```
 
-### 6.2 同時実行とスレッド（→ 決定: 上限20件程度で割り切り）
+### 6.2 同時実行とスレッド（→ 決定: 上限10件程度で割り切り）
 
-- 同時実行は **最大20件程度を上限**とし、超過はキューで待機（UIに「実行待ち」表示）。
-- BigQuery待ちジョブはCPUを食わず待つだけなので、**worker側のスレッドは多めに確保**して捌く。worker別プロセス（§2.2）により、Pumaのリクエストスレッドと独立にサイズ可能。
+- 同時実行は **最大10件程度を上限**とし、超過はキューで待機（UIに「実行待ち」表示）。
+- BigQuery待ちジョブはCPUを食わず待つだけなので、**worker側のスレッドはアプリ上限と揃えて確保**する。worker別プロセス（§2.2）により、Pumaのリクエストスレッドと独立にサイズ可能。具体値は `Queries::ExecutionsController::CONCURRENCY_LIMIT` と `config/queue.yml` の `query_execution` ワーカー threads で揃え、queue DB の connection pool（`config/database.yml` の `production:queue.max_connections`）も同期する。
 - 将来、規模が増えたら「投げてjob_id保存→一旦離脱→定期的に状態確認」の分割実行に発展させる余地を残す。
 
 ### 6.3 結果キャッシュ戦略

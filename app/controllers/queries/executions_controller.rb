@@ -2,7 +2,7 @@ module Queries
   # 非同期実行エンドポイント（トピック10）。
   # POST /queries/:query_id/executions。実行（書き込み/課金）は所有クエリのみ（他人の id は 404）。
   # 全パラメータ必須運用: 未入力が 1 つでもあれば実行せずエラー表示。
-  # 同時実行 20 件上限を超える場合は pending のまま作成しジョブを待機させる。
+  # 同時実行件数が CONCURRENCY_LIMIT を超える場合は pending のまま作成しジョブを待機させる。
   #
   # GET /queries/:query_id/executions/:id（過去結果の再表示・読み取り）は
   # トピック13（組織フルオープン §4.9）に合わせ全ユーザー可。実行（create）のみ
@@ -12,7 +12,9 @@ module Queries
     before_action :set_query, only: [ :create ]
     before_action :set_query_full_open, only: [ :show ]
 
-    CONCURRENCY_LIMIT = 20
+    # config/queue.yml の query_execution ワーカー threads と揃える前提
+    # （超過した分は pending で待機し、worker が空いた順に消化される）。
+    CONCURRENCY_LIMIT = 10
 
     # 過去実行の結果テーブル再表示（トピック17・フルオープン）。クエリ自体は全件
     # 閲覧可（Query.find）。当該クエリ配下に存在しない execution id は
