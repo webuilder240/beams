@@ -103,8 +103,8 @@
 
 ### DBマイグレーション（事前承認ゲート）
 
-- [ ] **`docs/tasks/migrations/22-redash-sources-migration.md` を作成し、ボス承認を取る**。内容: `redash_sources` テーブル新規（name / url / api_key / timestamps）。
-- [ ] 承認後マイグレーション作成・実行（`db/migrate/YYYYMMDDHHMMSS_create_redash_sources.rb`）
+- [x] **`docs/tasks/migrations/22-redash-sources-migration.md` を作成し、ボス承認を取る**。内容: `redash_sources` テーブル新規（name / url / api_key / timestamps）。
+- [x] 承認後マイグレーション作成・実行（`db/migrate/YYYYMMDDHHMMSS_create_redash_sources.rb`）
   - 受け入れ条件: `bin/rails db:migrate` 成功・`db:rollback` 成功。`db/schema.rb` 反映。
 
 ### RedashSource モデル

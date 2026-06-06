@@ -21,3 +21,11 @@
 - `bundle install`: webmock 3.26.2 / crack 1.0.1 / hashdiff 1.2.1 が追加された
 - `spec/rails_helper.rb` に `require "webmock/rspec"` と `WebMock.disable_net_connect!(allow_localhost: true)` を追加
 - `bin/bundler-audit check`: クリーン（No vulnerabilities found）
+
+#### 2. マイグレーション（redash_sources）
+- `db/migrate/20260606103507_create_redash_sources.rb` 作成（name/url/api_key/timestamps、name に unique index）
+- `bin/rails db:migrate`: 成功
+- `bin/rails db:rollback STEP=1`: 成功（drop_table 確認）
+- 再度 `bin/rails db:migrate`: 成功
+- `bin/rails db:test:prepare`: 成功
+- `db/schema.rb` に `redash_sources` テーブル定義が反映済み
