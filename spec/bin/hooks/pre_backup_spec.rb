@@ -42,4 +42,18 @@ RSpec.describe "bin/hooks/pre-backup" do
     expect(contents).not_to include("config/environment")
     expect(contents).not_to include("config/application")
   end
+
+  it "chdir's to the repository root so default source paths resolve to /rails/storage" do
+    # Beams::Backup.default_sources expands paths from Dir.pwd, so the hook
+    # must move to the repo root (the parent of bin/) before invoking it.
+    # ONCE may set an arbitrary cwd; relying on Dir.pwd as supplied by the
+    # caller would silently produce empty backups.
+    contents = File.read(script_path)
+    expect(contents).to match(/Dir\.chdir\(File\.expand_path\("\.\.\/\.\.",\s*__dir__\)\)/)
+  end
+
+  it "requires bundler/setup so vendored gems load without Rails boot" do
+    contents = File.read(script_path)
+    expect(contents).to include('require "bundler/setup"')
+  end
 end
