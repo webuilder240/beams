@@ -43,6 +43,15 @@ RSpec.describe "Queries", type: :request do
         expect(response.body).to include("売上集計")
         expect(response.body).not_to include("ユーザー一覧")
       end
+
+      it "filters by SQL body with ?q= (partial match, トピック21)" do
+        create(:query, user: user, title: "無題クエリA", sql_body: "SELECT user_id FROM events")
+        create(:query, user: user, title: "無題クエリB", sql_body: "SELECT name FROM products")
+
+        get queries_path(q: "user_id")
+        expect(response.body).to include("無題クエリA")
+        expect(response.body).not_to include("無題クエリB")
+      end
     end
 
     describe "GET /queries/new" do

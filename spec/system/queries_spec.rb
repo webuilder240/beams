@@ -56,11 +56,26 @@ RSpec.describe "Query editor", type: :system do
     log_in
     visit queries_path
 
-    fill_in "タイトルで検索", with: "売上"
+    fill_in "タイトル/SQL本文で検索", with: "売上"
     click_button "検索"
 
     expect(page).to have_content("売上レポート")
     expect(page).not_to have_content("在庫一覧")
+  end
+
+  it "searches queries by SQL body (rack_test, トピック21)" do
+    create(:query, user: user, title: "Untitled",
+                   sql_body: "SELECT user_id FROM events", bigquery_connection: connection)
+    create(:query, user: user, title: "別件",
+                   sql_body: "SELECT name FROM products", bigquery_connection: connection)
+    log_in
+    visit queries_path
+
+    fill_in "タイトル/SQL本文で検索", with: "user_id"
+    click_button "検索"
+
+    expect(page).to have_content("Untitled")
+    expect(page).not_to have_content("別件")
   end
 
   it "lists all users' queries with owner names (org full-open §4.9, rack_test)" do

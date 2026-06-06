@@ -70,7 +70,7 @@ RSpec.describe "Dashboards", type: :system do
   end
 
   describe "CRUD and widget flow (rack_test)" do
-    it "creates a dashboard, adds widgets, reorders, and deletes" do
+    it "creates a dashboard, adds widgets, and deletes" do
       seed_query_with_result(title: "売上クエリ")
       seed_query_with_result(title: "ユーザクエリ")
 
@@ -103,15 +103,6 @@ RSpec.describe "Dashboards", type: :system do
 
       # column_span: 2 のウィジェットは幅広（widget-span-2）
       expect(page).to have_css(".widget-span-2")
-
-      # 「下へ」で 1 番目を下に移動 → 順序入れ替わり
-      within(".widget-span-1") { click_button "↓ 下へ" }
-      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "ユーザクエリ", "売上クエリ" ])
-
-      # リロードしても順序が保持される
-      visit dashboard_path(dashboard)
-      titles = page.all("article h2").map(&:text)
-      expect(titles.first).to include("ユーザクエリ")
 
       # ウィジェット削除
       expect {
@@ -175,6 +166,143 @@ RSpec.describe "Dashboards", type: :system do
       expect(page).to have_content("ログアウト", wait: 10)
       visit dashboard_path(dashboard)
       expect(page).to have_css("canvas", wait: 10)
+    end
+  end
+
+  describe "toast notification", :js do
+    it "shows a toast message when toast:show event is fired and auto-dismisses" do
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboards_path
+
+      # toast:show カスタムイベントを発火してトーストが表示されることを確認
+      page.execute_script(
+        "window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: 'テストエラーメッセージ', type: 'error' } }))"
+      )
+
+      # 右下にエラートーストが表示される
+      expect(page).to have_css("[data-controller='toast']", wait: 5)
+      expect(page).to have_content("テストエラーメッセージ", wait: 5)
+
+      # 自動消滅（5秒以内）
+      expect(page).not_to have_content("テストエラーメッセージ", wait: 8)
+    end
+  end
+
+  describe "widget drag-and-drop reorder failure", :js do
+    it "restores DOM order and shows error toast when reorder fails" do
+      q1 = seed_query_with_result(title: "失敗テスト1番目")
+      q2 = seed_query_with_result(title: "失敗テスト2番目")
+      dashboard = create(:dashboard, user: user, title: "失敗D&DテストD")
+      w1 = create(:widget, dashboard: dashboard, query: q1, position: 0)
+      w2 = create(:widget, dashboard: dashboard, query: q2, position: 1)
+
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboard_path(dashboard)
+      expect(page).to have_content("失敗テスト1番目", wait: 10)
+      expect(page).to have_content("失敗テスト2番目", wait: 10)
+      expect(page).to have_css('[data-sortable-ready="true"]', wait: 10)
+
+      # reorder エンドポイントを 500 でインターセプト（実ドラッグ前に登録）
+      page.driver.with_playwright_page do |pw|
+        pw.route("**/widget_order", ->(route, _request) {
+          route.fulfill(status: 500, contentType: "text/plain", body: "Internal Server Error")
+        })
+      end
+
+      # 実ポインタ操作で SortableJS（forceFallback: true）に実ドラッグを発火させる
+      page.driver.with_playwright_page do |pw|
+        handle = pw.query_selector("article[data-widget-id='#{w1.id}'] .drag-handle")
+        target = pw.query_selector("article[data-widget-id='#{w2.id}']")
+        hb = handle.bounding_box
+        tb = target.bounding_box
+
+        sx = hb["x"] + hb["width"] / 2
+        sy = hb["y"] + hb["height"] / 2
+        tx = tb["x"] + tb["width"] / 2
+        ty = tb["y"] + tb["height"] - 5
+
+        pw.mouse.move(sx, sy)
+        pw.mouse.down
+        pw.mouse.move(sx + 5, sy + 5, steps: 5)
+        pw.mouse.move(tx, ty, steps: 15)
+        pw.mouse.move(tx, ty, steps: 5)
+        pw.mouse.up
+      end
+
+      # (a) エラートーストが右下に表示される
+      expect(page).to have_css("[data-controller='toast']", wait: 10)
+      expect(page).to have_content("並び替えの保存に失敗しました", wait: 10)
+
+      # (b) 並び順がドラッグ前（w1 先頭）に戻る
+      expect(page).to have_css(
+        ".dashboard-grid > article:first-child h2",
+        text: "失敗テスト1番目",
+        wait: 10
+      )
+
+      # (c) サーバの position は変化していない
+      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title })
+        .to eq([ "失敗テスト1番目", "失敗テスト2番目" ])
+    end
+  end
+
+  describe "widget drag-and-drop reorder", :js do
+    it "reorders widgets by drag-and-drop and persists position" do
+      q1 = seed_query_with_result(title: "1番目クエリ")
+      q2 = seed_query_with_result(title: "2番目クエリ")
+      dashboard = create(:dashboard, user: user, title: "D&DテストD")
+      w1 = create(:widget, dashboard: dashboard, query: q1, position: 0)
+      w2 = create(:widget, dashboard: dashboard, query: q2, position: 1)
+
+      log_in
+      expect(page).to have_content("ログアウト", wait: 10)
+      visit dashboard_path(dashboard)
+      expect(page).to have_content("1番目クエリ", wait: 10)
+      expect(page).to have_content("2番目クエリ", wait: 10)
+
+      # SortableJS の初期化完了を待つ（connect() で data-sortable-ready="true" が立つ）。
+      # 固定 sleep ではなく属性の出現をポーリングすることでフレークを減らす。
+      expect(page).to have_css('[data-sortable-ready="true"]', wait: 10)
+
+      # 実ポインタ操作で SortableJS（forceFallback: true）に実ドラッグを発火させる。
+      # w1 のドラッグハンドルをつかみ → w2 の位置を通過させて → w2 の下端でドロップ。
+      # 中間ステップを挟む（steps:）ことで SortableJS が確実にドラッグを追従する。
+      page.driver.with_playwright_page do |pw|
+        handle = pw.query_selector("article[data-widget-id='#{w1.id}'] .drag-handle")
+        target = pw.query_selector("article[data-widget-id='#{w2.id}']")
+        hb = handle.bounding_box
+        tb = target.bounding_box
+
+        sx = hb["x"] + hb["width"] / 2
+        sy = hb["y"] + hb["height"] / 2
+        # w2 の下端付近（中央より下）にドロップして w1 を w2 の後ろへ移動させる
+        tx = tb["x"] + tb["width"] / 2
+        ty = tb["y"] + tb["height"] - 5
+
+        pw.mouse.move(sx, sy)
+        pw.mouse.down
+        # ハンドルから少し動かしてドラッグ開始を確実にし、複数ステップで対象まで移動
+        pw.mouse.move(sx + 5, sy + 5, steps: 5)
+        pw.mouse.move(tx, ty, steps: 15)
+        # ドロップ位置で一度静止させて SortableJS の並べ替えを確定させる
+        pw.mouse.move(tx, ty, steps: 5)
+        pw.mouse.up
+      end
+
+      # ドロップ後の PATCH 完了 → Turbo Stream 再描画を、DOM 反映の出現で待つ
+      # （固定 sleep を排し、グリッド先頭ウィジェットが「2番目クエリ」になるまでポーリング）。
+      expect(page).to have_css(".dashboard-grid > article:first-child h2", text: "2番目クエリ", wait: 10)
+
+      # 実ドラッグの結果としてサーバの position が永続化されていることを確認
+      expect(dashboard.reload.ordered_widgets.map { |w| w.query.title }).to eq([ "2番目クエリ", "1番目クエリ" ])
+
+      # リロード後も順序が保持される
+      visit dashboard_path(dashboard)
+      titles = page.all("article h2", wait: 10).map(&:text)
+      expect(titles.first).to include("2番目クエリ")
+      expect(titles.last).to include("1番目クエリ")
     end
   end
 end

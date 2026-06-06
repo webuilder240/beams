@@ -4,7 +4,7 @@ class QueriesController < ApplicationController
 
   def index
     # 組織フルオープン（§4.9）: 全ログインユーザーが全クエリを閲覧可能。
-    @queries = Query.title_matching(params[:q]).order(updated_at: :desc)
+    @queries = Query.text_matching(params[:q]).order(updated_at: :desc)
     @q = params[:q]
   end
 

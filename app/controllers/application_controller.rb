@@ -10,6 +10,9 @@ class ApplicationController < ActionController::Base
   # 初回起動（ユーザー 0 件）を検知し、セットアップウィザードに誘導する。
   # ウィザード自身のコントローラでは skip する（リダイレクトループ防止）。
   before_action :redirect_to_setup_if_needed
+  # トピック23（Bugsnag）: 例外通知時にログイン中ユーザー情報を付与するため、
+  # 各リクエストで Current.user に current_user をセットする（未ログイン時は nil）。
+  before_action :set_current_user
 
   private
 
@@ -17,5 +20,9 @@ class ApplicationController < ActionController::Base
     return if User.any?
 
     redirect_to setup_step1_path
+  end
+
+  def set_current_user
+    Current.user = current_user
   end
 end

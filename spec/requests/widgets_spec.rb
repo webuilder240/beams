@@ -57,34 +57,4 @@ RSpec.describe "Widgets", type: :request do
       }.to change(Widget, :count).by(-1)
     end
   end
-
-  describe "POST move_up / move_down" do
-    before { login_as(user) }
-
-    let!(:w1) { create(:widget, dashboard: dashboard, query: query, position: 0) }
-    let!(:w2) { create(:widget, dashboard: dashboard, query: query, position: 1) }
-    let!(:w3) { create(:widget, dashboard: dashboard, query: query, position: 2) }
-
-    it "moves a widget up, swapping with the previous one" do
-      post move_up_dashboard_widget_path(dashboard, w2)
-      expect(w1.reload.position).to eq(1)
-      expect(w2.reload.position).to eq(0)
-    end
-
-    it "is a no-op when moving up the first widget" do
-      post move_up_dashboard_widget_path(dashboard, w1)
-      expect(dashboard.ordered_widgets.to_a).to eq([ w1, w2, w3 ])
-    end
-
-    it "moves a widget down, swapping with the next one" do
-      post move_down_dashboard_widget_path(dashboard, w2)
-      expect(w3.reload.position).to eq(1)
-      expect(w2.reload.position).to eq(2)
-    end
-
-    it "is a no-op when moving down the last widget" do
-      post move_down_dashboard_widget_path(dashboard, w3)
-      expect(dashboard.ordered_widgets.to_a).to eq([ w1, w2, w3 ])
-    end
-  end
 end

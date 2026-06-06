@@ -38,7 +38,7 @@ gem "bootsnap", require: false
 gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 2.0"
 
 # BigQuery クライアント（Beams のクエリ実行基盤）[https://github.com/googleapis/google-cloud-ruby]
 gem "google-cloud-bigquery"
@@ -46,6 +46,9 @@ gem "google-cloud-bigquery"
 # CSV はクエリ結果の全件ダウンロード（トピック10）で使用。Ruby 3.4 から
 # default gem ではなくなったため明示的に追加する。
 gem "csv"
+
+# Bugsnag による例外通知（production のみ通知）。トピック23。
+gem "bugsnag"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
