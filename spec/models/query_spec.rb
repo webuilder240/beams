@@ -77,34 +77,62 @@ RSpec.describe Query, type: :model do
     end
   end
 
-  describe ".title_matching" do
+  describe ".text_matching" do
     it "returns queries whose title contains the term (partial match)" do
-      hit = create(:query, title: "売上集計")
-      create(:query, title: "ユーザー一覧")
+      hit = create(:query, title: "売上集計", sql_body: "SELECT 1")
+      create(:query, title: "ユーザー一覧", sql_body: "SELECT 2")
 
-      expect(Query.title_matching("売上")).to contain_exactly(hit)
+      expect(Query.text_matching("売上")).to contain_exactly(hit)
+    end
+
+    it "returns queries whose sql_body contains the term (partial match)" do
+      hit = create(:query, title: "無題", sql_body: "SELECT user_id FROM events")
+      create(:query, title: "別件", sql_body: "SELECT name FROM products")
+
+      expect(Query.text_matching("user_id")).to contain_exactly(hit)
+    end
+
+    it "returns queries matching either title or sql_body without duplicates" do
+      title_only = create(:query, title: "売上集計", sql_body: "SELECT 1")
+      sql_only = create(:query, title: "無題", sql_body: "SELECT amount FROM 売上")
+      create(:query, title: "別件", sql_body: "SELECT id FROM products")
+
+      expect(Query.text_matching("売上")).to contain_exactly(title_only, sql_only)
+    end
+
+    it "returns an empty relation when neither title nor sql_body matches" do
+      create(:query, title: "売上集計", sql_body: "SELECT 1")
+
+      expect(Query.text_matching("該当なし")).to be_empty
     end
 
     it "returns all queries when the term is blank" do
       create(:query, title: "A")
       create(:query, title: "B")
 
-      expect(Query.title_matching("")).to match_array(Query.all)
-      expect(Query.title_matching(nil)).to match_array(Query.all)
+      expect(Query.text_matching("")).to match_array(Query.all)
+      expect(Query.text_matching(nil)).to match_array(Query.all)
     end
 
     it "escapes the LIKE wildcard % so it is treated literally" do
-      literal = create(:query, title: "100%達成")
-      create(:query, title: "未達成")
+      literal = create(:query, title: "100%達成", sql_body: "SELECT 1")
+      create(:query, title: "未達成", sql_body: "SELECT 1")
 
-      expect(Query.title_matching("100%")).to contain_exactly(literal)
+      expect(Query.text_matching("100%")).to contain_exactly(literal)
     end
 
     it "escapes the LIKE wildcard _ so it is treated literally" do
-      literal = create(:query, title: "a_b 集計")
-      create(:query, title: "axb 集計")
+      literal = create(:query, title: "a_b 集計", sql_body: "SELECT 1")
+      create(:query, title: "axb 集計", sql_body: "SELECT 1")
 
-      expect(Query.title_matching("a_b")).to contain_exactly(literal)
+      expect(Query.text_matching("a_b")).to contain_exactly(literal)
+    end
+
+    it "escapes the LIKE escape character \\ so it is treated literally" do
+      literal = create(:query, title: "無題", sql_body: "path\\to\\file")
+      create(:query, title: "無題2", sql_body: "pathXtoXfile")
+
+      expect(Query.text_matching("path\\to")).to contain_exactly(literal)
     end
   end
 

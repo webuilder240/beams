@@ -7,7 +7,8 @@ class Dashboard < ApplicationRecord
 
   validates :title, presence: true, length: { maximum: 255 }
 
-  # タイトル部分一致検索（§4.11）。空クエリは全件を返す。`Query.title_matching` と同方針。
+  # タイトル部分一致検索（§4.11）。空クエリは全件を返す。`Query.text_matching` と同方針
+  # （ただしダッシュボードはタイトルのみ検索 — トピック21 B3-A）。
   # SQLite は `\` を既定のエスケープ文字として扱わないため、`ESCAPE '\'` を明示して
   # `sanitize_sql_like` が生成する `\` を有効化し、`%` `_` を文字どおり扱う。
   scope :title_matching, ->(term) {
