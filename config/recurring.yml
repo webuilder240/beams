@@ -14,9 +14,6 @@ production:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
 
-  # SQLite 自動バックアップ（トピック15）。外部 cron に依存せず SolidQueue の
-  # 定期実行で日次 1 世代を取得する（ONCE 思想）。本体は Beams::Backup。
-  daily_backup:
-    class: BackupJob
-    queue: default
-    schedule: every day at 3am
+  # 自動バックアップは ONCE プラットフォーム（basecamp/once）の /hooks/pre-backup
+  # に一本化したため、ここでの定期 enqueue は撤去した（トピック 26 グループ C）。
+  # 手動緊急時用の `rake beams:backup` / `bin/beams-backup` は引き続き利用可能。
