@@ -74,6 +74,145 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe ".find_or_create_for_oauth" do
+    let(:provider) { "google_oauth2" }
+
+    context "when an OauthIdentity already exists" do
+      it "returns the linked user" do
+        existing = create(:user, email: "linked@example.com")
+        existing.oauth_identities.create!(provider: provider, uid: "uid-1")
+
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-1", email: "any@example.com")
+        expect(result).to eq(existing)
+        expect(existing.reload.oauth_identities.count).to eq(1)
+      end
+    end
+
+    context "when a user with the same email exists (no identity yet)" do
+      it "links a new oauth_identity to the existing user (B4-A)" do
+        existing = create(:user, email: "user@example.com")
+
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-2", email: "user@example.com")
+        expect(result).to eq(existing)
+        expect(existing.reload.oauth_identities.pluck(:provider, :uid)).to eq([ [ provider, "uid-2" ] ])
+      end
+
+      it "normalizes the incoming email for matching" do
+        existing = create(:user, email: "mixed@example.com")
+        result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-mixed", email: "  MIXED@Example.COM  ")
+        expect(result).to eq(existing)
+      end
+
+      it "is idempotent for the same (provider, uid) pair (finding B)" do
+        existing = create(:user, email: "user@example.com")
+
+        described_class.find_or_create_for_oauth(provider: provider, uid: "uid-dup", email: "user@example.com")
+        expect {
+          described_class.find_or_create_for_oauth(provider: provider, uid: "uid-dup", email: "user@example.com")
+        }.not_to change { existing.reload.oauth_identities.count }
+      end
+    end
+
+    context "when email is blank (finding M)" do
+      it "returns nil for nil email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: nil)).to be_nil
+      end
+
+      it "returns nil for empty email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: "")).to be_nil
+      end
+
+      it "returns nil for whitespace-only email" do
+        expect(described_class.find_or_create_for_oauth(provider: provider, uid: "u", email: "   ")).to be_nil
+      end
+    end
+
+    context "when no user exists and allowed_email_domain matches" do
+      before do
+        ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      end
+
+      it "creates a new member user with the oauth identity (B5-B)" do
+        expect {
+          described_class.find_or_create_for_oauth(provider: provider, uid: "uid-3", email: "new@example.com")
+        }.to change(described_class, :count).by(1)
+         .and change(OauthIdentity, :count).by(1)
+
+        user = described_class.find_by(email: "new@example.com")
+        expect(user.role).to eq("member")
+        expect(user.password_credential).to be_nil
+        expect(user.oauth_identities.pluck(:provider, :uid)).to eq([ [ provider, "uid-3" ] ])
+      end
+    end
+
+    context "when no user exists and allowed_email_domain does not match" do
+      before do
+        ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      end
+
+      it "returns nil and creates nothing" do
+        expect {
+          result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-x", email: "other@notexample.com")
+          expect(result).to be_nil
+        }.not_to change(described_class, :count)
+      end
+    end
+
+    context "when allowed_email_domain is blank" do
+      it "returns nil for any unregistered email" do
+        expect {
+          result = described_class.find_or_create_for_oauth(provider: provider, uid: "uid-y", email: "anyone@anywhere.com")
+          expect(result).to be_nil
+        }.not_to change(described_class, :count)
+      end
+    end
+  end
+
+  describe "password sync via after_save (finding R)" do
+    it "updates the PasswordCredential when password is changed via update!" do
+      user = create(:user, password: "original-pass")
+      old_digest = user.password_credential.password_digest
+
+      user.update!(password: "new-password-1")
+
+      expect(user.password_credential.reload.password_digest).not_to eq(old_digest)
+      expect(user.password_credential.authenticate("new-password-1")).to be_truthy
+    end
+
+    it "does not re-save the PasswordCredential when subsequent updates change only unrelated attributes in the same transaction" do
+      user = create(:user, password: "stable-pass")
+      pc = user.password_credential
+      pc_updated_at = pc.updated_at
+
+      User.transaction do
+        user.update!(password: "new-stable-pass")
+        # 同じインスタンスで unrelated attribute を更新しても PC が再 save されないこと
+        original_digest_after_first_update = user.password_credential.password_digest
+        user.update!(email: "newaddr@example.com")
+        expect(user.password_credential.reload.password_digest).to eq(original_digest_after_first_update)
+      end
+
+      expect(pc.reload.updated_at).to be >= pc_updated_at
+    end
+
+    it "rejects an explicit empty password_confirmation (finding J)" do
+      user = create(:user, password: "secret123")
+      user.password = "newpass1"
+      user.password_confirmation = ""
+      expect(user.save).to be(false)
+      expect(user.errors[:password_confirmation]).to be_present
+    end
+  end
+
+  describe "OAuth-only user behaviour" do
+    it "cannot authenticate with a password (B9-A)" do
+      ApplicationSetting.instance.update!(allowed_email_domain: "example.com")
+      described_class.find_or_create_for_oauth(provider: "google_oauth2", uid: "uid-9", email: "oa@example.com")
+      user = described_class.find_by(email: "oa@example.com")
+      expect(user.authenticate("any-password")).to be(false)
+    end
+  end
+
   describe "role predicates" do
     it "#admin? is true for admins" do
       expect(build(:user, :admin).admin?).to be(true)
