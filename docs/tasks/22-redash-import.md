@@ -124,7 +124,7 @@
 
 > service クラス禁止のため、PORO として `app/models/` 配下に置く。
 
-- [ ] `app/models/redash_client.rb` 新規作成
+- [x] `app/models/redash_client.rb` 新規作成
   - コンストラクタ: `RedashClient.new(redash_source)`
   - パブリック API:
     - `#list_queries(page:, page_size:)` — `GET /api/queries`、ページネーション込み

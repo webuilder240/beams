@@ -39,3 +39,13 @@
   - `RedashClient` 側からも同じ `guard_url!` を呼び出す（リクエスト直前に二重チェック）
 - `app/models/redash_client.rb` の例外クラス（`Error`/`Unauthorized`/`NotFound`/`ServerError`/`Timeout`/`ForbiddenURLError`）も同コミットで定義（バリデーションから参照されるため）
 - スペック: 16/16 green（暗号文確認・正常 IP・privateIP/loopback/metadata 拒否・スキーム拒否を網羅）
+
+#### 4. RedashClient PORO + SSRF ガード + WebMock スペック
+- `spec/factories/redash_sources.rb` 追加
+- `spec/models/redash_client_spec.rb` を Red で作成（13 examples、`#list_queries` / `#fetch_query` の正常系・401/403/404/5xx/Timeout・JSON パース失敗・SSRF ガード loopback/private/link-local/解決失敗）
+- `app/models/redash_client.rb` を完成:
+  - Net::HTTP 直使用、`Authorization: Key <api_key>` ヘッダ
+  - リクエスト直前に `RedashSource.guard_url!` を呼ぶ
+  - タイムアウト 5s（open/read）、リダイレクト追従なし
+  - 200 → JSON パース、401/403 → Unauthorized、404 → NotFound、5xx → ServerError、タイムアウト → Timeout、JSON パース失敗 → ServerError
+- スペック: 13/13 green。SSRF テストでは WebMock スタブが「リクエストされていない」ことを `expect(stub).not_to have_been_requested` で確認（実 HTTP が送られないこと）
