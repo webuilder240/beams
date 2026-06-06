@@ -1,96 +1,62 @@
-# Beams インストール・運用ガイド（ONCE 配布）
+# Beams インストール・運用ガイド（ONCE プラットフォーム）
 
-Beams は **買い切り・自社サーバー設置型**の BI ツールとして、単一 Docker コンテナで配布する（ONCE 形態）。本書はまっさらな Linux サーバーへの設置から、バックアップ・自動アップデート・ロールバックまでの運用手順をまとめる。TLS 終端は ONCE プラットフォーム側に委ねるため、本書では扱わない（トピック 26 で `basecamp/once` 採用に移行中）。
+Beams は **買い切り・自社サーバー設置型**の BI ツールとして、単一 Docker コンテナで配布する。設置・自動アップデート・バックアップ・TLS 終端は [basecamp/once](https://github.com/basecamp/once)（37signals 製の ONCE プラットフォーム）に統合している。本書はまっさらな Linux サーバーへの設置から、バックアップ・アップデート・ロールバックまでの運用手順をまとめる。
 
-> **注（2026-06-06）**: 旧自前配布層（自前インストーラ・自前 systemd 自動アップデート層・自前 TLS 設定など）はトピック 26 で `basecamp/once` 採用により全撤去された。本書の旧インストール／自動アップデート手順は同トピック・グループ F で ONCE プラットフォーム手順へ全面刷新する。
+> **公式配布イメージ**: `ghcr.io/webuilder240/beams:latest`（`main` への push ごとに multi-arch（`linux/amd64` / `linux/arm64`）でビルド・公開）。バージョン固定には `ghcr.io/webuilder240/beams:<git-sha>` タグを使う。
 
 ---
 
 ## 1. 前提
 
-- **OS**: Linux（systemd を利用する場合は systemd ベースのディストリビューション）
-- **Docker**: インストール済みであること（[Install Docker Engine](https://docs.docker.com/engine/install/)）。未導入の場合 `install.sh` は明示エラーで停止する。
-- **権限**: root もしくは `sudo`（コンテナ起動・`/etc/beams/` 書き込み・systemd 設置のため）
+- **OS**: Linux（ONCE がサポートする Docker 動作環境）
+- **Docker**: インストール済みであること（[Install Docker Engine](https://docs.docker.com/engine/install/)）
+- **権限**: root もしくは `sudo`（ONCE CLI / TUI がコンテナ起動・ホストファイル書き込みを行うため）
+- **DNS**: 公開ホスト名（例: `beams.example.com`）の **A レコード**を当該サーバーの公開 IP に向けておく。ONCE が Let's Encrypt で TLS 証明書を自動取得する際に必要
 
 ---
 
-## 2. インストール手順
+## 2. インストール
 
-> **手順は刷新中**: 旧 `install.sh` ベースの手順は撤去済み。ONCE プラットフォーム（`basecamp/once`）経由のインストール手順はトピック 26 グループ F で本節を全面刷新する予定。当面の暫定手順は本書下部「ONCE 環境変数」節を参照。
-
-> **公式配布イメージ**: `ghcr.io/webuilder240/beams:latest`（`main` への push ごとに multi-arch でビルド・公開）。`:<git-sha>` タグでバージョン固定も可能。
-
----
-
-## 3. 環境変数
-
-| 変数 | 必須/任意 | 説明 |
-|------|:---:|------|
-| `RAILS_MASTER_KEY` | **必須** | `config/master.key` の値。Rails の暗号化資格情報（Active Record Encryption 等）の復号に使う。 |
-| `IMAGE` | 任意 | 配布イメージ参照。既定 `ghcr.io/webuilder240/beams:latest`。バージョン固定したい場合は `ghcr.io/webuilder240/beams:<git-sha>` を指定する。 |
-
-機密値（`RAILS_MASTER_KEY`）は `docker run -e` ではなく **ホスト env ファイル `/etc/beams/beams.env`（権限 600）経由（`docker run --env-file`）**で渡す。これにより鍵が `ps` などのプロセス一覧に現れず、コンテナ再生成後も同じ env ファイルを再利用できる。
-
----
-
-## 4. ポート
-
-Beams コンテナは **HTTP 80 のみ**を公開する（`-p 80:80`、Dockerfile も `EXPOSE 80`）。TLS 終端は ONCE プラットフォーム側で行うため、本コンテナ単体では HTTPS を扱わない。
-
-### Thruster 関連 env と既定値
-
-| env | 既定 | 説明 |
-|-----|:---:|------|
-| `HTTP_PORT` | `80` | Thruster の HTTP 待受ポート。 |
-| `TARGET_PORT` | `3000` | Thruster が転送する先（Puma）のポート。 |
-
-通常は既定のままでよい。コンテナの公開ポートは `-p 80:80` で固定する想定のため、`HTTP_PORT` を変更する場合は公開ポートも合わせて調整すること。
-
----
-
-## 5. 永続データとバックアップ
-
-- アプリの全永続データ（4 分割 SQLite DB・アップロード等）は named volume **`beams_storage`**（コンテナ内 `/rails/storage`）に保存される。コンテナを作り直してもデータは残る。
-- SQLite の**自動バックアップ・復旧手順は [docs/RESTORE.md](RESTORE.md) を参照**（`rake beams:backup` / `rake beams:restore[generation]`）。バックアップ生成物も `/rails/storage` 配下（= `beams_storage`）に置かれる。
-
-手動バックアップは稼働コンテナ内で実行する:
+### 2.1 ONCE CLI / TUI を導入する
 
 ```bash
-docker exec beams bundle exec rake beams:backup
+curl https://get.once.com | sh
 ```
 
----
+### 2.2 Beams を設置する
 
-## 6. ヘルスチェック
+2 経路ある。どちらでも結果は同じ。
+
+#### 経路 A: TUI（対話型）
 
 ```bash
-# HTTP
-curl -fsS http://localhost/up
+once
 ```
 
-コンテナログは `docker logs -f beams` で確認できる。
+TUI で次のように進める:
+
+1. "Enter a Docker image path" に `ghcr.io/webuilder240/beams:latest` を入力
+2. hostname（例: `beams.example.com`）を入力
+3. Settings → Environment フォームで `RAILS_MASTER_KEY` を行追加（後述 §3）
+4. インストールを開始 → ONCE がイメージを pull し、コンテナを起動する
+
+#### 経路 B: CLI 一発
+
+```bash
+once install \
+  --image ghcr.io/webuilder240/beams:latest \
+  --env RAILS_MASTER_KEY=<config/master.key の値>
+```
+
+`--env KEY=VALUE` は繰り返し指定できる。
+
+設置が完了すると Beams は HTTP 80 で待受を開始し、ONCE が TLS（HTTPS 443）を自動終端する。ブラウザで `https://<hostname>/` を開くと初回セットアップウィザード（admin 作成 → BigQuery 接続登録 → 接続テスト）に到達する。
 
 ---
 
-## 7. 自動アップデート
+## 3. 初期 env（`RAILS_MASTER_KEY`）
 
-> 旧自前 systemd 自動アップデート層は撤去済み（トピック 26）。自動アップデートは ONCE プラットフォーム側に一本化する。再生成時に `bin/boot` が 4 つの SQLite DB へ `db:prepare` を流すため、**マイグレーションは自動適用**される。具体的な ONCE 設定手順はトピック 26 グループ F で本節を全面刷新する。
-
----
-
-## 8. 手動アップデート / ロールバック
-
-> 旧 `install.sh` 経由の手動アップデート／ロールバック手順は撤去済み。ONCE プラットフォーム経由の手順はトピック 26 グループ F で本節を全面刷新する予定。永続データは named volume `beams_storage` に残るため、コンテナを差し替えてもデータは保持される。データ自体を以前の状態へ戻す必要がある場合は、バックアップ世代からの復旧（[docs/RESTORE.md](RESTORE.md) の `rake beams:restore[generation]`）を行う。
-
----
-
-## ONCE 環境変数
-
-> 本節は ONCE プラットフォーム（basecamp/once）採用への移行（トピック 26）に伴う暫定追記。INSTALL.md 全体は同トピック・グループ F で ONCE 手順へ全面刷新する。
-
-### `RAILS_MASTER_KEY` の受け渡し
-
-`RAILS_MASTER_KEY`（`config/master.key` の値）は ONCE の **custom env** として渡す。経路は次の 2 つ:
+Beams は `config/credentials.yml.enc`（Active Record Encryption のキー 3 点を含む）を復号するために `RAILS_MASTER_KEY`（`config/master.key` の値）を **必須**で要求する。受け渡しは ONCE の **custom env** を使う。
 
 1. **CLI でインストール時に渡す**
 
@@ -100,34 +66,105 @@ curl -fsS http://localhost/up
      --env RAILS_MASTER_KEY=<config/master.key の値>
    ```
 
-   `--env KEY=VALUE` は繰り返し指定できる。
-
 2. **TUI で後から追加する**
 
    `once` を起動 → **Settings → Environment** フォームで `RAILS_MASTER_KEY` を行追加。保存後、ONCE が反映のためコンテナを再生成する。
 
-`SECRET_KEY_BASE` は ONCE が初回インストール時に自動生成して以後保持するため、ユーザーが渡す必要はない（Rails 標準の env として自動的に拾われる）。`RAILS_MASTER_KEY` が未設定でも boot 自体は通るが、credentials（Active Record Encryption のキー 3 点を含む）を復号できないため、AR Encryption を使う機能は失敗する。
+`SECRET_KEY_BASE` は ONCE が初回インストール時に自動生成して以後保持するため、ユーザーが渡す必要はない（Rails 標準の env として自動的に拾われる）。`RAILS_MASTER_KEY` が未設定でも boot 自体は通るが、credentials を復号できないため Active Record Encryption を使う機能（BigQuery SA 鍵の保存・参照など）が失敗する。
 
-### Beams が使わない ONCE 経由 env
+---
+
+## 4. バックアップ
+
+### 4.1 自動バックアップ（ONCE 統合 / 推奨）
+
+ONCE が定期バックアップを担う。ONCE TUI の **Backups 画面**で次を設定する:
+
+- **保存先**: ローカルディスク / S3 / その他 ONCE がサポートするバックアップ先
+- **頻度**: daily / weekly など
+- **リテンション**: 保持世代数
+
+バックアップ実行時、ONCE は Beams コンテナ内の `/hooks/pre-backup`（`bin/hooks/pre-backup` → `Beams::Once::PreBackup`）を呼び出す。Beams 側のフックは 4 つの SQLite DB（`production` / `cache` / `queue` / `cable`）の整合性スナップショットを `/storage/backups/once-pending/` に書き出すだけで、世代管理・転送・暗号化は ONCE が担当する。
+
+### 4.2 手動バックアップ（緊急時用）
+
+旧来の `rake beams:backup` / `bin/beams-backup` は **維持**している（緊急時の世代管理用）。`config/recurring.yml` での日次自動 enqueue は撤去済みのため、ONCE と二重に走ることはない。詳細は [docs/RESTORE.md](RESTORE.md) を参照。
+
+```bash
+# 稼働コンテナ内で実行
+docker exec <container> bundle exec rake beams:backup
+```
+
+---
+
+## 5. アップデート
+
+ONCE 内蔵の **自動アップデート**に任せる。ONCE は定期的に `:latest` を pull し、新しいダイジェストがあればコンテナを再生成する。再生成時に Beams の `bin/boot` が 4 つの SQLite DB へ `db:prepare` を流すため、マイグレーションは自動適用される。
+
+手動でアップデートしたい場合は次のいずれか:
+
+- ONCE TUI の **action menu** から「Update」を選ぶ
+- CLI: `once` の更新コマンドを叩く
+
+---
+
+## 6. ロールバック
+
+不具合時は次のいずれかで戻す:
+
+- **イメージタグ固定**: ONCE TUI でイメージパスを `ghcr.io/webuilder240/beams:<旧 git-sha>` に変更すると、ONCE がコンテナを再生成して当該イメージで起動する。`:latest` 追従に戻すには再度 `ghcr.io/webuilder240/beams:latest` を指定する
+- **データ復旧**: アプリデータ自体を以前の状態へ戻す必要がある場合は、ONCE TUI の Backups 画面から世代復旧を行う。手動世代運用は [docs/RESTORE.md](RESTORE.md) の `rake beams:restore[generation]` を参照
+
+---
+
+## 7. ポート
+
+Beams コンテナは **HTTP 80 のみ**を公開する（`Dockerfile` も `EXPOSE 80`）。TLS（HTTPS 443）終端は ONCE プラットフォーム側で自動的に行う（Let's Encrypt による証明書取得・更新も ONCE が担当）。
+
+| env | 既定 | 説明 |
+|-----|:---:|------|
+| `HTTP_PORT` | `80` | Thruster の HTTP 待受ポート |
+| `TARGET_PORT` | `3000` | Thruster が転送する先（Puma）のポート |
+
+通常は既定のままでよい。
+
+---
+
+## 8. 環境変数
+
+### 8.1 Beams が利用する env
+
+| 変数 | 必須/任意 | 説明 |
+|------|:---:|------|
+| `RAILS_MASTER_KEY` | **必須** | `config/master.key` の値。credentials（Active Record Encryption のキー 3 点を含む）の復号に使う。ONCE の custom env で渡す（§3） |
+| `DISABLE_SSL` | 任意 | ONCE が SSL 無効時に `true` を渡す。Beams は `DISABLE_SSL=true` 以外のときに `assume_ssl` / `force_ssl` を有効化し、`/up` を https リダイレクト対象から除外する（`Beams::Once::SslMode`） |
+| `SECRET_KEY_BASE` | 任意 | ONCE が初回インストール時に自動生成・保持。ユーザー設定不要 |
+| `BUGSNAG_API_KEY` | production のみ | Bugsnag への例外通知 API キー。ONCE custom env で渡す。development / test では未設定で問題ない |
+| `APP_VERSION` | 任意 | Bugsnag イベントに付与するアプリバージョン。未設定でも動作に影響なし |
+| `ONCE_PRE_BACKUP_DIR` | 任意 | `/hooks/pre-backup` の出力先（既定 `/storage/backups/once-pending`）。通常は変更不要 |
+
+### 8.2 ONCE が渡しうるが Beams が使わない env
 
 ONCE は他のアプリ向けに `VAPID_*` / `SMTP_*` / `NUM_CPUS` などの env を渡すことがある。**Beams はこれらを使っていない**（push 通知なし／メール送信は未実装／プロセス数は Puma の `WEB_CONCURRENCY` 等で制御）。**現状無視で問題ない**。将来これらを利用する機能を追加した時点で対応を検討する。
 
 ---
 
-## バックアップ（ONCE 統合）
+## 9. ヘルスチェック
 
-> 本節はトピック 26 グループ C で追記。INSTALL.md 全体はグループ F で ONCE 手順に全面刷新する。
+```bash
+# コンテナ内 / ローカル
+curl -fsS http://localhost/up
 
-自動バックアップは **ONCE プラットフォーム側に一本化**した。ONCE は設定されたスケジュール（保存先・頻度は TUI で設定）でバックアップを起動し、その直前に `/hooks/pre-backup` を呼び出す。Beams 側のフック実装（`bin/hooks/pre-backup` → `Beams::Once::PreBackup`）は、4 つの SQLite（`production` / `cache` / `queue` / `cable`）の整合性スナップショットを `/storage/backups/once-pending/` に書き出すだけで、世代管理・転送・暗号化は ONCE が担当する。
+# 公開 URL（ONCE が TLS 終端した状態）
+curl -fsS https://<hostname>/up
+```
 
-- **自動バックアップの設定**: ONCE TUI の Backups 画面（保存先・頻度・リテンション）
-- **手動バックアップ（緊急時）**: 旧来の `rake beams:backup` / `bin/beams-backup` は**維持**する。`config/recurring.yml` での日次自動 enqueue は撤去済み（ONCE と二重に走らないため）。
-- **復旧**: ONCE TUI からの復旧が標準。手動世代運用は [docs/RESTORE.md](RESTORE.md) を参照。
+コンテナログは ONCE TUI の Logs 画面、または `docker logs -f <container>` で確認できる。
 
 ---
 
-## 9. 関連ドキュメント
+## 10. 関連ドキュメント
 
 - バックアップ・復旧の詳細: [docs/RESTORE.md](RESTORE.md)
 - 製品方針・配布形態: [docs/PRODUCT_PLAN.md](PRODUCT_PLAN.md)（§2 配布形態）
-- 実装トピック: [docs/tasks/18-once-distribution.md](tasks/18-once-distribution.md)
+- 実装トピック: [docs/tasks/26-once-platform.md](tasks/26-once-platform.md)（basecamp/once 採用への移行）／[docs/tasks/18-once-distribution.md](tasks/18-once-distribution.md)（旧自前配布層・履歴）
