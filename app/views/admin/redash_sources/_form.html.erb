@@ -1,0 +1,32 @@
+<%# local: redash_source, url, method, submit_label, persisted %>
+<%= form_with model: redash_source, url: url, method: method, local: true, class: "space-y-4",
+      data: { turbo: false } do |f| %>
+  <%= render "errors", redash_source: redash_source %>
+
+  <div>
+    <%= f.label :name, "接続名", class: "form-label" %>
+    <%= f.text_field :name, class: "form-input" %>
+  </div>
+
+  <div>
+    <%= f.label :url, "Redash URL", class: "form-label" %>
+    <%= f.url_field :url, placeholder: "https://redash.example.com", class: "form-input" %>
+    <p class="text-xs text-gray-500 mt-1">https:// で始まる Redash サーバの URL（プライベート/メタデータ IP は拒否されます）</p>
+  </div>
+
+  <div>
+    <%= f.label :api_key, "API キー", class: "form-label" %>
+    <%#
+      暗号化済みの平文は編集画面でも再表示しない（セキュリティ）。value: "" で空欄表示し、
+      編集時は「変更する場合のみ入力」運用とする。
+    %>
+    <%= f.text_field :api_key, value: "", autocomplete: "off",
+          placeholder: persisted ? "変更する場合のみ、新しい API キーを入力してください（空欄なら既存のキーを保持）" : "Redash ユーザー API キー",
+          class: "form-input font-mono" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.submit submit_label, class: "btn-primary" %>
+    <%= link_to "キャンセル", admin_redash_sources_path, class: "text-gray-600 hover:underline" %>
+  </div>
+<% end %>

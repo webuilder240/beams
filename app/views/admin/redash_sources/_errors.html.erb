@@ -1,0 +1,9 @@
+<% if redash_source.errors.any? %>
+  <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3">
+    <ul class="list-disc list-inside text-sm">
+      <% redash_source.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

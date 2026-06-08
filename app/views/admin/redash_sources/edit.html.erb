@@ -1,0 +1,12 @@
+<% content_for :title, "Redash 接続を編集" %>
+
+<div class="max-w-xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">Redash 接続を編集</h1>
+
+  <%= render "form",
+        redash_source: @redash_source,
+        url: admin_redash_source_path(@redash_source),
+        method: :patch,
+        submit_label: "更新",
+        persisted: true %>
+</div>

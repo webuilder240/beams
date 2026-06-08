@@ -1,0 +1,30 @@
+<% content_for :title, "Redash から取り込み — 接続選択" %>
+
+<div class="max-w-xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold">Redash から取り込み</h1>
+
+  <% if alert %>
+    <div class="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-3"><%= alert %></div>
+  <% end %>
+
+  <% if @redash_sources.empty? %>
+    <div class="rounded border border-yellow-200 bg-yellow-50 text-yellow-800 px-4 py-3 text-sm">
+      Redash 接続が登録されていません。管理者に
+      <code>/admin/redash_sources</code> で接続情報の登録を依頼してください。
+    </div>
+  <% else %>
+    <p class="text-gray-700">取り込み元の Redash 接続を選択してください。</p>
+
+    <%= form_with url: index_queries_redash_import_path, method: :get, local: true, class: "space-y-4" do |f| %>
+      <div>
+        <%= f.label :redash_source_id, "Redash 接続", class: "form-label" %>
+        <%= f.select :redash_source_id,
+              @redash_sources.map { |s| [ "#{s.name}（#{s.url}）", s.id ] },
+              {},
+              class: "form-input" %>
+      </div>
+
+      <%= f.submit "次へ：クエリ一覧を取得", class: "btn-primary" %>
+    <% end %>
+  <% end %>
+</div>

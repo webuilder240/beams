@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_06_103507) do
   create_table "application_settings", force: :cascade do |t|
     t.decimal "bigquery_yen_per_tb", precision: 10, scale: 2, default: "950.0", null: false
     t.datetime "created_at", null: false
@@ -71,6 +71,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_150001) do
     t.datetime "updated_at", null: false
     t.index ["query_id", "name"], name: "index_query_parameters_on_query_id_and_name", unique: true
     t.index ["query_id"], name: "index_query_parameters_on_query_id"
+  end
+
+  create_table "redash_sources", force: :cascade do |t|
+    t.text "api_key", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.index ["name"], name: "index_redash_sources_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|

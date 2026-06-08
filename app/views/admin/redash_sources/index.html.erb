@@ -1,0 +1,41 @@
+<% content_for :title, "Redash 接続管理" %>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">Redash 接続管理</h1>
+    <%= link_to "新規接続", new_admin_redash_source_path,
+          class: "rounded bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700" %>
+  </div>
+
+  <% if notice %>
+    <div class="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-3"><%= notice %></div>
+  <% end %>
+
+  <% if @redash_sources.empty? %>
+    <p class="text-gray-500">Redash 接続が登録されていません。</p>
+  <% else %>
+    <table class="min-w-full divide-y divide-gray-200 bg-white rounded border border-gray-200">
+      <thead>
+        <tr class="text-left text-sm text-gray-600">
+          <th class="px-4 py-2">接続名</th>
+          <th class="px-4 py-2">URL</th>
+          <th class="px-4 py-2">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% @redash_sources.each do |source| %>
+          <tr>
+            <td class="px-4 py-2"><%= source.name %></td>
+            <td class="px-4 py-2 text-sm text-gray-700"><%= source.url %></td>
+            <td class="px-4 py-2 space-x-3 text-sm">
+              <%= link_to "編集", edit_admin_redash_source_path(source), class: "text-blue-600 hover:underline" %>
+              <%= button_to "削除", admin_redash_source_path(source), method: :delete,
+                    form: { data: { turbo_confirm: "本当に削除しますか？" }, class: "inline" },
+                    class: "text-red-600 hover:underline" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

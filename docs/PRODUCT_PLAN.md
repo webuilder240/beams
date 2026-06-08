@@ -236,7 +236,7 @@ worker: bundle exec bin/jobs          # SolidQueue（別プロセス）
 
 - **複数BigQuery接続**（部署ごとに権限の違うSAを使い分け）
 - **スケジュール実行**（SolidQueueの定期実行）
-- **Redash SQLインポート**（クエリ本文＋タイトルの最小移行、パラメータ記法変換）
+- **Redash SQLインポート**（クエリ本文＋タイトルの最小移行、パラメータ記法変換）— **実装済み（トピック22。Redash REST API 直接呼び出し方式、複数選択一括取り込み、SSRF ガード付き）**
 - **ダッシュボード自由グリッド**（D&D、SortableJS等をimportmapで）
 - **文脈オートコンプリート**（CodeMirror補完＋スキーマキャッシュ）
 - **タグ / お気に入り / SQL全文検索**（SQLiteのFTS5）

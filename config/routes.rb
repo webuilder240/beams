@@ -27,11 +27,24 @@ Rails.application.routes.draw do
 
     # コスト単価などのアプリ全体設定（シングルトン）。admin 専用。
     resource :settings, only: [ :edit, :update ]
+
+    # Redash 接続情報（API URL + 暗号化APIキー）の CRUD。トピック22。
+    resources :redash_sources, except: [ :show ]
   end
 
   # BigQuery 接続管理（admin 専用）
   namespace :bigquery do
     resources :connections, except: [ :show ]
+  end
+
+  # Redash クエリ取り込み（トピック22）。ログインユーザーが Redash から
+  # クエリ一覧を取得して複数選択し、BigQuery 接続を選んで一括 import する。
+  # /redash_import/new で RedashSource を選び、/redash_import/:id/index_queries で
+  # 一覧を表示し、/redash_import に POST で取り込みを実行する。
+  resource :redash_import, only: [ :new, :create ] do
+    member do
+      get :index_queries
+    end
   end
 
   # クエリエディタ（CodeMirror 6・保存クエリの CRUD）
