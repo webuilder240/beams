@@ -3,13 +3,13 @@
     {
       "warning_type": "File Access",
       "warning_code": 76,
-      "fingerprint": "fa1e8e86ebb175156082c85841c81fa2a174af1940f9b15ade4d1fc7f2233d94",
+      "fingerprint": "44f3298c1982aca25390572592b4ccf2c7113a3be4e9b2a7a0f3d1e36bf14572",
       "check_name": "SendFile",
       "message": "Model attribute used in file name",
       "file": "app/controllers/queries/executions/csv_exports_controller.rb",
-      "line": 19,
+      "line": 22,
       "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
-      "code": "send_file(Rails.root.join(\"storage/csv\", \"#{current_user.queries.find(params[:query_id]).latest_succeeded_execution.id.to_i}.csv.gz\").to_s, :filename => download_filename, :type => \"text/csv\", :disposition => \"attachment\", :x_sendfile => true)",
+      "code": "send_file(File.join(ENV.fetch(\"BEAMS_CSV_PATH\") do  Rails.root.join(\"storage/csv\").to_s  end, \"#{current_user.queries.find(params[:query_id]).latest_succeeded_execution.id.to_i}.csv.gz\"), :filename => download_filename, :type => \"text/csv\", :disposition => \"attachment\", :x_sendfile => true)",
       "render_path": null,
       "location": {
         "type": "method",
@@ -24,5 +24,5 @@
       "note": "Verified false positive (Coder, 2026-05-31). The send_file path is built only from execution.id.to_i joined to the fixed storage/csv directory, so no user-controlled or string attribute reaches the filesystem path. The :filename option is a Content-Disposition header value (download name), not a filesystem path, and is sanitized in #download_filename (\\\\w/- only). No path traversal possible."
     }
   ],
-  "brakeman_version": "8.0.4"
+  "brakeman_version": "8.0.5"
 }
