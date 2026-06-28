@@ -1,0 +1,6 @@
+<% now = Time.current.iso8601 %>
+
+default:
+  bigquery_yen_per_tb: 950.0
+  created_at: <%= now %>
+  updated_at: <%= now %>

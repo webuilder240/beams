@@ -14,7 +14,9 @@ module Queries
         return head :not_found if execution.nil?
 
         # パスは整数の id だけから組み立てる（ユーザー入力・文字列属性を含めない）。
-        path = Rails.root.join("storage/csv", "#{execution.id.to_i}.csv.gz").to_s
+        # CSV 出力先は ENV "BEAMS_CSV_PATH" で上書き可能（並列テストで worker 隔離するため）。
+        dir = ENV.fetch("BEAMS_CSV_PATH") { Rails.root.join("storage/csv").to_s }
+        path = File.join(dir, "#{execution.id.to_i}.csv.gz")
         return head :not_found unless File.exist?(path)
 
         send_file path,

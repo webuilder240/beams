@@ -1,0 +1,23 @@
+<% password_digest = BCrypt::Password.create("password") %>
+
+<% now = Time.current.iso8601 %>
+member:
+  email: member@example.com
+  password_digest: <%= password_digest %>
+  role: member
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+admin:
+  email: admin@example.com
+  password_digest: <%= password_digest %>
+  role: admin
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+other_member:
+  email: other@example.com
+  password_digest: <%= password_digest %>
+  role: member
+  created_at: <%= now %>
+  updated_at: <%= now %>

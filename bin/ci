@@ -44,17 +44,17 @@ run_lint() {
 
 run_test() {
   local idx="${1:-?}"
-  echo "==> [${idx}/${TOTAL}] test (rspec, system 除外)"
+  echo "==> [${idx}/${TOTAL}] test (minitest, system 除外)"
   bin/rails db:test:prepare
   bin/rails tailwindcss:build
-  bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
+  bin/rails test test/models test/jobs test/helpers test/lib test/integration test/controllers test/bin
 }
 
 run_system_test() {
   local idx="${1:-?}"
-  echo "==> [${idx}/${TOTAL}] system-test (rspec spec/system)"
+  echo "==> [${idx}/${TOTAL}] system-test (minitest test/system)"
   # test ジョブで db:test:prepare と tailwindcss:build は実行済みのため省略する。
-  SKIP_COVERAGE_CHECK=1 bundle exec rspec spec/system
+  SKIP_COVERAGE_CHECK=1 bin/rails test test/system
 }
 
 # ---- signoff ----------------------------------------------------------------
@@ -93,9 +93,9 @@ JOB:
   scan_ruby      brakeman + bundler-audit
   scan_js        importmap audit
   lint           rubocop
-  test           rspec (system 除外)
-  system         spec/system のみ（system-test の別名）
-  system-test    spec/system のみ
+  test           minitest (system 除外)
+  system         test/system のみ（system-test の別名）
+  system-test    test/system のみ
 
 ENV:
   BEAMS_CI_SIGNOFF=1   全ジョブ完走時に `gh signoff` を呼ぶ（個別ジョブでは無視）

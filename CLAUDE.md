@@ -10,13 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 実装時は以下を必ず守ること。各タスクの「完了」はこれらを満たすことを含む。
 
-1. **TDD で実装する**（Red → Green → Refactor）。先に失敗するテスト（RSpec）を書き、それを通す最小実装を行い、その後リファクタする。テストを後追いで書かない。
-2. **テストが通過するまでタスクを完了にしない**。完了の定義 = 対象の RSpec が green、かつ既存テストを壊していない。
+1. **TDD で実装する**（Red → Green → Refactor）。先に失敗するテスト（Minitest）を書き、それを通す最小実装を行い、その後リファクタする。テストを後追いで書かない。
+2. **テストが通過するまでタスクを完了にしない**。完了の定義 = 対象の Minitest が green、かつ既存テストを壊していない。
 3. **service クラス／`app/services` ディレクトリを作らない（禁止）**。`*Service` という命名も使わない。ドメインロジックの置き場所は次のいずれか:
    - 関連する **Active Record モデルのメソッド**（例: `Connection#bigquery`, `Query#bound_sql`）
-   - **PORO を `app/models/` 配下に置く**（例: `app/models/dry_run.rb`、テストは `spec/models/`）
-   - 運用スクリプト（バックアップ等）は **`lib/` 配下のモジュール＋rake/`bin` ラッパー**（テストは `spec/lib/`）
-4. **SimpleCov カバレッジ 85% 以上を維持する**（`spec/spec_helper.rb` の閾値を 85% に設定）。
+   - **PORO を `app/models/` 配下に置く**（例: `app/models/dry_run.rb`、テストは `test/models/`）
+   - 運用スクリプト（バックアップ等）は **`lib/` 配下のモジュール＋rake/`bin` ラッパー**（テストは `test/lib/`）
+4. **SimpleCov カバレッジ 85% 以上を維持する**（`test/test_helper.rb` の閾値を 85% に設定）。
 
 ## Commands
 
@@ -31,10 +31,14 @@ GitHub Actions の CI は `pull_request` トリガを撤去済み（コスト・
 
 ### テスト
 ```bash
-bundle exec rspec                        # 全テスト実行（SimpleCovカバレッジ計測付き）
-bundle exec rspec spec/models/foo_spec.rb  # 単一ファイルのテスト
-bundle exec rspec spec/models/foo_spec.rb:42  # 特定の行のテスト
+bin/rails test                                   # 全テスト（Minitest、CPU コア数で自動並列）
+bin/rails test test/models/foo_test.rb           # 単一ファイル
+bin/rails test test/models/foo_test.rb:42        # 特定行
+PARALLEL_WORKERS=1 bin/rails test                # シリアル実行（並列でしか出ない不具合の調査用）
+SKIP_COVERAGE_CHECK=1 bin/rails test test/system # SimpleCov 閾値チェックを無効化（部分実行時）
 ```
+
+テストフレームワークは **Minitest**（gem 追加なし、Rails 標準）。`test/test_helper.rb` で `parallelize(workers: :number_of_processors)` により CPU コア数で自動並列実行。FactoryBot は撤廃し、`test/support/test_data.rb` の TestData ヘルパー（`create_user` 等）と `test/fixtures/*.yml` を併用。詳細は [docs/MINITEST_MIGRATION.md](docs/MINITEST_MIGRATION.md) 参照。
 
 カバレッジは **85%** 未満でエラー終了（exit code 2）。レポートは `coverage/index.html` に生成される。
 
@@ -84,7 +88,7 @@ bin/release build    # ローカル Docker に linux/amd64 のみロード（pus
 - `ApplicationSetting` — アプリ全体設定（セットアップウィザードで構築）。
 
 ### 運用スクリプト（バックアップ/リストア）
-SQLite DB のバックアップ・リストアは `lib/beams/`（`backup.rb` / `restore.rb` / `procfile_reader.rb`）のモジュール + `lib/tasks/beams.rake` のラッパーで提供（`rake beams:backup`, `beams:backup:list`, `beams:restore[generation]`）。手順は `docs/RESTORE.md`。テストは `spec/lib/`。
+SQLite DB のバックアップ・リストアは `lib/beams/`（`backup.rb` / `restore.rb` / `procfile_reader.rb`）のモジュール + `lib/tasks/beams.rake` のラッパーで提供（`rake beams:backup`, `beams:backup:list`, `beams:restore[generation]`）。手順は `docs/RESTORE.md`。テストは `test/lib/`。
 
 ### Solid Stack（SQLite完結構成）
 本番環境は単一インフラ（Docker + SQLite）で動作する。4つのSQLiteデータベースを用途別に分離している：
@@ -102,12 +106,14 @@ SQLite DB のバックアップ・リストアは `lib/beams/`（`backup.rb` / `
 ONCE プラットフォーム（[basecamp/once](https://github.com/basecamp/once)）で配布する。設置手順は `docs/INSTALL.md` を参照。
 
 ### テスト構成
-- **RSpec** + **FactoryBot** + **Faker**（`spec/` 以下）
-- `spec/support/` 以下のファイルは自動読み込み済み
-- `spec/support/factory_bot.rb` でFactoryBotのDSL（`create`, `build` 等）をそのまま使用可能
-- **SimpleCov** がカバレッジを計測（`spec/spec_helper.rb` で設定）
-- System Specは `spec/system/` 以下に配置する。**原則JSなし**（`rack_test` ドライバー）で作成する
-- JSが必要な場合（リグレッションテストなど）のみ `js: true` メタデータを付与してPlaywright（chromium）で実行する。ローカルで初回実行前に `npx playwright install chromium` が必要
+- **Minitest**（Rails 標準、gem 追加なし）+ **fixtures** + **TestData ヘルパー**（`test/` 以下）
+- `test/support/` 以下のファイルは `test/test_helper.rb` から自動読み込み
+- `test/support/test_data.rb` の TestData ヘルパー（`create_user`, `create_query`, `create_bigquery_connection` 等）を `ActiveSupport::TestCase` に include 済み。FactoryBot は撤廃
+- **SimpleCov** がカバレッジを計測（`test/test_helper.rb` で設定）
+- 並列実行は Rails 標準の `parallelize(workers: :number_of_processors)` を `test_helper.rb` で有効化（gem 追加なし）。SQLite では worker ごとに `storage/test-<id>.sqlite3` が自動分離される
+- minitest 6 では `Object#stub` が標準で提供されないため、`test_helper.rb` で互換実装を入れている（`x.stub(:m, v) { ... }` 形式）
+- System test は `test/system/` 配下。`test/application_system_test_case.rb` で `ApplicationSystemTestCase`（`rack_test`）と `ApplicationJsSystemTestCase`（Playwright）の 2 つの基底クラスを定義。JS が必要な test は後者を継承
+- ローカルで Playwright を初回実行する前に `npx playwright install chromium` が必要
 
 
 ### CI（GitHub Actions）
@@ -115,5 +121,5 @@ ONCE プラットフォーム（[basecamp/once](https://github.com/basecamp/once
 1. `scan_ruby` — Brakeman + bundler-audit
 2. `scan_js` — importmap audit
 3. `lint` — RuboCop（`bin/rubocop -f github`）
-4. `test` — `bin/rails db:test:prepare && bundle exec rspec`（RSpec。Minitest は使っていない）
-5. `system-test` — `bundle exec rspec spec/system`（Playwright browsers + `tailwindcss:build` を事前実行。失敗時スクリーンショットをartifactに保存）
+4. `test` — `bin/rails db:test:prepare && bin/rails test`（Minitest、CPU コア数で並列実行）
+5. `system-test` — `bin/rails test test/system`（Playwright browsers + `tailwindcss:build` を事前実行。失敗時スクリーンショットをartifactに保存）

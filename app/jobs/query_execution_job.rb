@@ -112,9 +112,9 @@ class QueryExecutionJob < ApplicationJob
 
   # 全件 CSV を gzip でファイルに書き出す。最新1件のみ保持（既存は上書き）。
   def write_csv(execution, schema, rows)
-    dir = Rails.root.join("storage/csv")
+    dir = ENV.fetch("BEAMS_CSV_PATH") { Rails.root.join("storage/csv").to_s }
     FileUtils.mkdir_p(dir)
-    path = dir.join("#{execution.id}.csv.gz")
+    path = File.join(dir, "#{execution.id}.csv.gz")
 
     Zlib::GzipWriter.open(path) do |gz|
       gz.write(CSV.generate_line(schema.map { |c| c["name"] }))
