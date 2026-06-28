@@ -1,0 +1,10 @@
+<% now = Time.current.iso8601 %>
+
+default:
+  dashboard: default
+  query: default
+  position: 0
+  column_span: 1
+  title_override:
+  created_at: <%= now %>
+  updated_at: <%= now %>

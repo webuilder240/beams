@@ -1,0 +1,9 @@
+<% now = Time.current.iso8601 %>
+
+default:
+  query: default
+  chart_type: line
+  display_mode: table
+  counter_aggregation: sum
+  created_at: <%= now %>
+  updated_at: <%= now %>

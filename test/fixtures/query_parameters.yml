@@ -1,0 +1,2 @@
+# Note: Query#sync_parameters! auto-creates query_parameters from SQL on save.
+# Empty file to ensure ActiveRecord clears the table between tests.

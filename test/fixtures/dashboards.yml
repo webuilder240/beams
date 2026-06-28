@@ -1,0 +1,15 @@
+<% now = Time.current.iso8601 %>
+
+default:
+  user: member
+  title: ダッシュボード1
+  description:
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+second:
+  user: member
+  title: ダッシュボード2
+  description:
+  created_at: <%= now %>
+  updated_at: <%= now %>

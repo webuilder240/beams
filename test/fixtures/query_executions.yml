@@ -1,0 +1,33 @@
+<% now = Time.current.iso8601 %>
+
+pending:
+  query: default
+  status: pending
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+running:
+  query: default
+  status: running
+  started_at: <%= 1.minute.ago.iso8601 %>
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+succeeded:
+  query: default
+  status: succeeded
+  started_at: <%= 1.minute.ago.iso8601 %>
+  finished_at: <%= Time.current.iso8601 %>
+  result_row_count: 1
+  result_truncated: false
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+failed:
+  query: default
+  status: failed
+  started_at: <%= 1.minute.ago.iso8601 %>
+  finished_at: <%= Time.current.iso8601 %>
+  error_message: boom
+  created_at: <%= now %>
+  updated_at: <%= now %>

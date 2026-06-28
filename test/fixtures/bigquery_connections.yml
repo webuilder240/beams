@@ -1,0 +1,33 @@
+<% sa_json = lambda do |project|
+  {
+    type: "service_account",
+    project_id: project,
+    private_key_id: "fixture_private_key_id",
+    private_key: "-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----\n",
+    client_email: "sa@#{project}.iam.gserviceaccount.com",
+    client_id: "123456789012345678901"
+  }.to_json
+end %>
+<% now = Time.current.iso8601 %>
+
+default:
+  name: 接続1
+  project_id: my-project-1
+  service_account_json: '<%= sa_json.call("my-project-1") %>'
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+production:
+  name: 本番接続
+  project_id: my-project-2
+  service_account_json: '<%= sa_json.call("my-project-2") %>'
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+with_cost_limit:
+  name: 上限あり接続
+  project_id: my-project-3
+  service_account_json: '<%= sa_json.call("my-project-3") %>'
+  maximum_bytes_billed: 10000000000
+  created_at: <%= now %>
+  updated_at: <%= now %>

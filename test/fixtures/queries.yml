@@ -1,0 +1,25 @@
+<% now = Time.current.iso8601 %>
+
+default:
+  user: member
+  bigquery_connection: default
+  title: クエリ1
+  sql_body: "SELECT 1"
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+second:
+  user: member
+  bigquery_connection: default
+  title: クエリ2
+  sql_body: "SELECT 2"
+  created_at: <%= now %>
+  updated_at: <%= now %>
+
+result_query:
+  user: member
+  bigquery_connection: production
+  title: 結果クエリ
+  sql_body: "SELECT 1"
+  created_at: <%= now %>
+  updated_at: <%= now %>
